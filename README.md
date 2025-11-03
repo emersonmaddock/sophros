@@ -1,3 +1,3 @@
 # sophros
 
-# Contributors: Evan, 
+# Contributors: Evan, Janis
