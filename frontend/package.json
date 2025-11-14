@@ -11,7 +11,9 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@clerk/clerk-expo": "^2.19.1",
     "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
@@ -22,6 +24,7 @@
     "expo-image": "~3.0.10",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.14",
+    "expo-secure-store": "^15.0.7",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "expo-symbols": "~1.0.7",
@@ -31,17 +34,17 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
-    "react-native-worklets": "0.5.1",
     "react-native-reanimated": "~4.1.1",
-    "react-native-safe-area-context": "~5.6.0",
+    "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.16.0",
-    "react-native-web": "~0.21.0"
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
     "eslint": "^9.25.0",
-    "eslint-config-expo": "~10.0.0"
+    "eslint-config-expo": "~10.0.0",
+    "typescript": "~5.9.2"
   },
   "private": true,
   "packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
