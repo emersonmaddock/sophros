@@ -14,18 +14,7 @@ export default function WelcomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <ThemedView style={styles.container}>
           <View style={styles.logoContainer}>
-            {/* <ThemedText style={styles.logo}>🌊</ThemedText> */}
-            <ThemedText style={styles.logoText}>Sophros</ThemedText>
-          </View>
-
-          <View style={styles.content}>
-            <ThemedText style={styles.headline}>
-              Your Personal Health Planner
-            </ThemedText>
-            
-            <ThemedText style={styles.subtext}>
-              Stop tracking. Start planning. We&apos;ll create your optimal schedule for meals, workouts, and sleep.
-            </ThemedText>
+            <ThemedText style={styles.logoText}>Welcome to Sophros!</ThemedText>
           </View>
 
           <View style={styles.buttonContainer}>

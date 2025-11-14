@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { OnboardingData, initialOnboardingData } from '@/types/onboarding';
+import React, { ReactNode, createContext, useCallback, useContext, useState } from 'react';
 
 interface OnboardingContextType {
   data: OnboardingData;

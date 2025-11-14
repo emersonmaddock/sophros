@@ -51,7 +51,7 @@ function SignUpScreen() {
       if (completeSignUp.status === 'complete') {
         // If the sign-up is complete, set the active session and navigate to the protected screen
         await setActive({ session: completeSignUp.createdSessionId })
-        router.replace('/onboarding')
+        router.replace('/onboarding/biological-profile-1')
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2))
       }
@@ -133,7 +133,7 @@ function SignUpScreen() {
 
         <TouchableOpacity
           style={styles.textButton}
-          onPress={() => router.push('/')}
+          onPress={() => router.push('/sign-in')}
           activeOpacity={0.8}
         >
           <Text style={styles.textButtonText}>Already have an account? Sign in.</Text>
