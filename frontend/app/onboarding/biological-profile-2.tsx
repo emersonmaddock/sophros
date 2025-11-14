@@ -19,7 +19,7 @@ export default function SexSelectionScreen() {
       },
     });
     completeOnboarding();
-    router.replace('/');
+    router.replace('/onboarding/done');
   };
 
   return (
