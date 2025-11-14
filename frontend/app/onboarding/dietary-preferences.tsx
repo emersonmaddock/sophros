@@ -49,7 +49,7 @@ export default function DietaryPreferencesScreen() {
 
   const handleContinue = () => {
     nextStep();
-    router.push('/onboarding/schedule-context');
+    // router.push('/onboarding/schedule-context');
   };
 
   return (

@@ -31,13 +31,13 @@ export default function WelcomeScreen() {
           <View style={styles.buttonContainer}>
             <Button
               title="Get Started"
-              onPress={() => router.push('/onboarding/primary-goal')}
+              onPress={() => router.push('/(auth)/sign-up')}
               fullWidth
             />
             
             <Button
               title="Sign In"
-              onPress={() => router.push('/auth/sign-in')}
+              onPress={() => router.push('/(auth)/sign-in')}
               variant="outline"
               fullWidth
               style={styles.secondaryButton}
