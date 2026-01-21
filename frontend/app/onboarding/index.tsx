@@ -5,15 +5,15 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@clerk/clerk-expo';
 import { Redirect, router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
   const backgroundColor = useThemeColor({}, 'background');
 
-  const { isSignedIn } = useAuth()
+  const { isSignedIn } = useAuth();
 
   if (isSignedIn) {
-    return <Redirect href={'/onboarding/biological-profile-1'} />
+    return <Redirect href={'/onboarding/biological-profile-1'} />;
   }
 
   return (
@@ -25,12 +25,8 @@ export default function WelcomeScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <Button
-              title="Get Started"
-              onPress={() => router.push('/(auth)/sign-up')}
-              fullWidth
-            />
-            
+            <Button title="Get Started" onPress={() => router.push('/(auth)/sign-up')} fullWidth />
+
             <Button
               title="Sign In"
               onPress={() => router.push('/(auth)/sign-in')}

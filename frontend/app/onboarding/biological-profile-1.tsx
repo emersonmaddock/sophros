@@ -27,7 +27,8 @@ export default function AgeScreen() {
     }
   };
 
-  const isValid = age.length > 0 && !isNaN(parseInt(age, 10)) && parseInt(age, 10) > 0 && parseInt(age, 10) < 150;
+  const isValid =
+    age.length > 0 && !isNaN(parseInt(age, 10)) && parseInt(age, 10) > 0 && parseInt(age, 10) < 150;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
@@ -49,12 +50,7 @@ export default function AgeScreen() {
           </View>
 
           <View style={styles.buttonContainer}>
-            <Button
-              title="Continue"
-              onPress={handleContinue}
-              disabled={!isValid}
-              fullWidth
-            />
+            <Button title="Continue" onPress={handleContinue} disabled={!isValid} fullWidth />
           </View>
         </ThemedView>
       </ScrollView>

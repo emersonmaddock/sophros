@@ -14,7 +14,6 @@ export default function AgeScreen() {
           <View style={styles.content}>
             <ThemedText style={styles.title}>Done</ThemedText>
           </View>
-
         </ThemedView>
       </ScrollView>
     </SafeAreaView>

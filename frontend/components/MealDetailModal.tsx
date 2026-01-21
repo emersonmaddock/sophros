@@ -1,35 +1,19 @@
-import { Colors } from "@/constants/theme";
-import { ArrowRight, Check, Edit, Info, X } from "lucide-react-native";
-import React from "react";
-import {
-    Linking,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from "react-native";
+import { Colors } from '@/constants/theme';
+import { ArrowRight, Check, Edit, Info, X } from 'lucide-react-native';
+import React from 'react';
+import { Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 /* Simple helper for colored bars */
-const ProgressBar = ({
-  percent,
-  color,
-}: {
-  percent: number;
-  color: string;
-}) => (
+const ProgressBar = ({ percent, color }: { percent: number; color: string }) => (
   <View
     style={{
       height: 6,
       backgroundColor: Colors.light.background,
       borderRadius: 3,
-      overflow: "hidden",
+      overflow: 'hidden',
     }}
   >
-    <View
-      style={{ width: `${percent}%`, backgroundColor: color, height: "100%" }}
-    />
+    <View style={{ width: `${percent}%`, backgroundColor: color, height: '100%' }} />
   </View>
 );
 
@@ -39,26 +23,13 @@ interface MealDetailModalProps {
   meal: any; // Using any for now to match template speed, but should be typed ideally
 }
 
-export const MealDetailModal = ({
-  visible,
-  onClose,
-  meal,
-}: MealDetailModalProps) => {
+export const MealDetailModal = ({ visible, onClose, meal }: MealDetailModalProps) => {
   if (!meal) return null;
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="slide" transparent={true} visible={visible} onRequestClose={onClose}>
       <View style={styles.centeredView}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          onPress={onClose}
-          activeOpacity={1}
-        />
+        <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1} />
 
         <View style={styles.modalView}>
           <View style={styles.dragHandle} />
@@ -79,16 +50,13 @@ export const MealDetailModal = ({
             >
               <View style={styles.infoHeader}>
                 <Info size={18} color={Colors.light.primary} />
-                <Text
-                  style={[styles.infoTitle, { color: Colors.light.primary }]}
-                >
+                <Text style={[styles.infoTitle, { color: Colors.light.primary }]}>
                   WHY THIS MEAL
                 </Text>
               </View>
               <Text style={styles.infoText}>
-                You asked for quick, savory breakfasts and to avoid heavy foods
-                after 9 PM. This bowl gives you 28g of protein with mostly
-                complex carbs.
+                You asked for quick, savory breakfasts and to avoid heavy foods after 9 PM. This
+                bowl gives you 28g of protein with mostly complex carbs.
               </Text>
             </View>
 
@@ -101,33 +69,15 @@ export const MealDetailModal = ({
                   <Text style={styles.macroLabel}>Calories</Text>
                 </View>
                 <View style={styles.macroItem}>
-                  <Text
-                    style={[styles.macroValue, { color: Colors.light.primary }]}
-                  >
-                    28g
-                  </Text>
+                  <Text style={[styles.macroValue, { color: Colors.light.primary }]}>28g</Text>
                   <Text style={styles.macroLabel}>Protein</Text>
                 </View>
                 <View style={styles.macroItem}>
-                  <Text
-                    style={[
-                      styles.macroValue,
-                      { color: Colors.light.charts.carbs },
-                    ]}
-                  >
-                    42g
-                  </Text>
+                  <Text style={[styles.macroValue, { color: Colors.light.charts.carbs }]}>42g</Text>
                   <Text style={styles.macroLabel}>Carbs</Text>
                 </View>
                 <View style={styles.macroItem}>
-                  <Text
-                    style={[
-                      styles.macroValue,
-                      { color: Colors.light.charts.fats },
-                    ]}
-                  >
-                    12g
-                  </Text>
+                  <Text style={[styles.macroValue, { color: Colors.light.charts.fats }]}>12g</Text>
                   <Text style={styles.macroLabel}>Fats</Text>
                 </View>
               </View>
@@ -135,32 +85,30 @@ export const MealDetailModal = ({
 
             {/* Micronutrients */}
             <View style={{ marginBottom: 24 }}>
-              <Text style={[styles.sectionHeader, { marginBottom: 12 }]}>
-                KEY MICRONUTRIENTS
-              </Text>
+              <Text style={[styles.sectionHeader, { marginBottom: 12 }]}>KEY MICRONUTRIENTS</Text>
               <View style={{ gap: 10 }}>
                 {[
                   {
-                    name: "Vitamin D",
-                    amount: "2.4 µg",
+                    name: 'Vitamin D',
+                    amount: '2.4 µg',
                     daily: 45,
                     color: Colors.light.secondary,
                   },
                   {
-                    name: "Calcium",
-                    amount: "320 mg",
+                    name: 'Calcium',
+                    amount: '320 mg',
                     daily: 32,
                     color: Colors.light.primary,
                   },
                   {
-                    name: "Iron",
-                    amount: "1.8 mg",
+                    name: 'Iron',
+                    amount: '1.8 mg',
                     daily: 22,
                     color: Colors.light.error,
                   },
                   {
-                    name: "Vitamin B12",
-                    amount: "1.2 µg",
+                    name: 'Vitamin B12',
+                    amount: '1.2 µg',
                     daily: 50,
                     color: Colors.light.charts.carbs,
                   },
@@ -168,8 +116,8 @@ export const MealDetailModal = ({
                   <View key={i}>
                     <View
                       style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
                         marginBottom: 6,
                       }}
                     >
@@ -186,16 +134,14 @@ export const MealDetailModal = ({
 
             {/* Ingredients */}
             <View style={{ marginBottom: 24 }}>
-              <Text style={[styles.sectionHeader, { marginBottom: 12 }]}>
-                INGREDIENTS
-              </Text>
+              <Text style={[styles.sectionHeader, { marginBottom: 12 }]}>INGREDIENTS</Text>
               <View style={{ marginLeft: 8 }}>
                 {[
-                  "Greek yogurt (200g)",
-                  "Mixed berries (100g)",
-                  "Granola (30g)",
-                  "Honey (15g)",
-                  "Chia seeds (10g)",
+                  'Greek yogurt (200g)',
+                  'Mixed berries (100g)',
+                  'Granola (30g)',
+                  'Honey (15g)',
+                  'Chia seeds (10g)',
                 ].map((ing, i) => (
                   <Text key={i} style={styles.ingredientItem}>
                     • {ing}
@@ -207,11 +153,7 @@ export const MealDetailModal = ({
             {/* Source Link */}
             <TouchableOpacity
               style={styles.linkCard}
-              onPress={() =>
-                Linking.openURL(
-                  "https://www.healthyrecipes.com/greek-yogurt-bowl",
-                )
-              }
+              onPress={() => Linking.openURL('https://www.healthyrecipes.com/greek-yogurt-bowl')}
             >
               <View style={{ flex: 1 }}>
                 <Text style={styles.linkSubtitle}>VIEW RECIPE</Text>
@@ -223,37 +165,19 @@ export const MealDetailModal = ({
             {/* Actions */}
             <View style={styles.actionsRow}>
               <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  { backgroundColor: Colors.light.success, flex: 1 },
-                ]}
+                style={[styles.actionButton, { backgroundColor: Colors.light.success, flex: 1 }]}
               >
                 <Check size={20} color="#FFF" />
-                <Text style={[styles.actionButtonText, { color: "#FFF" }]}>
-                  Completed
-                </Text>
+                <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Completed</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  { backgroundColor: Colors.light.background },
-                ]}
+                style={[styles.actionButton, { backgroundColor: Colors.light.background }]}
               >
                 <Edit size={20} color={Colors.light.text} />
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    { color: Colors.light.text },
-                  ]}
-                >
-                  Modify
-                </Text>
+                <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>Modify</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  { backgroundColor: Colors.light.background },
-                ]}
+                style={[styles.actionButton, { backgroundColor: Colors.light.background }]}
                 onPress={onClose}
               >
                 <X size={20} color={Colors.light.error} />
@@ -269,19 +193,19 @@ export const MealDetailModal = ({
 const styles = StyleSheet.create({
   centeredView: {
     flex: 1,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalView: {
     backgroundColor: Colors.light.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: "85%",
-    shadowColor: "#000",
+    maxHeight: '85%',
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: -2,
@@ -295,12 +219,12 @@ const styles = StyleSheet.create({
     height: 4,
     backgroundColor: Colors.light.background,
     borderRadius: 2,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 24,
   },
   title: {
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 8,
   },
@@ -316,14 +240,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   infoHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
     marginBottom: 8,
   },
   infoTitle: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   infoText: {
     fontSize: 14,
@@ -338,20 +262,20 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.textMuted,
   },
   macrosGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 12,
   },
   macroItem: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   macroValue: {
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
   },
   macroLabel: {
@@ -371,24 +295,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   linkSubtitle: {
     fontSize: 13,
     color: Colors.light.textMuted,
     marginBottom: 4,
   },
-  linkTitle: { fontSize: 14, fontWeight: "600", color: Colors.light.primary },
-  actionsRow: { flexDirection: "row", gap: 12 },
+  linkTitle: { fontSize: 14, fontWeight: '600', color: Colors.light.primary },
+  actionsRow: { flexDirection: 'row', gap: 12 },
   actionButton: {
     padding: 16,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
     gap: 8,
   },
-  actionButtonText: { fontSize: 15, fontWeight: "600" },
+  actionButtonText: { fontSize: 15, fontWeight: '600' },
 });

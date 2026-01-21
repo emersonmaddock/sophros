@@ -1,89 +1,83 @@
-import { MealDetailModal } from "@/components/MealDetailModal";
-import { Colors } from "@/constants/theme";
-import { Calendar } from "lucide-react-native";
-import React, { useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MealDetailModal } from '@/components/MealDetailModal';
+import { Colors } from '@/constants/theme';
+import { Calendar } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SchedulePage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
 
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const scheduleItems = [
     {
-      time: "7:00 AM",
-      title: "Wake Up & Stretch",
-      duration: "30 min",
-      type: "exercise",
-      status: "completed",
+      time: '7:00 AM',
+      title: 'Wake Up & Stretch',
+      duration: '30 min',
+      type: 'exercise',
+      status: 'completed',
     },
     {
-      time: "7:30 AM",
-      title: "Breakfast",
-      subtitle: "Greek Yogurt Bowl (380 cal)",
-      duration: "20 min",
-      type: "meal",
-      status: "completed",
+      time: '7:30 AM',
+      title: 'Breakfast',
+      subtitle: 'Greek Yogurt Bowl (380 cal)',
+      duration: '20 min',
+      type: 'meal',
+      status: 'completed',
     },
     {
-      time: "9:00 AM",
-      title: "Morning Workout",
-      subtitle: "HIIT Training",
-      duration: "45 min",
-      type: "exercise",
-      status: "completed",
+      time: '9:00 AM',
+      title: 'Morning Workout',
+      subtitle: 'HIIT Training',
+      duration: '45 min',
+      type: 'exercise',
+      status: 'completed',
     },
     {
-      time: "12:30 PM",
-      title: "Lunch",
-      subtitle: "Grilled Chicken Salad (520 cal)",
-      duration: "30 min",
-      type: "meal",
-      status: "current",
+      time: '12:30 PM',
+      title: 'Lunch',
+      subtitle: 'Grilled Chicken Salad (520 cal)',
+      duration: '30 min',
+      type: 'meal',
+      status: 'current',
     },
     {
-      time: "3:00 PM",
-      title: "Snack",
-      subtitle: "Protein Shake (180 cal)",
-      duration: "10 min",
-      type: "meal",
-      status: "upcoming",
+      time: '3:00 PM',
+      title: 'Snack',
+      subtitle: 'Protein Shake (180 cal)',
+      duration: '10 min',
+      type: 'meal',
+      status: 'upcoming',
     },
     {
-      time: "6:30 PM",
-      title: "Evening Walk",
-      duration: "30 min",
-      type: "exercise",
-      status: "upcoming",
+      time: '6:30 PM',
+      title: 'Evening Walk',
+      duration: '30 min',
+      type: 'exercise',
+      status: 'upcoming',
     },
     {
-      time: "7:30 PM",
-      title: "Dinner",
-      subtitle: "Salmon & Vegetables (640 cal)",
-      duration: "40 min",
-      type: "meal",
-      status: "upcoming",
+      time: '7:30 PM',
+      title: 'Dinner',
+      subtitle: 'Salmon & Vegetables (640 cal)',
+      duration: '40 min',
+      type: 'meal',
+      status: 'upcoming',
     },
     {
-      time: "10:30 PM",
-      title: "Sleep",
-      subtitle: "Target: 8 hours",
-      duration: "8 hrs",
-      type: "sleep",
-      status: "upcoming",
+      time: '10:30 PM',
+      title: 'Sleep',
+      subtitle: 'Target: 8 hours',
+      duration: '8 hrs',
+      type: 'sleep',
+      status: 'upcoming',
     },
   ];
 
   const handleItemPress = (item: any) => {
-    if (item.type === "meal") {
+    if (item.type === 'meal') {
       setSelectedMeal(item);
       setModalVisible(true);
     }
@@ -91,9 +85,9 @@ export default function SchedulePage() {
 
   const getBorderColor = (type: string) => {
     switch (type) {
-      case "meal":
+      case 'meal':
         return Colors.light.secondary;
-      case "exercise":
+      case 'exercise':
         return Colors.light.primary;
       default:
         return Colors.light.charts.carbs;
@@ -101,7 +95,7 @@ export default function SchedulePage() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -110,20 +104,11 @@ export default function SchedulePage() {
         </View>
 
         {/* Day Selector */}
-        <View
-          style={styles.daySelector}
-        >
+        <View style={styles.daySelector}>
           {days.map((day, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[styles.dayCard, i === 2 && styles.activeDayCard]}
-            >
-              <Text style={[styles.dayText, i === 2 && styles.activeDayText]}>
-                {day}
-              </Text>
-              <Text style={[styles.dateText, i === 2 && styles.activeDateText]}>
-                {17 + i}
-              </Text>
+            <TouchableOpacity key={i} style={[styles.dayCard, i === 2 && styles.activeDayCard]}>
+              <Text style={[styles.dayText, i === 2 && styles.activeDayText]}>{day}</Text>
+              <Text style={[styles.dateText, i === 2 && styles.activeDateText]}>{17 + i}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -140,31 +125,31 @@ export default function SchedulePage() {
                 style={[
                   styles.eventCard,
                   { borderLeftColor: getBorderColor(item.type) },
-                  item.status === "completed" && { opacity: 0.6 },
+                  item.status === 'completed' && { opacity: 0.6 },
                 ]}
                 onPress={() => handleItemPress(item)}
-                disabled={item.type !== "meal"}
+                disabled={item.type !== 'meal'}
               >
                 <View
                   style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
                     marginBottom: 4,
                   }}
                 >
                   <View
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
+                      flexDirection: 'row',
+                      alignItems: 'center',
                       gap: 8,
                     }}
                   >
                     <Text style={styles.eventTitle}>
                       {item.title}
-                      {item.status === "completed" && " ✓"}
+                      {item.status === 'completed' && ' ✓'}
                     </Text>
-                    {item.status === "current" && (
+                    {item.status === 'current' && (
                       <View style={styles.nowBadge}>
                         <Text style={styles.nowText}>NOW</Text>
                       </View>
@@ -175,9 +160,7 @@ export default function SchedulePage() {
                   </View>
                 </View>
 
-                {item.subtitle && (
-                  <Text style={styles.eventSubtitle}>{item.subtitle}</Text>
-                )}
+                {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
               </TouchableOpacity>
             </View>
           ))}
@@ -213,7 +196,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 4,
   },
@@ -222,8 +205,8 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
   },
   daySelector: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   dayCard: {
@@ -231,10 +214,10 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 16,
     backgroundColor: Colors.light.surface,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -246,19 +229,19 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: '500',
     color: Colors.light.textMuted,
   },
   activeDayText: {
-    color: "rgba(255,255,255,0.8)",
+    color: 'rgba(255,255,255,0.8)',
   },
   dateText: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
   },
   activeDateText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
   },
   timeIndicator: {
     backgroundColor: `${Colors.light.primary}10`,
@@ -267,13 +250,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   currentTimeText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
   timeSubText: {
@@ -284,7 +267,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   timelineItem: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 16,
     marginBottom: 16,
   },
@@ -294,7 +277,7 @@ const styles = StyleSheet.create({
   },
   itemTime: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.textMuted,
   },
   eventCard: {
@@ -303,7 +286,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderLeftWidth: 3,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -311,7 +294,7 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
   nowBadge: {
@@ -322,8 +305,8 @@ const styles = StyleSheet.create({
   },
   nowText: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#FFF",
+    fontWeight: '700',
+    color: '#FFF',
   },
   durationBadge: {
     backgroundColor: Colors.light.background,
@@ -341,29 +324,29 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tapHint: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 6,
     marginTop: 8,
-    alignItems: "center",
+    alignItems: 'center',
   },
   tapHintText: {
     fontSize: 11,
     color: Colors.light.primary,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   planButton: {
     backgroundColor: Colors.light.primary,
     borderRadius: 16,
     padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
     marginTop: 24,
   },
   planButtonText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 });

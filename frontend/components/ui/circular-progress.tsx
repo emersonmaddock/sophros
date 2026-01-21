@@ -1,7 +1,7 @@
-import { Colors } from "@/constants/theme";
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import { Colors } from '@/constants/theme';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 interface CircularProgressProps {
   percentage: number;
@@ -30,15 +30,11 @@ export const CircularProgress = ({
         style={{
           width: size,
           height: size,
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Svg
-          width={size}
-          height={size}
-          style={{ transform: [{ rotate: "-90deg" }] }}
-        >
+        <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
           <Circle
             cx={size / 2}
             cy={size / 2}
@@ -75,21 +71,21 @@ export const CircularProgress = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: "center",
+    alignItems: 'center',
     gap: 8,
   },
   percentageContainer: {
-    position: "absolute",
-    alignItems: "center",
-    justifyContent: "center",
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   percentageText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
   },
   labelContainer: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   labelText: {
     fontSize: 11,
@@ -98,7 +94,7 @@ const styles = StyleSheet.create({
   },
   valueText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
 });

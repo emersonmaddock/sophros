@@ -28,7 +28,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       const newCompletedSteps = prev.completedSteps.includes(prev.currentStep)
         ? prev.completedSteps
         : [...prev.completedSteps, prev.currentStep];
-      
+
       return {
         ...prev,
         currentStep: prev.currentStep + 1,

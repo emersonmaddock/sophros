@@ -1,22 +1,22 @@
-import OAuthButton from '@/components/OAuthButton'
-import { styles } from '@/constants/AuthStyles'
-import { useSignUp } from '@clerk/clerk-expo'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import OAuthButton from '@/components/OAuthButton';
+import { styles } from '@/constants/AuthStyles';
+import { useSignUp } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function SignUpScreen() {
-  const router = useRouter()
-  const { signUp, isLoaded, setActive } = useSignUp()
-  const [emailAddress, setEmailAddress] = useState('')
-  const [password, setPassword] = useState('')
-  const [pendingVerification, setPendingVerification] = useState(false)
-  const [code, setCode] = useState('')
+  const router = useRouter();
+  const { signUp, isLoaded, setActive } = useSignUp();
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState('');
 
   // [useSignUp hook](/docs/hooks/use-sign-up) from Clerk SDK to handle sign-up logic
   const onSignUpPress = async () => {
     if (!isLoaded || !signUp) {
-      return
+      return;
     }
 
     try {
@@ -24,41 +24,41 @@ function SignUpScreen() {
       await signUp.create({
         emailAddress,
         password,
-      })
+      });
 
       // Prepare the email address verification, which will send the email a code
       await signUp.prepareEmailAddressVerification({
         strategy: 'email_code',
-      })
+      });
 
-      setPendingVerification(true)
+      setPendingVerification(true);
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2))
+      console.error(JSON.stringify(err, null, 2));
     }
-  }
+  };
 
   const onVerifyPress = async () => {
     if (!isLoaded || !signUp) {
-      return
+      return;
     }
 
     try {
       // Attempt to verify the email address using the provided code
       const completeSignUp = await signUp.attemptEmailAddressVerification({
         code,
-      })
+      });
 
       if (completeSignUp.status === 'complete') {
         // If the sign-up is complete, set the active session and navigate to the protected screen
-        await setActive({ session: completeSignUp.createdSessionId })
-        router.replace('/onboarding/biological-profile-1')
+        await setActive({ session: completeSignUp.createdSessionId });
+        router.replace('/onboarding/biological-profile-1');
       } else {
-        console.error(JSON.stringify(completeSignUp, null, 2))
+        console.error(JSON.stringify(completeSignUp, null, 2));
       }
     } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2))
+      console.error(JSON.stringify(err, null, 2));
     }
-  }
+  };
 
   // Email verification screen
   if (pendingVerification) {
@@ -87,7 +87,7 @@ function SignUpScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    )
+    );
   }
 
   // Sign up screen
@@ -140,7 +140,7 @@ function SignUpScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  )
+  );
 }
 
-export default SignUpScreen
+export default SignUpScreen;

@@ -1,35 +1,35 @@
-import { Colors, Layout, Shadows } from "@/constants/theme";
-import { Calendar, ChevronRight, Heart, Settings, Utensils } from "lucide-react-native";
-import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors, Layout, Shadows } from '@/constants/theme';
+import { Calendar, ChevronRight, Heart, Settings, Utensils } from 'lucide-react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfilePage() {
   const menuItems = [
     {
-      label: "Allergies & Preferences",
+      label: 'Allergies & Preferences',
       icon: Utensils,
-      value: "",
+      value: '',
     },
     {
-      label: "Sync Health Data",
+      label: 'Sync Health Data',
       icon: Heart,
-      value: "Connected",
+      value: 'Connected',
     },
     {
-      label: "Sync Calendar",
+      label: 'Sync Calendar',
       icon: Calendar,
-      value: "Connected",
+      value: 'Connected',
     },
     {
-      label: "Account Settings",
+      label: 'Account Settings',
       icon: Settings,
-      value: "",
+      value: '',
     },
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -51,9 +51,9 @@ export default function ProfilePage() {
           </View>
           <View style={styles.statsGrid}>
             {[
-              { label: "Age", value: "28" },
-              { label: "Height", value: "5'10\"" },
-              { label: "Weight", value: "165 lbs" },
+              { label: 'Age', value: '28' },
+              { label: 'Height', value: '5\'10"' },
+              { label: 'Weight', value: '165 lbs' },
             ].map((stat, i) => (
               <View key={i} style={styles.statItem}>
                 <Text style={styles.statValue}>{stat.value}</Text>
@@ -74,9 +74,7 @@ export default function ProfilePage() {
                 </View>
                 <View style={styles.menuContent}>
                   <Text style={styles.menuLabel}>{item.label}</Text>
-                  {item.value ? (
-                    <Text style={styles.menuValue}>{item.value}</Text>
-                  ) : null}
+                  {item.value ? <Text style={styles.menuValue}>{item.value}</Text> : null}
                 </View>
                 <ChevronRight size={20} color={Colors.light.textMuted} />
               </TouchableOpacity>
@@ -87,7 +85,6 @@ export default function ProfilePage() {
     </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -103,7 +100,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 4,
   },
@@ -119,8 +116,8 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   profileInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
     marginBottom: 20,
   },
@@ -128,18 +125,18 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.light.primary,
   },
   avatarText: {
     fontSize: 32,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   profileName: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 2,
   },
@@ -150,26 +147,26 @@ const styles = StyleSheet.create({
   },
   activityBadge: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.primary,
     backgroundColor: `${Colors.light.primary}15`,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   statsGrid: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   statItem: {
-    alignItems: "center",
+    alignItems: 'center',
     flex: 1,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 4,
   },
@@ -182,7 +179,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
     marginBottom: 16,
   },
@@ -197,7 +194,7 @@ const styles = StyleSheet.create({
   },
   microListLabel: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: '500',
     color: Colors.light.text,
   },
   microListValue: {
@@ -211,8 +208,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.surface,
     borderRadius: Layout.cardRadius,
     padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
     ...Shadows.card,
   },
@@ -221,15 +218,15 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     backgroundColor: `${Colors.light.primary}15`,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   menuContent: {
     flex: 1,
   },
   menuLabel: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
   menuValue: {
