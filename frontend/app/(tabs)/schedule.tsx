@@ -19,14 +19,14 @@ export default function SchedulePage() {
 
   const scheduleItems = [
     {
-      time: "07:00",
+      time: "7:00 AM",
       title: "Wake Up & Stretch",
       duration: "30 min",
       type: "exercise",
       status: "completed",
     },
     {
-      time: "07:30",
+      time: "7:30 AM",
       title: "Breakfast",
       subtitle: "Greek Yogurt Bowl (380 cal)",
       duration: "20 min",
@@ -34,7 +34,7 @@ export default function SchedulePage() {
       status: "completed",
     },
     {
-      time: "09:00",
+      time: "9:00 AM",
       title: "Morning Workout",
       subtitle: "HIIT Training",
       duration: "45 min",
@@ -42,7 +42,7 @@ export default function SchedulePage() {
       status: "completed",
     },
     {
-      time: "12:30",
+      time: "12:30 PM",
       title: "Lunch",
       subtitle: "Grilled Chicken Salad (520 cal)",
       duration: "30 min",
@@ -50,7 +50,7 @@ export default function SchedulePage() {
       status: "current",
     },
     {
-      time: "15:00",
+      time: "3:00 PM",
       title: "Snack",
       subtitle: "Protein Shake (180 cal)",
       duration: "10 min",
@@ -58,14 +58,14 @@ export default function SchedulePage() {
       status: "upcoming",
     },
     {
-      time: "18:30",
+      time: "6:30 PM",
       title: "Evening Walk",
       duration: "30 min",
       type: "exercise",
       status: "upcoming",
     },
     {
-      time: "19:30",
+      time: "7:30 PM",
       title: "Dinner",
       subtitle: "Salmon & Vegetables (640 cal)",
       duration: "40 min",
@@ -73,7 +73,7 @@ export default function SchedulePage() {
       status: "upcoming",
     },
     {
-      time: "22:30",
+      time: "10:30 PM",
       title: "Sleep",
       subtitle: "Target: 8 hours",
       duration: "8 hrs",
