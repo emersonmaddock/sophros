@@ -14,6 +14,7 @@ export const Colors = {
     icon: '#687076',
     primary: '#2B9D8F',
     primaryDark: '#1F6D63',
+    tint: '#2B9D8F', // Alias for primary
     secondary: '#FFB74D',
     success: '#22C55E',
     error: '#EF4444',
@@ -22,6 +23,25 @@ export const Colors = {
       protein: '#2B9D8F', // Primary
       carbs: '#8B5CF6',
       fats: '#EC4899',
+    },
+  },
+  dark: {
+    text: '#F9FAFB',
+    textMuted: '#9CA3AF',
+    background: '#111827',
+    surface: '#1F2937',
+    icon: '#9CA3AF',
+    primary: '#34D399',
+    primaryDark: '#10B981',
+    tint: '#34D399', // Alias for primary
+    secondary: '#FBBF24',
+    success: '#22C55E',
+    error: '#EF4444',
+    charts: {
+      calories: '#FBBF24', // Secondary
+      protein: '#34D399', // Primary
+      carbs: '#A78BFA',
+      fats: '#F472B6',
     },
   },
 };

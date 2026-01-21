@@ -17,10 +17,18 @@ const ProgressBar = ({ percent, color }: { percent: number; color: string }) => 
   </View>
 );
 
+interface MealData {
+  time: string;
+  title?: string;
+  subtitle?: string;
+  type: string;
+  [key: string]: unknown; // Allow additional properties
+}
+
 interface MealDetailModalProps {
   visible: boolean;
   onClose: () => void;
-  meal: any; // Using any for now to match template speed, but should be typed ideally
+  meal: MealData | null;
 }
 
 export const MealDetailModal = ({ visible, onClose, meal }: MealDetailModalProps) => {

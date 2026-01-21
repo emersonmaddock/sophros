@@ -5,13 +5,22 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type ScheduleItem = {
+  time: string;
+  title: string;
+  subtitle?: string;
+  duration: string;
+  type: 'meal' | 'exercise' | 'sleep';
+  status: 'completed' | 'current' | 'upcoming';
+};
+
 export default function SchedulePage() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
 
   const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const scheduleItems = [
+  const scheduleItems: ScheduleItem[] = [
     {
       time: '7:00 AM',
       title: 'Wake Up & Stretch',
@@ -76,7 +85,7 @@ export default function SchedulePage() {
     },
   ];
 
-  const handleItemPress = (item: any) => {
+  const handleItemPress = (item: ScheduleItem) => {
     if (item.type === 'meal') {
       setSelectedMeal(item);
       setModalVisible(true);

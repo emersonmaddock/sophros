@@ -31,7 +31,7 @@ function SignInScreen() {
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(JSON.stringify(err, null, 2));
     }
   };

@@ -32,7 +32,7 @@ function SignUpScreen() {
       });
 
       setPendingVerification(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(JSON.stringify(err, null, 2));
     }
   };
@@ -55,7 +55,7 @@ function SignUpScreen() {
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(JSON.stringify(err, null, 2));
     }
   };
