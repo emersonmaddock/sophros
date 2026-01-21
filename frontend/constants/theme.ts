@@ -26,6 +26,20 @@ export const Colors = {
   },
 };
 
+export const Shadows = {
+  card: {
+    shadowColor: "#000",
+    shadowOffset: { width: 2, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+};
+
+export const Layout = {
+  cardRadius: 16,
+};
+
 export const Fonts = Platform.select({
   ios: {
     /** iOS `UIFontDescriptorSystemDesignDefault` */

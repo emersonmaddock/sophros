@@ -1,5 +1,5 @@
-import { CircularProgress } from "@/components/ui/circular-progress";
-import { Colors } from "@/constants/theme";
+import { MacroNutrients } from "@/components/MacroNutrients";
+import { Colors, Layout, Shadows } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import {
   Calendar,
@@ -49,6 +49,13 @@ export default function DashboardPage() {
     },
   ];
 
+  const macroData = {
+    calories: { value: "1,840", percentage: 84 },
+    protein: { value: "78g", percentage: 65 },
+    carbs: { value: "185g", percentage: 74 },
+    fats: { value: "52g", percentage: 80 },
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -61,7 +68,11 @@ export default function DashboardPage() {
         </View>
 
         {/* Health Score Card */}
-        <View style={styles.scoreCard}>
+        <TouchableOpacity
+          style={styles.scoreCard}
+          onPress={() => router.push("/health-score")}
+          activeOpacity={0.9}
+        >
           <View style={styles.scoreHeader}>
             <View>
               <Text style={styles.scoreLabel}>Health Score</Text>
@@ -92,7 +103,7 @@ export default function DashboardPage() {
               </View>
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Today's Schedule */}
         <View style={styles.section}>
@@ -149,32 +160,7 @@ export default function DashboardPage() {
             </TouchableOpacity>
           </View>
           <View style={styles.card}>
-            <View style={styles.macrosContainer}>
-              <CircularProgress
-                percentage={84}
-                color={Colors.light.secondary}
-                label="Calories"
-                value="1,840"
-              />
-              <CircularProgress
-                percentage={65}
-                color={Colors.light.primary}
-                label="Protein"
-                value="78g"
-              />
-              <CircularProgress
-                percentage={74}
-                color={Colors.light.charts.carbs}
-                label="Carbs"
-                value="185g"
-              />
-              <CircularProgress
-                percentage={80}
-                color={Colors.light.charts.fats}
-                label="Fats"
-                value="52g"
-              />
-            </View>
+            <MacroNutrients data={macroData} />
           </View>
         </View>
 
@@ -226,14 +212,10 @@ const styles = StyleSheet.create({
   },
   scoreCard: {
     backgroundColor: Colors.light.primary,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     paddingVertical: 20,
     paddingHorizontal: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.card,
   },
   scoreHeader: {
     flexDirection: "row",
@@ -312,14 +294,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     paddingVertical: 20,
     paddingHorizontal: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 2, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.card,
   },
   macrosContainer: {
     flexDirection: "row",
@@ -330,16 +308,12 @@ const styles = StyleSheet.create({
   },
   listItem: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 4, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Shadows.card,
   },
   activeListItem: {
     borderWidth: 2,
@@ -393,14 +367,10 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     padding: 20,
     gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Shadows.card,
   },
   actionText: {
     fontSize: 14,

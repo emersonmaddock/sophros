@@ -1,6 +1,6 @@
 import { MealDetailModal } from "@/components/MealDetailModal";
 import { Colors } from "@/constants/theme";
-import { Calendar, Clock, Info } from "lucide-react-native";
+import { Calendar } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ScrollView,
@@ -128,17 +128,6 @@ export default function SchedulePage() {
           ))}
         </View>
 
-        {/* Current Time Indicator */}
-        <View style={styles.timeIndicator}>
-          <Clock size={20} color={Colors.light.primary} />
-          <View>
-            <Text style={styles.currentTimeText}>Current Time: 12:15 PM</Text>
-            <Text style={styles.timeSubText}>
-              Lunch is coming up in 15 minutes
-            </Text>
-          </View>
-        </View>
-
         {/* Timeline */}
         <View style={styles.timeline}>
           {scheduleItems.map((item, i) => (
@@ -189,13 +178,6 @@ export default function SchedulePage() {
                 {item.subtitle && (
                   <Text style={styles.eventSubtitle}>{item.subtitle}</Text>
                 )}
-
-                {item.type === "meal" && (
-                  <View style={styles.tapHint}>
-                    <Info size={14} color={Colors.light.primary} />
-                    <Text style={styles.tapHintText}>Tap for details</Text>
-                  </View>
-                )}
               </TouchableOpacity>
             </View>
           ))}
@@ -225,7 +207,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 120,
-    gap: 24
   },
   header: {
     marginBottom: 24,

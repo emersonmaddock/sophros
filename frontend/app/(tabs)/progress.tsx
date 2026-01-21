@@ -1,6 +1,5 @@
-import { CircularProgress } from "@/components/ui/circular-progress";
-import { Colors } from "@/constants/theme";
-import { LinearGradient } from "expo-linear-gradient";
+import { MacroNutrients } from "@/components/MacroNutrients";
+import { Colors, Layout, Shadows } from "@/constants/theme";
 import { Award, Users } from "lucide-react-native";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -24,6 +23,13 @@ export default function ProgressPage() {
     { rank: 5, name: "Ryan Smith", streak: 7, you: false },
   ];
 
+  const weeklyMacros = {
+    calories: { value: "Avg 1,950", percentage: 88, label: "Calories" },
+    protein: { value: "Avg 86g", percentage: 72, label: "Protein" },
+    carbs: { value: "Avg 203g", percentage: 81, label: "Carbs" },
+    fats: { value: "Avg 65g", percentage: 75, label: "Fats" }, // Estimated fat based on previous data
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -34,12 +40,7 @@ export default function ProgressPage() {
         </View>
 
         {/* Streak Card */}
-        <LinearGradient
-          colors={[Colors.light.success, "#16A34A"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.streakCard}
-        >
+        <View style={styles.streakCard}>
           <View
             style={{
               flexDirection: "row",
@@ -57,34 +58,14 @@ export default function ProgressPage() {
             </View>
           </View>
           <Text style={styles.streakFooter}>Keep it up! You're on fire 🔥</Text>
-        </LinearGradient>
+        </View>
 
         {/* Weekly Nutrition */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>This Week's Nutrition</Text>
           <View style={styles.card}>
             <View style={styles.nutritionCircles}>
-              <CircularProgress
-                percentage={88}
-                color={Colors.light.secondary}
-                label="Calories"
-                value="Avg 1,950"
-                size={70}
-              />
-              <CircularProgress
-                percentage={72}
-                color={Colors.light.primary}
-                label="Protein"
-                value="Avg 86g"
-                size={70}
-              />
-              <CircularProgress
-                percentage={81}
-                color={Colors.light.charts.carbs}
-                label="Carbs"
-                value="Avg 203g"
-                size={70}
-              />
+              <MacroNutrients data={weeklyMacros} size={70} />
             </View>
             <View style={styles.nutritionGrid}>
               {[
@@ -207,7 +188,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   header: {
     marginBottom: 24,
@@ -223,14 +204,11 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
   },
   streakCard: {
-    borderRadius: 20,
+    backgroundColor: Colors.light.success,
+    borderRadius: Layout.cardRadius,
     padding: 24,
     marginBottom: 24,
-    shadowColor: Colors.light.success,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    ...Shadows.card,
   },
   streakIconBox: {
     width: 56,
@@ -266,18 +244,12 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     padding: 20,
     paddingVertical: 16, // Matching template padding
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Shadows.card,
   },
   nutritionCircles: {
-    flexDirection: "row",
-    justifyContent: "space-around",
     marginBottom: 20,
   },
   nutritionGrid: {
@@ -294,9 +266,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "48%",
   },
-  // Oh, need grid layout for nutrition stats.
-  // Let's refactor styles.nutritionGrid a bit in jsx, I did a map without wrapping in grid views.
-  // I will just use flex wrap or simple map. The template used grid-template-columns 1fr 1fr.
   nutriLabel: { fontSize: 13, color: Colors.light.textMuted },
   nutriValue: { fontSize: 14, fontWeight: "600" },
 
@@ -308,16 +277,12 @@ const styles = StyleSheet.create({
   achievementCard: {
     width: "31%", // roughly 1/3 minus gap
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
+    borderRadius: Layout.cardRadius,
     padding: 16,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Shadows.card,
   },
   achievementName: {
     fontSize: 11,

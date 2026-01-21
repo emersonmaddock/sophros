@@ -1,56 +1,30 @@
-import { CircularProgress } from "@/components/ui/circular-progress";
-import { Colors } from "@/constants/theme";
-import { ChevronRight } from "lucide-react-native";
+import { Colors, Layout, Shadows } from "@/constants/theme";
+import { Calendar, ChevronRight, Heart, Settings, Utensils } from "lucide-react-native";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const ProgressBar = ({
-  percent,
-  color,
-}: {
-  percent: number;
-  color: string;
-}) => (
-  <View style={styles.progBarBg}>
-    <View
-      style={[
-        styles.progBarFill,
-        { width: `${percent}%`, backgroundColor: color },
-      ]}
-    />
-  </View>
-);
-
 export default function ProfilePage() {
-  const macros = [
+  const menuItems = [
     {
-      label: "Calories",
-      current: 1840,
-      target: 2200,
-      unit: "cal",
-      color: Colors.light.secondary,
+      label: "Allergies & Preferences",
+      icon: Utensils,
+      value: "",
     },
     {
-      label: "Protein",
-      current: 78,
-      target: 120,
-      unit: "g",
-      color: Colors.light.primary,
+      label: "Sync Health Data",
+      icon: Heart,
+      value: "Connected",
     },
     {
-      label: "Carbs",
-      current: 185,
-      target: 250,
-      unit: "g",
-      color: Colors.light.charts.carbs,
+      label: "Sync Calendar",
+      icon: Calendar,
+      value: "Connected",
     },
     {
-      label: "Fats",
-      current: 52,
-      target: 65,
-      unit: "g",
-      color: Colors.light.charts.fats,
+      label: "Account Settings",
+      icon: Settings,
+      value: "",
     },
   ];
 
@@ -64,16 +38,15 @@ export default function ProfilePage() {
         </View>
 
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <TouchableOpacity style={styles.profileCard} activeOpacity={0.9}>
           <View style={styles.profileInfo}>
-            <View
-              style={styles.avatar}
-            >
+            <View style={styles.avatar}>
               <Text style={styles.avatarText}>A</Text>
             </View>
             <View>
               <Text style={styles.profileName}>Alex Martinez</Text>
               <Text style={styles.profileEmail}>alex.martinez@email.com</Text>
+              <Text style={styles.activityBadge}>Active Lifestyle</Text>
             </View>
           </View>
           <View style={styles.statsGrid}>
@@ -88,154 +61,33 @@ export default function ProfilePage() {
               </View>
             ))}
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* Macro Goals */}
+        {/* Settings & Preferences */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Daily Macronutrient Goals</Text>
-          <View style={styles.goalsContainer}>
-            {macros.map((goal, i) => (
-              <View key={i} style={styles.card}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                  }}
-                >
-                  <Text style={styles.goalLabel}>{goal.label}</Text>
-                  <Text style={styles.goalValue}>
-                    {goal.current} / {goal.target} {goal.unit}
-                  </Text>
+          <Text style={styles.sectionTitle}>Preferences</Text>
+          <View style={styles.menuContainer}>
+            {menuItems.map((item, i) => (
+              <TouchableOpacity key={i} style={styles.menuItem}>
+                <View style={styles.menuIconBox}>
+                  <item.icon size={20} color={Colors.light.primary} />
                 </View>
-                <ProgressBar
-                  percent={(goal.current / goal.target) * 100}
-                  color={goal.color}
-                />
-              </View>
+                <View style={styles.menuContent}>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  {item.value ? (
+                    <Text style={styles.menuValue}>{item.value}</Text>
+                  ) : null}
+                </View>
+                <ChevronRight size={20} color={Colors.light.textMuted} />
+              </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        {/* Micronutrients */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Key Micronutrients (Today)</Text>
-          <View style={styles.card}>
-            <View style={styles.microGridTop}>
-              <CircularProgress
-                percentage={45}
-                size={70}
-                color={Colors.light.secondary}
-                label="Vitamin D"
-                value="4.5 µg"
-              />
-              <CircularProgress
-                percentage={68}
-                size={70}
-                color={Colors.light.error}
-                label="Iron"
-                value="12.2 mg"
-              />
-              <CircularProgress
-                percentage={75}
-                size={70}
-                color={Colors.light.primary}
-                label="Calcium"
-                value="750 mg"
-              />
-              <CircularProgress
-                percentage={91}
-                size={70}
-                color={Colors.light.charts.carbs}
-                label="Vitamin B12"
-                value="2.3 µg"
-              />
-            </View>
-
-            <View style={styles.microList}>
-              {[
-                {
-                  label: "Vitamin C",
-                  value: "82%",
-                  amount: "73.8 mg",
-                  color: "#F59E0B",
-                },
-                {
-                  label: "Magnesium",
-                  value: "61%",
-                  amount: "244 mg",
-                  color: "#10B981",
-                },
-                {
-                  label: "Zinc",
-                  value: "54%",
-                  amount: "5.9 mg",
-                  color: "#6366F1",
-                },
-                {
-                  label: "Potassium",
-                  value: "48%",
-                  amount: "1680 mg",
-                  color: Colors.light.charts.fats,
-                },
-              ].map((item, i) => (
-                <View key={i} style={{ marginBottom: i < 3 ? 12 : 0 }}>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      marginBottom: 6,
-                    }}
-                  >
-                    <Text style={styles.microListLabel}>{item.label}</Text>
-                    <Text style={styles.microListValue}>
-                      {item.amount} ({item.value})
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      height: 6,
-                      backgroundColor: Colors.light.background,
-                      borderRadius: 3,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: item.value,
-                        backgroundColor: item.color,
-                        height: "100%",
-                      }}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Activity Level */}
-        <View
-          style={[
-            styles.card,
-            {
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 24,
-            },
-          ]}
-        >
-          <View>
-            <Text style={styles.goalLabel}>Activity Level</Text>
-            <Text style={styles.statValue}>Active</Text>
-          </View>
-          <ChevronRight size={20} color={Colors.light.textMuted} />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -261,14 +113,10 @@ const styles = StyleSheet.create({
   },
   profileCard: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 20,
+    borderRadius: Layout.cardRadius,
     padding: 24,
     marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    ...Shadows.card,
   },
   profileInfo: {
     flexDirection: "row",
@@ -282,6 +130,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: Colors.light.primary,
   },
   avatarText: {
     fontSize: 32,
@@ -292,11 +141,23 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: Colors.light.text,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   profileEmail: {
     fontSize: 14,
     color: Colors.light.textMuted,
+    marginBottom: 6,
+  },
+  activityBadge: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.light.primary,
+    backgroundColor: `${Colors.light.primary}15`,
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: "hidden",
   },
   statsGrid: {
     flexDirection: "row",
@@ -325,49 +186,14 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 16,
   },
-  goalsContainer: {
-    gap: 12,
-  },
   card: {
     backgroundColor: Colors.light.surface,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  goalLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.light.text,
-  },
-  goalValue: {
-    fontSize: 14,
-    color: Colors.light.textMuted,
-  },
-  progBarBg: {
-    height: 8,
-    backgroundColor: Colors.light.background,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progBarFill: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  microGridTop: {
-    flexDirection: "row",
-    justifyContent: "space-around", // Changed from grid to space-around for 4 items
-    flexWrap: "wrap",
-    gap: 16,
-    marginBottom: 16,
+    borderRadius: Layout.cardRadius,
+    padding: 20,
+    ...Shadows.card,
   },
   microList: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    paddingTop: 16,
+    // Top border removed as it's the only thing now
   },
   microListLabel: {
     fontSize: 13,
@@ -377,5 +203,38 @@ const styles = StyleSheet.create({
   microListValue: {
     fontSize: 13,
     color: Colors.light.textMuted,
+  },
+  menuContainer: {
+    gap: 12,
+  },
+  menuItem: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    ...Shadows.card,
+  },
+  menuIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: `${Colors.light.primary}15`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuContent: {
+    flex: 1,
+  },
+  menuLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.light.text,
+  },
+  menuValue: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
+    marginTop: 2,
   },
 });
