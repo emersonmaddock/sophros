@@ -1,63 +1,50 @@
-import { MacroNutrients } from "@/components/MacroNutrients";
-import { Colors, Layout, Shadows } from "@/constants/theme";
-import { useRouter } from "expo-router";
-import {
-  Calendar,
-  ChevronRight,
-  Dumbbell,
-  Plus,
-  TrendingUp,
-  Utensils,
-} from "lucide-react-native";
-import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { MacroNutrients } from '@/components/MacroNutrients';
+import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useRouter } from 'expo-router';
+import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const upcomingItems = [
     {
-      time: "12:30 PM",
-      title: "Lunch",
-      subtitle: "Chicken & Quinoa",
+      time: '12:30 PM',
+      title: 'Lunch',
+      subtitle: 'Chicken & Quinoa',
       icon: Utensils,
       color: Colors.light.secondary,
-      status: "upcoming",
+      status: 'upcoming',
     },
     {
-      time: "3:00 PM",
-      title: "Afternoon Snack",
-      subtitle: "Protein Shake",
+      time: '3:00 PM',
+      title: 'Afternoon Snack',
+      subtitle: 'Protein Shake',
       icon: Utensils,
       color: Colors.light.secondary,
-      status: "upcoming",
+      status: 'upcoming',
     },
     {
-      time: "6:00 PM",
-      title: "Evening Workout",
-      subtitle: "45 min Strength",
+      time: '6:00 PM',
+      title: 'Evening Workout',
+      subtitle: '45 min Strength',
       icon: Dumbbell,
       color: Colors.light.primary,
-      status: "scheduled",
+      status: 'scheduled',
     },
   ];
 
   const macroData = {
-    calories: { value: "1,840", percentage: 84 },
-    protein: { value: "78g", percentage: 65 },
-    carbs: { value: "185g", percentage: 74 },
-    fats: { value: "52g", percentage: 80 },
+    calories: { value: '1,840', percentage: 84 },
+    protein: { value: '78g', percentage: 65 },
+    carbs: { value: '185g', percentage: 74 },
+    fats: { value: '52g', percentage: 80 },
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -70,7 +57,7 @@ export default function DashboardPage() {
         {/* Health Score Card */}
         <TouchableOpacity
           style={styles.scoreCard}
-          onPress={() => router.push("/health-score")}
+          onPress={() => router.push('/health-score')}
           activeOpacity={0.9}
         >
           <View style={styles.scoreHeader}>
@@ -86,18 +73,13 @@ export default function DashboardPage() {
 
           <View style={styles.scoreDetails}>
             {[
-              { label: "Nutrition", value: 92 },
-              { label: "Exercise", value: 85 },
-              { label: "Sleep", value: 84 },
+              { label: 'Nutrition', value: 92 },
+              { label: 'Exercise', value: 85 },
+              { label: 'Sleep', value: 84 },
             ].map((item, i) => (
               <View key={i} style={styles.scoreItem}>
                 <View style={styles.progressBarBg}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${item.value}%` },
-                    ]}
-                  />
+                  <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
                 </View>
                 <Text style={styles.scoreItemLabel}>{item.label}</Text>
               </View>
@@ -110,7 +92,7 @@ export default function DashboardPage() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming</Text>
             <TouchableOpacity
-              onPress={() => router.push("/(tabs)/schedule")}
+              onPress={() => router.push('/(tabs)/schedule')}
               style={styles.viewAllButton}
             >
               <Text style={styles.viewAllText}>Full Schedule</Text>
@@ -120,16 +102,8 @@ export default function DashboardPage() {
 
           <View style={styles.listContainer}>
             {upcomingItems.map((item, i) => (
-              <TouchableOpacity
-                key={i}
-                style={[styles.listItem, i === 0 && styles.activeListItem]}
-              >
-                <View
-                  style={[
-                    styles.iconBox,
-                    { backgroundColor: `${item.color}15` },
-                  ]}
-                >
+              <TouchableOpacity key={i} style={[styles.listItem, i === 0 && styles.activeListItem]}>
+                <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
                   <item.icon size={24} color={item.color} />
                 </View>
                 <View style={styles.itemContent}>
@@ -152,7 +126,7 @@ export default function DashboardPage() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
             <TouchableOpacity
-              onPress={() => router.push("/(tabs)/profile")}
+              onPress={() => router.push('/(tabs)/profile')}
               style={styles.viewAllButton}
             >
               <Text style={styles.viewAllText}>View All</Text>
@@ -172,7 +146,7 @@ export default function DashboardPage() {
           <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push("/(tabs)/schedule")}
+              onPress={() => router.push('/(tabs)/schedule')}
             >
               <Calendar size={24} color={Colors.light.primary} />
               <Text style={styles.actionText}>Plan Week</Text>
@@ -202,7 +176,7 @@ const styles = StyleSheet.create({
   header: {},
   headerTitle: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.text,
     marginBottom: 4,
   },
@@ -218,9 +192,9 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   scoreHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
   },
   scoreLabel: {
@@ -230,33 +204,33 @@ const styles = StyleSheet.create({
   },
   scoreValue: {
     fontSize: 48,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.surface,
     lineHeight: 48,
   },
   trendBadge: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
   trendText: {
     fontSize: 13,
     color: Colors.light.surface,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   scoreDetails: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
   },
   scoreItem: {
     flex: 1,
   },
   progressBarBg: {
-    backgroundColor: "rgba(255,255,255,0.25)",
+    backgroundColor: 'rgba(255,255,255,0.25)',
     height: 4,
     borderRadius: 2,
     marginBottom: 2,
@@ -272,24 +246,24 @@ const styles = StyleSheet.create({
   },
   section: {},
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
   viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 0,
   },
   viewAllText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: '700',
     color: Colors.light.primary,
   },
   card: {
@@ -300,8 +274,8 @@ const styles = StyleSheet.create({
     ...Shadows.card,
   },
   macrosContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   listContainer: {
     gap: 12,
@@ -310,8 +284,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.surface,
     borderRadius: Layout.cardRadius,
     padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
     ...Shadows.card,
   },
@@ -323,15 +297,15 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   itemContent: {
     flex: 1,
   },
   itemTitle: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
     marginBottom: 2,
   },
@@ -340,7 +314,7 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
   },
   timeBox: {
-    alignItems: "flex-end",
+    alignItems: 'flex-end',
     gap: 4,
   },
   timeBadge: {
@@ -351,17 +325,17 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
   nowText: {
-    display: "none", // Hide for now
+    display: 'none', // Hide for now
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.primary,
   },
   actionsGrid: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
   },
   actionCard: {
@@ -374,7 +348,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
   },
 });

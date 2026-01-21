@@ -26,10 +26,7 @@ export default function SexSelectionScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
       <ThemedView style={styles.container}>
         <TouchableOpacity
-          style={[
-            styles.circle,
-            data.biologicalProfile.gender === 'male' && styles.circleSelected,
-          ]}
+          style={[styles.circle, data.biologicalProfile.gender === 'male' && styles.circleSelected]}
           onPress={() => handleSelectSex('male')}
         >
           <ThemedText style={styles.circleText}>Male</ThemedText>

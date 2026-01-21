@@ -26,23 +26,15 @@ export function SelectableCard({
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        { backgroundColor, borderColor, borderWidth: 2 },
-        style,
-      ]}
+      style={[styles.container, { backgroundColor, borderColor, borderWidth: 2 }, style]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <ThemedView style={styles.content}>
-        {icon && (
-          <ThemedText style={styles.icon}>{icon}</ThemedText>
-        )}
+        {icon && <ThemedText style={styles.icon}>{icon}</ThemedText>}
         <ThemedView style={styles.textContainer}>
           <ThemedText style={styles.title}>{title}</ThemedText>
-          {description && (
-            <ThemedText style={styles.description}>{description}</ThemedText>
-          )}
+          {description && <ThemedText style={styles.description}>{description}</ThemedText>}
         </ThemedView>
       </ThemedView>
     </TouchableOpacity>

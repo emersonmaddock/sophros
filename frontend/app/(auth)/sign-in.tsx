@@ -1,40 +1,40 @@
-import OAuthButton from '@/components/OAuthButton'
-import { styles } from '@/constants/AuthStyles'
-import { useSignIn } from '@clerk/clerk-expo'
-import { useRouter } from 'expo-router'
-import { useState } from 'react'
-import { Text, TextInput, TouchableOpacity, View } from 'react-native'
+import OAuthButton from '@/components/OAuthButton';
+import { styles } from '@/constants/AuthStyles';
+import { useSignIn } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 function SignInScreen() {
-  const router = useRouter()
+  const router = useRouter();
   // [useSignIn hook](/docs/hooks/use-sign-in) from Clerk SDK to handle sign-in logic
-  const { signIn, isLoaded, setActive } = useSignIn()
-  const [emailAddress, setEmailAddress] = useState('')
-  const [password, setPassword] = useState('')
+  const { signIn, isLoaded, setActive } = useSignIn();
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
 
   const onSignInPress = async () => {
-    if (!isLoaded || !setActive) return
+    if (!isLoaded || !setActive) return;
 
     try {
       // signIn.create() method from Clerk SDK to handle sign-in logic
       const signInAttempt = await signIn.create({
         identifier: emailAddress,
         password,
-      })
+      });
 
       if (signInAttempt.status === 'complete') {
         await setActive({
           session: signInAttempt.createdSessionId,
-        })
+        });
         // Navigate to protected screen once the session is created
-        router.replace('/onboarding')
+        router.replace('/onboarding');
       } else {
-        console.error(JSON.stringify(signInAttempt, null, 2))
+        console.error(JSON.stringify(signInAttempt, null, 2));
       }
-    } catch (err: any) {
-      console.error(JSON.stringify(err, null, 2))
+    } catch (err: unknown) {
+      console.error(JSON.stringify(err, null, 2));
     }
-  }
+  };
 
   return (
     <View style={styles.formContainer}>
@@ -85,7 +85,7 @@ function SignInScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  )
+  );
 }
 
-export default SignInScreen
+export default SignInScreen;

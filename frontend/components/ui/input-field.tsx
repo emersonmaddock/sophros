@@ -9,13 +9,7 @@ interface InputFieldProps extends TextInputProps {
   helperText?: string;
 }
 
-export function InputField({
-  label,
-  error,
-  helperText,
-  style,
-  ...props
-}: InputFieldProps) {
+export function InputField({ label, error, helperText, style, ...props }: InputFieldProps) {
   const textColor = useThemeColor({}, 'text');
   const backgroundColor = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
   const placeholderColor = useThemeColor({ light: '#999999', dark: '#666666' }, 'text');
@@ -24,24 +18,14 @@ export function InputField({
 
   return (
     <ThemedView style={styles.container}>
-      {label && (
-        <ThemedText style={styles.label}>{label}</ThemedText>
-      )}
+      {label && <ThemedText style={styles.label}>{label}</ThemedText>}
       <TextInput
-        style={[
-          styles.input,
-          { color: textColor, backgroundColor, borderColor },
-          style,
-        ]}
+        style={[styles.input, { color: textColor, backgroundColor, borderColor }, style]}
         placeholderTextColor={placeholderColor}
         {...props}
       />
-      {error && (
-        <ThemedText style={styles.error}>{error}</ThemedText>
-      )}
-      {helperText && !error && (
-        <ThemedText style={styles.helperText}>{helperText}</ThemedText>
-      )}
+      {error && <ThemedText style={styles.error}>{error}</ThemedText>}
+      {helperText && !error && <ThemedText style={styles.helperText}>{helperText}</ThemedText>}
     </ThemedView>
   );
 }
