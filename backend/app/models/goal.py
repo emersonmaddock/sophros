@@ -9,8 +9,8 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Goal(Base):
-    __tablename__ = "goal"
+class UserGoal(Base):
+
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, index=True)
