@@ -10,8 +10,6 @@ if TYPE_CHECKING:
 
 
 class UserGoal(Base):
-
-
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, index=True)
     description: Mapped[str] = mapped_column(String, index=True)
