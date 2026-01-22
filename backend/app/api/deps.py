@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt  # type: ignore
+from jose import jwt  
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
