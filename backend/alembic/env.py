@@ -11,6 +11,7 @@ from alembic import context
 from app.core.config import settings
 from app.db.base_class import Base
 from app.models.user import User # Import models to register them
+from app.models.goal import UserGoal
 
 config = context.config
 

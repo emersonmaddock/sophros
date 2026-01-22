@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional, Dict, Any
+from typing import Optional, List, Any
+from app.schemas.goal import Goal
 
 class UserBase(BaseModel):
     email: str
@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     height: Optional[float] = None
     gender: Optional[str] = None
     activity_level: Optional[str] = None
-    goals: Optional[Dict[str, Any]] = None
+    goals: List[Goal] = []
 
 class UserCreate(UserBase):
     id: str # Clerk ID provided by frontend/webhook
