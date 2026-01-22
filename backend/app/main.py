@@ -15,8 +15,6 @@ async def lifespan(app: FastAPI):
     print("Shutting down...")
 
 
-
-
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
