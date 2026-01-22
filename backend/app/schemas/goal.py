@@ -1,18 +1,22 @@
+
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+
 
 class GoalBase(BaseModel):
     goal_type: str
-    target_value: Optional[str] = None
-    description: Optional[str] = None
+    target_value: str | None = None
+    description: str | None = None
+
 
 class GoalCreate(GoalBase):
     pass
 
+
 class GoalUpdate(BaseModel):
-    goal_type: Optional[str] = None
-    target_value: Optional[str] = None
-    description: Optional[str] = None
+    goal_type: str | None = None
+    target_value: str | None = None
+    description: str | None = None
+
 
 class Goal(GoalBase):
     id: int
