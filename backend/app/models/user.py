@@ -1,6 +1,9 @@
 from app.db.base_class import Base
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Integer, Float, Boolean, JSON
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.models.goal import UserGoal
 
 class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True) # Clerk ID
@@ -14,5 +17,5 @@ class User(Base):
     gender: Mapped[str | None] = mapped_column(String, nullable=True)
     activity_level: Mapped[str | None] = mapped_column(String, nullable=True)
     
-    # Preferences / Metadata
-    goals: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    # Relationships
+    goals: Mapped[list["UserGoal"]] = relationship(back_populates="user", cascade="all, delete-orphan")
