@@ -74,7 +74,7 @@ export const UNIT_CONVERSION = {
   // Weight
   LBS_TO_KG: 0.453592,
   KG_TO_LBS: 2.20462,
-  
+
   // Height
   CM_TO_INCHES: 0.393701,
   INCHES_TO_CM: 2.54,

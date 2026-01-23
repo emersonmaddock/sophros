@@ -38,7 +38,8 @@ export default function WelcomeScreen() {
             <View style={styles.header}>
               <Text style={styles.logoText}>Welcome to Sophros!</Text>
               <Text style={styles.subtitle}>
-                Let's set up your personalized health profile to get you started on your wellness journey.
+                Let&apos;s set up your personalized health profile to get you started on your wellness
+                journey.
               </Text>
             </View>
 

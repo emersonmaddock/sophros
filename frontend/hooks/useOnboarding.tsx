@@ -136,7 +136,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const isSection2Complete = () => {
     return (
-      data.weight !== '' && data.height !== '' && !validateWeight(data.weight) && !validateHeight(data.height)
+      data.weight !== '' &&
+      data.height !== '' &&
+      !validateWeight(data.weight) &&
+      !validateHeight(data.height)
     );
   };
 
@@ -153,7 +156,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const canSubmit = () => {
-    return isSection1Complete() && isSection2Complete() && isSection3Complete() && isSection4Complete();
+    return (
+      isSection1Complete() && isSection2Complete() && isSection3Complete() && isSection4Complete()
+    );
   };
 
   // Submit the onboarding data

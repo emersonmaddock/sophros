@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { Colors, Layout, Shadows } from './theme';
 
 export const styles = StyleSheet.create({
   formContainer: {
@@ -6,14 +7,10 @@ export const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
     padding: 24,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    ...Shadows.card,
   },
   headerContainer: {
     alignItems: 'center',
@@ -21,14 +18,14 @@ export const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0F172A', // Slate 900
+    fontWeight: '700',
+    color: Colors.light.text,
   },
   subtitle: {
-    fontSize: 15,
-    color: '#64748B', // Slate 500
-    marginTop: 10,
-    lineHeight: 22,
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    marginTop: 8,
+    lineHeight: 20,
   },
   form: {
     width: '100%',
@@ -37,36 +34,32 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#334155', // Slate 700
+    color: Colors.light.text,
     marginBottom: 8,
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#E2E8F0', // Slate 200
+    borderColor: '#E5E7EB',
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    backgroundColor: '#F8FAFC', // Slate 50
-    color: '#1E293B', // Slate 800
+    backgroundColor: Colors.light.background,
+    color: Colors.light.text,
   },
   button: {
-    backgroundColor: '#6366F1', // Indigo 500
+    backgroundColor: Colors.light.primary,
     borderRadius: 12,
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 28,
-    shadowColor: '#6366F1', // Indigo 500
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Shadows.card,
   },
   buttonText: {
-    color: '#ffffff',
+    color: Colors.light.surface,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -76,8 +69,8 @@ export const styles = StyleSheet.create({
     padding: 8,
   },
   textButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6366F1', // Indigo 500
+    color: Colors.light.primary,
   },
 });
