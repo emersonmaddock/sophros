@@ -10,10 +10,15 @@ router = APIRouter()
 
 
 @router.post("/", response_model=UserSchema)
-async def create_user(user_in: UserCreate, db: AsyncSession = Depends(deps.get_db)):
+async def create_user(
+    user_in: UserCreate,
+    db: AsyncSession = Depends(deps.get_db),
+    _: None = Depends(deps.verify_webhook_secret),
+):
     """
     Create new user.
-    Called by frontend after Clerk signup, or via Webhook (secure).
+    Called by Clerk webhook with valid webhook secret.
+    Requires X-Webhook-Secret header.
     """
     user = await db.get(User, user_in.id)
     if user:

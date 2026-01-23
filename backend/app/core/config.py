@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     # Security / Clerk
     CLERK_PUBLISHABLE_KEY: str | None = None
     CLERK_SECRET_KEY: str | None = None
+    CLERK_WEBHOOK_SECRET: str | None = None
 
     # External APIs
     OPENAI_API_KEY: str | None = None
