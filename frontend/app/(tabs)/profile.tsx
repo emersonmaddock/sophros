@@ -1,10 +1,29 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { Calendar, ChevronRight, Heart, Settings, Utensils } from 'lucide-react-native';
+import { useAuth } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import { Calendar, ChevronRight, Heart, LogOut, Settings, Utensils } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfilePage() {
+  const { signOut } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await signOut();
+          router.replace('/(auth)/sign-in');
+        },
+      },
+    ]);
+  };
+
   const menuItems = [
     {
       label: 'Allergies & Preferences',
@@ -80,6 +99,14 @@ export default function ProfilePage() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Logout Button */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+            <LogOut size={20} color={Colors.light.error} />
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -233,5 +260,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textMuted,
     marginTop: 2,
+  },
+  logoutButton: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.error,
+    ...Shadows.card,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.error,
   },
 });

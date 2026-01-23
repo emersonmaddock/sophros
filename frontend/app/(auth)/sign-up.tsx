@@ -51,7 +51,7 @@ function SignUpScreen() {
       if (completeSignUp.status === 'complete') {
         // If the sign-up is complete, set the active session and navigate to the protected screen
         await setActive({ session: completeSignUp.createdSessionId });
-        router.replace('/onboarding/biological-profile-1');
+        router.replace('/onboarding');
       } else {
         console.error(JSON.stringify(completeSignUp, null, 2));
       }
