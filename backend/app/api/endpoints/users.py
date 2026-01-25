@@ -5,6 +5,8 @@ from app.api import deps
 from app.models.user import User
 from app.schemas.user import User as UserSchema
 from app.schemas.user import UserCreate, UserUpdate
+from app.schemas.nutrient import DRIOutput
+from app.services.nutrient_calculator import NutrientCalculator
 
 router = APIRouter()
 
@@ -51,3 +53,35 @@ async def update_user_me(
     await db.commit()
     await db.refresh(current_user)
     return current_user
+
+
+@router.get("/me/targets", response_model=DRIOutput)
+async def read_user_targets(current_user: User = Depends(deps.get_current_user)):
+    """
+    Get nutrient targets based on user profile.
+    """
+    # Check if necessary profile fields are present
+    if not all(
+        [
+            current_user.age,
+            current_user.weight,
+            current_user.height,
+            current_user.gender,
+            current_user.activity_level,
+        ]
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Complete profile (age, weight, height, gender, activity_level) required to calculate targets.",
+        )
+
+    # Calculate targets
+    result = NutrientCalculator.calculate_targets(
+        age=current_user.age,
+        gender=current_user.gender,
+        weight_kg=current_user.weight,
+        height_cm=current_user.height,
+        activity_level=current_user.activity_level,
+    )
+
+    return result
