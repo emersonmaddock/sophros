@@ -13,6 +13,7 @@ class UserBase(BaseModel):
     height: float | None = None
     gender: str | None = None
     activity_level: str | None = None
+    pregnancy_status: str | None = None
     goals: list[Goal] = []
 
 
@@ -27,6 +28,7 @@ class UserUpdate(BaseModel):
     height: float | None = None
     gender: str | None = None
     activity_level: str | None = None
+    pregnancy_status: str | None = None
     goals: dict[str, Any] | None = None
 
 
