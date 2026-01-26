@@ -12,7 +12,8 @@
 │   │   ├── core
 │   │   ├── db
 │   │   ├── models
-│   │   └── schemas
+│   │   ├── schemas
+│   │   └── services
 │   └── tests
 ├── docs
 │   └── pdfs
