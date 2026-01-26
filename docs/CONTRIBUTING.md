@@ -1,4 +1,5 @@
 # Repository Architecture
+```
 .
 ├── .github
 │   └── workflows
@@ -31,6 +32,7 @@
     ├── hooks
     ├── scripts
     └── types
+```
 
 # Branching / Workflow Model
 
