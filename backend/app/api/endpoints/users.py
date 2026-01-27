@@ -79,7 +79,7 @@ async def read_user_targets(current_user: User = Depends(deps.get_current_user))
             status_code=400,
             detail="Complete profile (age, weight, etc) required to calculate targets.",
         )
-    
+
     # Tell mypy they're not None (redundant at runtime, useful for typing)
     assert age is not None
     assert weight is not None
