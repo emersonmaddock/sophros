@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class NutrientRange(BaseModel):
     min: int
     target: int

@@ -1,5 +1,5 @@
-import pytest
-from app.services.nutrient_calculator import NutrientCalculator, DRIOutput
+from app.services.nutrient_calculator import DRIOutput, NutrientCalculator
+
 
 def test_calculate_bmr_male():
     # Male: 10*80 + 6.25*180 - 5*30 + 5 = 1780
@@ -27,7 +27,7 @@ def test_calculate_targets_integration():
     # Male, 30, 180, 80, Moderate (1.55)
     # BMR = 1780
     # TDEE = 1780 * 1.55 = 2759
-    
+
     result = NutrientCalculator.calculate_targets(
         age=30,
         gender="male",
@@ -35,20 +35,20 @@ def test_calculate_targets_integration():
         height_cm=180,
         activity_level="moderately_active"
     )
-    
+
     assert isinstance(result, DRIOutput)
-    
+
     # Check Calories
     assert result.calories.target == 2759
     assert result.calories.min == 2759 - 250
     assert result.calories.max == 2759 + 250
-    
+
     # Check Protein (10-35% of 2759)
     # 275.9 - 965.65 kcal
     # /4 -> 68.9 - 241.4 g -> 68 - 241 g (int truncation)
     assert result.protein.min == int(2759 * 0.10 / 4)
     assert result.protein.max == int(2759 * 0.35 / 4)
-    
+
     # Check Fat (20-35% of 2759)
     # /9
     assert result.fat.min == int(2759 * 0.20 / 9)

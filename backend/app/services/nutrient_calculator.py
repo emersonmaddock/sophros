@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Literal, Dict, Optional
 
 # USDA Activity Factors
 ACTIVITY_MULTIPLIERS = {
@@ -66,22 +65,26 @@ class NutrientCalculator:
         Calculate Total Daily Energy Expenditure (TDEE).
         """
         # Default to sedentary if unknown logic
-        multiplier = ACTIVITY_MULTIPLIERS.get(activity_level.lower() if activity_level else "sedentary", 1.2)
+        if activity_level:
+            key = activity_level.lower()
+        else:
+            key = "sedentary"
+        multiplier = ACTIVITY_MULTIPLIERS.get(key, 1.2)
         return int(bmr * multiplier)
 
     @staticmethod
-    def calculate_macronutrient_ranges(tdee: int) -> Dict[str, NutrientRange]:
+    def calculate_macronutrient_ranges(tdee: int) -> dict[str, NutrientRange]:
         """
         Calculate macronutrient ranges based on TDEE and AMDR.
         Returns dictionary of NutrientRange objects.
         """
         ranges = {}
-        
+
         # Calculate Protein
         p_min_cal = tdee * AMDR_RANGES["protein"][0]
         p_max_cal = tdee * AMDR_RANGES["protein"][1]
         p_target_cal = tdee * 0.225  # Midpoint
-        
+
         ranges["protein"] = NutrientRange(
             min=int(p_min_cal / CALORIES_PER_GRAM["protein"]),
             max=int(p_max_cal / CALORIES_PER_GRAM["protein"]),
@@ -92,7 +95,7 @@ class NutrientCalculator:
         f_min_cal = tdee * AMDR_RANGES["fat"][0]
         f_max_cal = tdee * AMDR_RANGES["fat"][1]
         f_target_cal = tdee * 0.275 # Midpoint
-        
+
         ranges["fat"] = NutrientRange(
             min=int(f_min_cal / CALORIES_PER_GRAM["fat"]),
             max=int(f_max_cal / CALORIES_PER_GRAM["fat"]),
@@ -103,7 +106,7 @@ class NutrientCalculator:
         c_min_cal = tdee * AMDR_RANGES["carbohydrates"][0]
         c_max_cal = tdee * AMDR_RANGES["carbohydrates"][1]
         c_target_cal = tdee * 0.55 # Midpoint
-        
+
         ranges["carbohydrates"] = NutrientRange(
             min=int(c_min_cal / CALORIES_PER_GRAM["carbohydrates"]),
             max=int(c_max_cal / CALORIES_PER_GRAM["carbohydrates"]),
@@ -121,12 +124,12 @@ class NutrientCalculator:
         height_cm: float,
         activity_level: str
     ) -> DRIOutput:
-        
+
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
-        
+
         macros = cls.calculate_macronutrient_ranges(tdee)
-        
+
         # Calories Range: TDEE +/- 250
         calories_range = NutrientRange(
             min=tdee - 250,
@@ -134,7 +137,7 @@ class NutrientCalculator:
             max=tdee + 250,
             unit="kcal"
         )
-        
+
         return DRIOutput(
             calories=calories_range,
             protein=macros["protein"],
