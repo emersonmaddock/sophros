@@ -16,20 +16,31 @@ async def get_current_user(
 ) -> User:
     """
     Validates the Bearer token and returns the current user.
-    Note: Signature verification is currently skipped for prototype speed.
-    In production, use Clerk's JWKS to verify signature.
+    Integrates with Clerk to verify the JWT signature using the public key.
     """
     try:
-        # WARNING: This does NOT verify the signature.
-        # TODO: Implement JWKS verification with CLERK_PEM_PUBLIC_KEY
-        payload = jwt.get_unverified_claims(token.credentials)
+        if settings.CLERK_JWT_PUBLIC_KEY:
+            # Verify the signature using the public key
+            payload = jwt.decode(
+                token.credentials,
+                settings.CLERK_JWT_PUBLIC_KEY,
+                algorithms=["RS256"],
+                options={"verify_aud": False},  # Usually fine for Clerk
+            )
+        else:
+            # Fallback for local development if key is not yet set
+            # WARNING: This does NOT verify the signature.
+            import warnings
+            warnings.warn("CLERK_JWT_PUBLIC_KEY is not set. Token signature is UNVERIFIED.", UserWarning)
+            payload = jwt.get_unverified_claims(token.credentials)
+
         user_id = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=403, detail="Invalid token payload")
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            detail=f"Could not validate credentials: {str(e)}",
         ) from e
 
     user = await db.get(User, user_id)
