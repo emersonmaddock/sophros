@@ -88,29 +88,29 @@ class NutrientCalculator:
         ranges["protein"] = NutrientRange(
             min=int(p_min_cal / CALORIES_PER_GRAM["protein"]),
             max=int(p_max_cal / CALORIES_PER_GRAM["protein"]),
-            target=int(p_target_cal / CALORIES_PER_GRAM["protein"])
+            target=int(p_target_cal / CALORIES_PER_GRAM["protein"]),
         )
 
         # Calculate Fat
         f_min_cal = tdee * AMDR_RANGES["fat"][0]
         f_max_cal = tdee * AMDR_RANGES["fat"][1]
-        f_target_cal = tdee * 0.275 # Midpoint
+        f_target_cal = tdee * 0.275  # Midpoint
 
         ranges["fat"] = NutrientRange(
             min=int(f_min_cal / CALORIES_PER_GRAM["fat"]),
             max=int(f_max_cal / CALORIES_PER_GRAM["fat"]),
-            target=int(f_target_cal / CALORIES_PER_GRAM["fat"])
+            target=int(f_target_cal / CALORIES_PER_GRAM["fat"]),
         )
 
         # Calculate Carbs
         c_min_cal = tdee * AMDR_RANGES["carbohydrates"][0]
         c_max_cal = tdee * AMDR_RANGES["carbohydrates"][1]
-        c_target_cal = tdee * 0.55 # Midpoint
+        c_target_cal = tdee * 0.55  # Midpoint
 
         ranges["carbohydrates"] = NutrientRange(
             min=int(c_min_cal / CALORIES_PER_GRAM["carbohydrates"]),
             max=int(c_max_cal / CALORIES_PER_GRAM["carbohydrates"]),
-            target=int(c_target_cal / CALORIES_PER_GRAM["carbohydrates"])
+            target=int(c_target_cal / CALORIES_PER_GRAM["carbohydrates"]),
         )
 
         return ranges
@@ -122,9 +122,8 @@ class NutrientCalculator:
         gender: str,
         weight_kg: float,
         height_cm: float,
-        activity_level: str
+        activity_level: str,
     ) -> DRIOutput:
-
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
 
@@ -132,15 +131,12 @@ class NutrientCalculator:
 
         # Calories Range: TDEE +/- 250
         calories_range = NutrientRange(
-            min=tdee - 250,
-            target=tdee,
-            max=tdee + 250,
-            unit="kcal"
+            min=tdee - 250, target=tdee, max=tdee + 250, unit="kcal"
         )
 
         return DRIOutput(
             calories=calories_range,
             protein=macros["protein"],
             carbohydrates=macros["carbohydrates"],
-            fat=macros["fat"]
+            fat=macros["fat"],
         )

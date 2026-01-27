@@ -7,6 +7,7 @@ class NutrientRange(BaseModel):
     max: int
     unit: str = "g"
 
+
 class DRIOutput(BaseModel):
     calories: NutrientRange
     protein: NutrientRange

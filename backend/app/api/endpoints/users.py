@@ -87,7 +87,6 @@ async def read_user_targets(current_user: User = Depends(deps.get_current_user))
     assert gender is not None
     assert activity_level is not None
 
-
     # Calculate targets
     return NutrientCalculator.calculate_targets(
         age=age,

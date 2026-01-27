@@ -6,21 +6,25 @@ def test_calculate_bmr_male():
     bmr = NutrientCalculator.calculate_bmr(80, 180, 30, "male")
     assert bmr == 1780
 
+
 def test_calculate_bmr_female():
     # Female: 10*60 + 6.25*165 - 5*25 - 161
     # 600 + 1031.25 - 125 - 161 = 1345.25 -> 1345
     bmr = NutrientCalculator.calculate_bmr(60, 165, 25, "female")
-    assert bmr == 1345   # int conversion floors 1345.25
+    assert bmr == 1345  # int conversion floors 1345.25
+
 
 def test_calculate_tdee_sedentary():
     # BMR 1500 * 1.2 = 1800
     tdee = NutrientCalculator.calculate_tdee(1500, "sedentary")
     assert tdee == 1800
 
+
 def test_calculate_tdee_active():
     # BMR 1500 * 1.725 = 2587.5 -> 2587
     tdee = NutrientCalculator.calculate_tdee(1500, "active")
     assert tdee == 2587
+
 
 def test_calculate_targets_integration():
     # Test a full profile
@@ -33,7 +37,7 @@ def test_calculate_targets_integration():
         gender="male",
         weight_kg=80,
         height_cm=180,
-        activity_level="moderately_active"
+        activity_level="moderately_active",
     )
 
     assert isinstance(result, DRIOutput)
@@ -58,6 +62,7 @@ def test_calculate_targets_integration():
     # /4
     assert result.carbohydrates.min == int(2759 * 0.45 / 4)
     assert result.carbohydrates.max == int(2759 * 0.65 / 4)
+
 
 def test_invalid_activity_defaults():
     # Should default to sedentary (1.2)
