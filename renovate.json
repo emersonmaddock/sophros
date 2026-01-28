@@ -1,0 +1,45 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended",
+        "schedule:weekly"
+    ],
+    "packageRules": [
+        {
+            "matchManagers": [
+                "github-actions",
+                "npm",
+                "pep621"
+            ],
+            "groupName": "{{manager}} non-major",
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        }
+    ],
+    "pip_requirements": {
+        "fileMatch": [
+            "backend/pyproject.toml"
+        ]
+    },
+    "enabledManagers": [
+        "github-actions",
+        "npm",
+        "pep621"
+    ],
+    "rangeStrategy": "bump",
+    "lockFileMaintenance": {
+        "enabled": true
+    },
+    "ignorePaths": [
+        "**/node_modules/**",
+        "**/__pycache__/**"
+    ],
+    "labels": [
+        "dependencies"
+    ],
+    "prConcurrentLimit": 10,
+    "prHourlyLimit": 2,
+    "updateNotScheduled": false
+}
