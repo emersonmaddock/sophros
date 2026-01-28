@@ -1,8 +1,4 @@
-from typing import Any
-
 from pydantic import BaseModel, ConfigDict
-
-from app.schemas.goal import Goal
 
 
 class UserBase(BaseModel):
@@ -14,7 +10,6 @@ class UserBase(BaseModel):
     gender: str | None = None
     activity_level: str | None = None
     pregnancy_status: str | None = None
-    goals: list[Goal] = []
 
 
 class UserCreate(UserBase):
@@ -29,7 +24,6 @@ class UserUpdate(BaseModel):
     gender: str | None = None
     activity_level: str | None = None
     pregnancy_status: str | None = None
-    goals: dict[str, Any] | None = None
 
 
 class User(UserBase):
