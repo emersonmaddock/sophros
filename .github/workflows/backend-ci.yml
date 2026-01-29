@@ -36,9 +36,9 @@ jobs:
       - name: Lint with Ruff
         run: |
           # Run linter
-          ruff check app
+          uv run ruff check app
           # Run formatter check
-          ruff format --check app
+          uv run ruff format --check app
 
   type-check:
     runs-on: ubuntu-latest
@@ -61,7 +61,7 @@ jobs:
           enable-cache: true
 
       - name: Type check with mypy
-        run: mypy app
+        run: uv run mypy app
 
   test:
     runs-on: ubuntu-latest
@@ -86,5 +86,4 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
-        run: |
-          pytest
+        run: uv run pytest
