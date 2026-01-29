@@ -30,7 +30,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "0.4.15"
+          version: "latest"
           enable-cache: true
 
       - name: Lint with Ruff
@@ -57,7 +57,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "0.4.15"
+          version: "latest"
           enable-cache: true
 
       - name: Type check with mypy
@@ -80,7 +80,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: "0.4.15"
+          version: "latest"
           enable-cache: true
 
       - name: Run tests
