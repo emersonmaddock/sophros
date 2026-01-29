@@ -10,16 +10,20 @@ router = APIRouter()
 
 
 @router.post("/", response_model=UserSchema)
-async def create_user(user_in: UserCreate, db: AsyncSession = Depends(deps.get_db)):
+async def create_user(
+    user_in: UserCreate,
+    db: AsyncSession = Depends(deps.get_db),
+    payload: dict = Depends(deps.get_auth_payload),
+):
     """
     Create new user.
     Called by frontend after Clerk signup, or via Webhook (secure).
     """
-    user = await db.get(User, user_in.id)
+    user = await db.get(User, payload.get("id"))
     if user:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    user = User(**user_in.model_dump())
+    user = User(**user_in.model_dump(), id=payload.get("id"))
     db.add(user)
     await db.commit()
     await db.refresh(user)

@@ -13,7 +13,8 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    id: str  # Clerk ID provided by frontend/webhook
+    # User ID is provided by the Clerk JWT payload
+    pass
 
 
 class UserUpdate(BaseModel):
