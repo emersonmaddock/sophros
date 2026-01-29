@@ -1,6 +1,6 @@
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -9,9 +9,15 @@ from app.models.user import User
 
 bearer = HTTPBearer()
 
-async def get_auth_payload(token: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
+async def get_auth_payload(
+    token: HTTPAuthorizationCredentials = Depends(bearer)
+) -> dict:
     try:
-        payload = jwt.decode(token.credentials, key=settings.CLERK_PEM_PUBLIC_KEY, algorithms=['RS256'])
+        payload = jwt.decode(
+            token.credentials,
+            key=settings.CLERK_PEM_PUBLIC_KEY,
+            algorithms=['RS256']
+        )
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
