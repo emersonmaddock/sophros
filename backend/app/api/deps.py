@@ -9,14 +9,13 @@ from app.models.user import User
 
 bearer = HTTPBearer()
 
+
 async def get_auth_payload(
-    token: HTTPAuthorizationCredentials = Depends(bearer)
+    token: HTTPAuthorizationCredentials = Depends(bearer),
 ) -> dict:
     try:
         payload = jwt.decode(
-            token.credentials,
-            key=settings.CLERK_PEM_PUBLIC_KEY,
-            algorithms=['RS256']
+            token.credentials, key=settings.CLERK_PEM_PUBLIC_KEY, algorithms=["RS256"]
         )
     except JWTError as e:
         raise HTTPException(
@@ -24,6 +23,7 @@ async def get_auth_payload(
             detail="Could not validate credentials",
         ) from e
     return payload
+
 
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
