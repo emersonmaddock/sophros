@@ -9,7 +9,7 @@ from app.schemas.user import UserCreate, UserUpdate
 router = APIRouter()
 
 
-@router.post("/", response_model=UserSchema)
+@router.post("", response_model=UserSchema)
 async def create_user(
     user_in: UserCreate,
     db: AsyncSession = Depends(deps.get_db),
@@ -19,11 +19,11 @@ async def create_user(
     Create new user.
     Called by frontend after Clerk signup, or via Webhook (secure).
     """
-    user = await db.get(User, payload.get("id"))
+    user = await db.get(User, payload.get("sub"))
     if user:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    user = User(**user_in.model_dump(), id=payload.get("id"))
+    user = User(**user_in.model_dump(), id=payload.get("sub"))
     db.add(user)
     await db.commit()
     await db.refresh(user)

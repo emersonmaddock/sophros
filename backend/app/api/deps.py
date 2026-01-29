@@ -1,6 +1,6 @@
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt
+from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -12,7 +12,7 @@ bearer = HTTPBearer()
 async def get_auth_payload(token: HTTPAuthorizationCredentials = Depends(bearer)) -> dict:
     try:
         payload = jwt.decode(token.credentials, key=settings.CLERK_PEM_PUBLIC_KEY, algorithms=['RS256'])
-    except jwt.exceptions.PyJWTError as e:
+    except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -28,7 +28,7 @@ async def get_current_user(
     Note: Signature verification is currently skipped for prototype speed.
     In production, use Clerk's JWKS to verify signature.
     """
-    user_id = payload.get("id")
+    user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=403, detail="Invalid token payload")
 
