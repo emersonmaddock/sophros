@@ -60,7 +60,13 @@ jobs:
         run: pnpm typecheck
 
   build-android:
+    name: Build Android
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,6 +75,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -92,25 +107,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: "zulu"
-          java-version: "11"
+      - name: Install Expo CLI
+        run: pnpm add -g @expo/cli
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v2
+      - name: Verify app.json configuration
+        run: npx expo config --type public
 
-      - name: Build Android Release
-        run: |
-          cd android
-          ./gradlew bundleRelease
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: app-release
-          path: android/app/build/outputs/bundle/release/app-release.aab
+      - name: Prebuild Android
+        run: npx expo prebuild --platform android --clean --no-install
 
   # DISABLE IOS BUILD FOR NOW BECAUSE ITS EXPENSIVE
   # build-ios:
