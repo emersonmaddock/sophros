@@ -87,7 +87,7 @@ function SignUpScreen() {
               return;
             }
             router.replace('/onboarding');
-          }
+          },
         });
 
         router.replace('/onboarding');
@@ -133,7 +133,12 @@ function SignUpScreen() {
 
               {error && <Text style={styles.error}>{error}</Text>}
 
-              <TouchableOpacity style={styles.button} onPress={onVerifyPress} activeOpacity={0.8} disabled={loading}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onVerifyPress}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
                 <Text style={styles.buttonText}>Verify</Text>
               </TouchableOpacity>
             </View>
@@ -210,7 +215,12 @@ function SignUpScreen() {
 
             {error && <Text style={styles.error}>{error}</Text>}
 
-            <TouchableOpacity style={styles.button} onPress={onSignUpPress} activeOpacity={0.8} disabled={loading}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={onSignUpPress}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
               <Text style={styles.buttonText}>Sign Up</Text>
             </TouchableOpacity>
 

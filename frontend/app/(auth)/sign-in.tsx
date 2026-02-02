@@ -47,11 +47,11 @@ function SignInScreen() {
           session: signInAttempt.createdSessionId,
           navigate: async ({ session }) => {
             if (session?.currentTask) {
-              console.log(session?.currentTask)
-              return
+              console.log(session?.currentTask);
+              return;
             }
 
-            router.replace('/(tabs)')
+            router.replace('/(tabs)');
           },
         });
 
@@ -64,14 +64,14 @@ function SignInScreen() {
         // See https://clerk.com/docs/guides/secure/client-trust
         const emailCodeFactor = signInAttempt.supportedSecondFactors?.find(
           (factor): factor is EmailCodeFactor => factor.strategy === 'email_code'
-        )
+        );
 
         if (emailCodeFactor) {
           await signIn.prepareSecondFactor({
             strategy: 'email_code',
             emailAddressId: emailCodeFactor.emailAddressId,
-          })
-          setPendingVerification(true)
+          });
+          setPendingVerification(true);
         }
       } else {
         console.error(signInAttempt);
@@ -112,7 +112,7 @@ function SignInScreen() {
               return;
             }
             router.replace('/(tabs)');
-          }
+          },
         });
 
         router.replace('/(tabs)');
@@ -212,7 +212,12 @@ function SignInScreen() {
 
             {error && <Text style={styles.error}>{error}</Text>}
 
-            <TouchableOpacity style={styles.button} onPress={onSignInPress} activeOpacity={0.8} disabled={loading}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={onSignInPress}
+              activeOpacity={0.8}
+              disabled={loading}
+            >
               <Text style={styles.buttonText}>Sign In</Text>
             </TouchableOpacity>
 
