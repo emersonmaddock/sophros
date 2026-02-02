@@ -4,8 +4,9 @@ from app.schemas.nutrient import DRIOutput
 
 class MealAllocator:
     @staticmethod
+    @staticmethod
     def allocate_targets(
-        daily_targets: DRIOutput, config: MealDistributionConfig = None
+        daily_targets: DRIOutput, config: MealDistributionConfig | None = None
     ) -> DailyMealPlan:
         """
         Distributes the daily nutritional targets into meal slots based on the
@@ -27,10 +28,19 @@ class MealAllocator:
             # Basic validation, though in production we might just normalize
             pass
 
-        for slot_name, percentage in config.slots.items():
+        # config.slots keys are strings from the JSON/Dict, we map them to MealSlot
+        # Assuming the keys match the MealSlot values (e.g. "Breakfast")
+        from app.schemas.meal_plan import MealSlot
+
+        for slot_name_str, percentage in config.slots.items():
+            # Try to match string to Enum
+            # Case-insensitive match if needed, but Enum value is usually robust
+            # Let's assume exact match to Enum value
+            slot_enum = MealSlot(slot_name_str)
+
             slots_output.append(
                 MealSlotTarget(
-                    slot_name=slot_name,
+                    slot_name=slot_enum,
                     calories=int(daily_cal * percentage),
                     protein=int(daily_prot * percentage),
                     carbohydrates=int(daily_carbs * percentage),

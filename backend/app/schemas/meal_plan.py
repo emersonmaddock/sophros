@@ -1,8 +1,17 @@
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 
+class MealSlot(str, Enum):
+    BREAKFAST = "Breakfast"
+    LUNCH = "Lunch"
+    DINNER = "Dinner"
+    SNACK = "Snack"
+
+
 class MealSlotTarget(BaseModel):
-    slot_name: str  # e.g. "Breakfast", "Lunch", "Dinner", "Snack"
+    slot_name: MealSlot
     calories: int
     protein: int
     carbohydrates: int

@@ -37,19 +37,33 @@ class RecipeFilter:
             ]:
                 continue
 
-            # 2. Check Ingredients for Allergies/Dislikes
+            if constraints.is_dairy_free and "dairy-free" not in [
+                t.lower() for t in recipe.tags
+            ]:
+                continue
+
+            if constraints.is_pescatarian and "pescatarian" not in [
+                t.lower() for t in recipe.tags
+            ]:
+                continue
+
+            if constraints.is_halal and "halal" not in [t.lower() for t in recipe.tags]:
+                continue
+
+            if constraints.is_kosher and "kosher" not in [
+                t.lower() for t in recipe.tags
+            ]:
+                continue
+
+            # 2. Check Ingredients for Allergies (Strict)
             # We assume if the allergen string is present in any ingredient string,
-            # it's a violation. This is conservative.
+            # it's a violation.
             violation = False
-
-            # Combine bad words
-            avoid_list = allergies + dislikes
-
-            if avoid_list:
+            if allergies:
                 for ingredient in recipe.ingredients:
                     ing_lower = ingredient.lower()
-                    for avoid in avoid_list:
-                        if avoid in ing_lower:
+                    for allergy in allergies:
+                        if allergy in ing_lower:
                             violation = True
                             break
                     if violation:
@@ -57,6 +71,17 @@ class RecipeFilter:
 
             if violation:
                 continue
+
+            # 3. Check Ingredients for Dislikes (Soft)
+            # If dislike found, add to warnings
+            if dislikes:
+                for ingredient in recipe.ingredients:
+                    ing_lower = ingredient.lower()
+                    for dislike in dislikes:
+                        if dislike in ing_lower:
+                            recipe.warnings.append(
+                                f"Contains disliked ingredient: {dislike}"
+                            )
 
             filtered.append(recipe)
 

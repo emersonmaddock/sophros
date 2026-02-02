@@ -66,7 +66,6 @@ def test_optimize_minimizes_deviation():
     )
 
     # Slight Cal diff, Perfect Macros (Cal diff 10, Macros diff 0 -> Cost 10)
-    # Wait, simple math:
     # R1 Cost: Cal(0) + Prot(|10-30|*10=200) + Carbs(|30-50|*10=200) + Fat(0) = 400
     # R2 Cost: Cal(|490-500|=10) + Prot(0) + ... = 10
     # R2 should win

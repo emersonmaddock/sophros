@@ -15,7 +15,9 @@ class Recipe(BaseModel):
     nutrients: RecipeNutrients
     tags: list[str] = Field(default_factory=list)
     ingredients: list[str] = Field(default_factory=list)
+    warnings: list[str] = Field(
+        default_factory=list
+    )  # Soft restrictions (e.g. dislikes)
 
     # Metadata for classification
-    is_breakfast: bool = False  # Can be explicitly flagged or inferred later
     preparation_time_minutes: int | None = None
