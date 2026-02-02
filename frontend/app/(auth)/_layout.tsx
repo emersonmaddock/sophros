@@ -8,7 +8,7 @@ export default function AuthRoutesLayout() {
     // For now, redirect to onboarding
     // TODO: redirect to tabs if user data exists
     // Or, redirect to tabs then back to onboarding if user data doesn't exist
-    return <Redirect href={'/onboarding'} />;
+    return <Redirect href={'/(tabs)'} />;
   }
 
   return (
