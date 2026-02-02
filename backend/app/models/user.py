@@ -1,12 +1,7 @@
-from typing import TYPE_CHECKING
-
 from sqlalchemy import Boolean, Float, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
-
-if TYPE_CHECKING:
-    from app.models.goal import UserGoal
 
 
 class User(Base):
@@ -21,8 +16,3 @@ class User(Base):
     gender: Mapped[str | None] = mapped_column(String, nullable=True)
     activity_level: Mapped[str | None] = mapped_column(String, nullable=True)
     pregnancy_status: Mapped[str | None] = mapped_column(String, nullable=True)
-
-    # Relationships
-    goals: Mapped[list["UserGoal"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
-    )
