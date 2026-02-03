@@ -49,7 +49,7 @@ class MealOptimizer:
             # If no valid recipes, this will be sum([]) == 1 which is False (Infeasible)
             # preventing crash but returning no solution
             model.Add(
-                sum(selected[(r_idx, s_idx)] for r_idx in valid_indices[s_idx]) == 1  # type: ignore[arg-type]
+                sum(selected[(r_idx, s_idx)] for r_idx in valid_indices[s_idx]) == 1
             )
 
         # 3. Calculate Totals
@@ -110,7 +110,7 @@ class MealOptimizer:
             selected[(r_idx, s_idx)] * (1 if available_recipes[r_idx].warnings else 0)
             for s_idx in range(len(slots))
             for r_idx in valid_indices[s_idx]
-        )  # type: ignore[arg-type]
+        )
 
         model.Minimize(
             abs_diff_cals
