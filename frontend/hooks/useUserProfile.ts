@@ -44,7 +44,9 @@ export function useUserProfile() {
       height: backendUser.height
         ? `${Math.floor(backendUser.height / 30.48)}' ${Math.round((backendUser.height % 30.48) / 2.54)}"`
         : 'Not set',
-      gender: backendUser.gender ? GENDER_LABELS[backendUser.gender] || backendUser.gender : 'Not set',
+      gender: backendUser.gender
+        ? GENDER_LABELS[backendUser.gender] || backendUser.gender
+        : 'Not set',
       activityLevel: backendUser.activity_level
         ? ACTIVITY_LEVEL_LABELS[backendUser.activity_level] || backendUser.activity_level
         : 'Not set',

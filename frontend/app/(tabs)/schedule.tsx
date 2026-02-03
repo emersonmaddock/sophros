@@ -130,9 +130,16 @@ export default function SchedulePage() {
         {/* Day Selector */}
         <View style={styles.daySelector}>
           {days.map((day, i) => (
-            <TouchableOpacity key={i} style={[styles.dayCard, i === todayDayOfWeek && styles.activeDayCard]}>
-              <Text style={[styles.dayText, i === todayDayOfWeek && styles.activeDayText]}>{day}</Text>
-              <Text style={[styles.dateText, i === todayDayOfWeek && styles.activeDateText]}>{weekDates[i]}</Text>
+            <TouchableOpacity
+              key={i}
+              style={[styles.dayCard, i === todayDayOfWeek && styles.activeDayCard]}
+            >
+              <Text style={[styles.dayText, i === todayDayOfWeek && styles.activeDayText]}>
+                {day}
+              </Text>
+              <Text style={[styles.dateText, i === todayDayOfWeek && styles.activeDateText]}>
+                {weekDates[i]}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>

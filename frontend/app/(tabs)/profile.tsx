@@ -3,7 +3,15 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { UserUpdate } from '@/types/user';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Heart, LogOut, Pencil, Settings, Utensils } from 'lucide-react-native';
+import {
+  Calendar,
+  ChevronRight,
+  Heart,
+  LogOut,
+  Pencil,
+  Settings,
+  Utensils,
+} from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -97,7 +105,7 @@ export default function ProfilePage() {
       } else {
         Alert.alert('Error', 'Failed to update profile. Please try again.');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -162,15 +170,10 @@ export default function ProfilePage() {
         <View style={styles.profileCard}>
           <View style={styles.profileInfo}>
             {clerkUser?.imageUrl ? (
-              <Image
-                source={{ uri: clerkUser.imageUrl }}
-                style={styles.avatarImage}
-              />
+              <Image source={{ uri: clerkUser.imageUrl }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {profile.fullName.charAt(0).toUpperCase()}
-                </Text>
+                <Text style={styles.avatarText}>{profile.fullName.charAt(0).toUpperCase()}</Text>
               </View>
             )}
             <View>

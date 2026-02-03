@@ -37,7 +37,7 @@ export async function apiRequest<T>(
     const error: ApiError = await response.json().catch(() => ({
       detail: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    
+
     // Create error with status code included
     const errorMessage = `${error.detail} (Status: ${response.status})`;
     throw new Error(errorMessage);
@@ -55,7 +55,10 @@ export async function getUser(token: string): Promise<User | null> {
     return await apiRequest<User>('/users/me', token);
   } catch (error) {
     // User doesn't exist in backend yet (404)
-    if (error instanceof Error && (error.message.includes('404') || error.message.includes('Status: 404'))) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('404') || error.message.includes('Status: 404'))
+    ) {
       return null;
     }
     // Re-throw other errors (network, 401, 500, etc.)
