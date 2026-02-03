@@ -1,4 +1,4 @@
-from app.schemas.meal_plan import MealDistributionConfig
+from app.schemas.meal_plan import MealDistributionConfig, MealSlot
 from app.schemas.nutrient import DRIOutput, NutrientRange
 from app.services.meal_allocator import MealAllocator
 
@@ -14,7 +14,7 @@ def test_allocate_standard_distribution():
 
     # 30/40/30 split
     config = MealDistributionConfig(
-        slots={"breakfast": 0.3, "lunch": 0.4, "dinner": 0.3}
+        slots={"Breakfast": 0.3, "Lunch": 0.4, "Dinner": 0.3}
     )
 
     plan = MealAllocator.allocate_targets(daily, config)
@@ -22,7 +22,7 @@ def test_allocate_standard_distribution():
     assert len(plan.slots) == 3
 
     # Check Breakfast (30% of 2000 = 600)
-    breakfast = next(s for s in plan.slots if s.slot_name == "breakfast")
+    breakfast = next(s for s in plan.slots if s.slot_name == MealSlot.BREAKFAST)
     assert breakfast.calories == 600
     assert breakfast.protein == 45  # 30% of 150
 
@@ -44,8 +44,10 @@ def test_allocate_uneven_split():
         fat=NutrientRange(min=0, target=100, max=200),
     )
 
-    # 33/33/34 split
-    config = MealDistributionConfig(slots={"one": 0.33, "two": 0.33, "three": 0.34})
+    # 33/33/34 split using valid Slots
+    config = MealDistributionConfig(
+        slots={"Breakfast": 0.33, "Lunch": 0.33, "Dinner": 0.34}
+    )
 
     plan = MealAllocator.allocate_targets(daily, config)
 

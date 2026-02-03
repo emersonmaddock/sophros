@@ -22,7 +22,7 @@ class MealDistributionConfig(BaseModel):
     name: str = "Standard"
     # Percentage of daily total for each slot. Must sum to 1.0 (approx)
     slots: dict[str, float] = Field(
-        default_factory=lambda: {"breakfast": 0.30, "lunch": 0.35, "dinner": 0.35}
+        default_factory=lambda: {"Breakfast": 0.30, "Lunch": 0.35, "Dinner": 0.35}
     )
 
 
