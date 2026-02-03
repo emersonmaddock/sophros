@@ -78,7 +78,7 @@ function SignUpScreen() {
       if (completeSignUp.status === 'complete') {
         // If the sign-up is complete, set the active session and navigate to the protected screen
         await setActive({
-          session: completeSignUp.createdSessionId
+          session: completeSignUp.createdSessionId,
         });
       } else {
         console.error(completeSignUp);
