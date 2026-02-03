@@ -79,18 +79,7 @@ function SignUpScreen() {
         // If the sign-up is complete, set the active session and navigate to the protected screen
         await setActive({
           session: completeSignUp.createdSessionId,
-          navigate: async ({ session }) => {
-            if (session?.currentTask) {
-              // Check for tasks and navigate to custom UI to help users resolve them
-              // See https://clerk.com/docs/guides/development/custom-flows/overview#session-tasks
-              console.log(session?.currentTask);
-              return;
-            }
-            router.replace('/onboarding');
-          },
         });
-
-        router.replace('/onboarding');
       } else {
         console.error(completeSignUp);
       }

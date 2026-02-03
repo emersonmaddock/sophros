@@ -1,12 +1,36 @@
 import { Colors } from '@/constants/theme';
+import { useUser } from '@/contexts/UserContext';
 import { OnboardingProvider } from '@/hooks/useOnboarding';
-import { Stack, useRouter } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import { TouchableOpacity } from 'react-native';
+import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
 
 export default function OnboardingLayout() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const { isOnboarded, loading } = useUser();
 
+  // Redirect to auth if session expires for whatever reason
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  // Show loading while checking user status
+  if (isSignedIn && loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  // If signed in and onboarded, go to main app
+  if (isSignedIn && isOnboarded) {
+    return <Redirect href={'/(tabs)'} />;
+  }
+
+  // Needs onboarding
   return (
     <OnboardingProvider>
       <Stack

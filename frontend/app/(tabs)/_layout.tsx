@@ -1,4 +1,5 @@
-import { Tabs } from 'expo-router';
+import { useAuth } from '@clerk/clerk-expo';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 
@@ -8,6 +9,12 @@ import { Calendar, Home, TrendingUp, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   const colorScheme = 'light'; // Forcing light mode based on design system for now
+  const { isSignedIn } = useAuth();
+
+  // Protect tabs - redirect to auth if session expires
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   return (
     <Tabs

@@ -1,6 +1,8 @@
-import { createUser, CreateUserPayload } from '@/constants/api';
+import { createUser } from '@/constants/api';
 import { VALIDATION_RULES } from '@/constants/onboarding';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useUser } from '@/contexts/UserContext';
+import { UserCreate } from '@/types/user';
+import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useContext, useState } from 'react';
 
 export interface OnboardingData {
@@ -39,7 +41,8 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
   const { getToken } = useAuth();
-  const { user } = useUser();
+  const { user } = useClerkUser();
+  const { refreshUser } = useUser();
 
   const [data, setData] = useState<OnboardingData>({
     age: '',
@@ -181,8 +184,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         throw new Error('Could not get authentication token');
       }
 
-      const payload: CreateUserPayload = {
-        id: user.id,
+      const payload: UserCreate = {
         email: user.primaryEmailAddress.emailAddress,
         age: parseInt(data.age, 10),
         weight: parseFloat(data.weight), // Already in kg
@@ -197,6 +199,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       }
 
       await createUser(payload, token);
+
+      // Refresh user context to update isOnboarded status
+      await refreshUser();
+
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create user profile';

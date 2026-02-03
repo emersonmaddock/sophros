@@ -1,5 +1,6 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
 import React from 'react';
@@ -8,6 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardPage() {
   const router = useRouter();
+
+  // Get user for name
+  const { user: clerkUser } = useClerkUser();
+  const userName = clerkUser?.firstName || 'there';
+
+  // Get date for subtitle
+  // e.g., 'Wednesday, Dec 23'
+  const today = new Date();
+  const day = today.getDate();
+  const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
+  const monthName = today.toLocaleString('en-US', { month: 'short' });
 
   const upcomingItems = [
     {
@@ -48,9 +60,9 @@ export default function DashboardPage() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Good Morning, Alex</Text>
+          <Text style={styles.headerTitle}>Good Morning, {userName}</Text>
           <Text style={styles.headerSubtitle}>
-            Let&apos;s make today healthy · Wednesday, Dec 23
+            Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
           </Text>
         </View>
 

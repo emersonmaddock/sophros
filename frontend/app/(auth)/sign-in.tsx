@@ -45,18 +45,9 @@ function SignInScreen() {
       if (signInAttempt.status === 'complete') {
         await setActive({
           session: signInAttempt.createdSessionId,
-          navigate: async ({ session }) => {
-            if (session?.currentTask) {
-              console.log(session?.currentTask);
-              return;
-            }
-
-            router.replace('/(tabs)');
-          },
         });
 
-        // Navigate to home screen, which will redirect to onboarding if needed
-        router.replace('/(tabs)');
+        // Auth layout will handle routing based on onboarding status
       } else if (signInAttempt.status === 'needs_second_factor') {
         // Check if email_code is a valid second factor
         // This is required when Client Trust is enabled and the user
@@ -101,21 +92,12 @@ function SignInScreen() {
       });
 
       if (signInAttempt.status === 'complete') {
-        // If the sign-up is complete, set the active session and navigate to the protected screen
+        // If verification is complete, set the active session
         await setActive({
           session: signInAttempt.createdSessionId,
-          navigate: async ({ session }) => {
-            if (session?.currentTask) {
-              // Check for tasks and navigate to custom UI to help users resolve them
-              // See https://clerk.com/docs/guides/development/custom-flows/overview#session-tasks
-              console.log(session?.currentTask);
-              return;
-            }
-            router.replace('/(tabs)');
-          },
         });
 
-        router.replace('/(tabs)');
+        // Auth layout will handle routing based on onboarding status
       } else {
         console.error(signInAttempt);
       }

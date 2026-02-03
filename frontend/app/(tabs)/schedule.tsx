@@ -18,7 +18,22 @@ export default function SchedulePage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Calculate dates for the current week
+  const today = new Date();
+  const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+
+  // Get the start of the week (Sunday)
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - todayDayOfWeek);
+
+  // Generate dates for the week
+  const weekDates = days.map((_, index) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + index);
+    return date.getDate();
+  });
 
   const scheduleItems: ScheduleItem[] = [
     {
@@ -115,9 +130,16 @@ export default function SchedulePage() {
         {/* Day Selector */}
         <View style={styles.daySelector}>
           {days.map((day, i) => (
-            <TouchableOpacity key={i} style={[styles.dayCard, i === 2 && styles.activeDayCard]}>
-              <Text style={[styles.dayText, i === 2 && styles.activeDayText]}>{day}</Text>
-              <Text style={[styles.dateText, i === 2 && styles.activeDateText]}>{17 + i}</Text>
+            <TouchableOpacity
+              key={i}
+              style={[styles.dayCard, i === todayDayOfWeek && styles.activeDayCard]}
+            >
+              <Text style={[styles.dayText, i === todayDayOfWeek && styles.activeDayText]}>
+                {day}
+              </Text>
+              <Text style={[styles.dateText, i === todayDayOfWeek && styles.activeDateText]}>
+                {weekDates[i]}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
