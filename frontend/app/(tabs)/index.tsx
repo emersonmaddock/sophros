@@ -9,9 +9,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user: clerkUser } = useClerkUser();
 
+  // Get user for name
+  const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
+
+  // Get date for subtitle
+  // e.g., 'Wednesday, Dec 23'
+  const today = new Date();
+  const day = today.getDate();
+  const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
+  const monthName = today.toLocaleString('en-US', { month: 'short' });
 
   const upcomingItems = [
     {
@@ -54,7 +62,7 @@ export default function DashboardPage() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Good Morning, {userName}</Text>
           <Text style={styles.headerSubtitle}>
-            Let&apos;s make today healthy · Wednesday, Dec 23
+            Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
           </Text>
         </View>
 
