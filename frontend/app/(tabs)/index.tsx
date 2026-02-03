@@ -1,5 +1,6 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
 import React from 'react';
@@ -8,6 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user: clerkUser } = useClerkUser();
+
+  const userName = clerkUser?.firstName || 'there';
 
   const upcomingItems = [
     {
@@ -48,7 +52,7 @@ export default function DashboardPage() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Good Morning, Alex</Text>
+          <Text style={styles.headerTitle}>Good Morning, {userName}</Text>
           <Text style={styles.headerSubtitle}>
             Let&apos;s make today healthy · Wednesday, Dec 23
           </Text>

@@ -28,8 +28,7 @@ function SignInScreen() {
         await setActive({
           session: signInAttempt.createdSessionId,
         });
-        // Navigate to protected screen once the session is created
-        router.replace('/onboarding');
+        // Auth layout will handle routing based on onboarding status
       } else {
         console.error(JSON.stringify(signInAttempt, null, 2));
       }

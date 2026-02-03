@@ -1,14 +1,36 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { UserUpdate } from '@/types/user';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Heart, LogOut, Settings, Utensils } from 'lucide-react-native';
-import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Calendar, ChevronRight, Heart, LogOut, Pencil, Settings, Utensils } from 'lucide-react-native';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfilePage() {
   const { signOut } = useAuth();
   const router = useRouter();
+  const { profile, backendUser, updateUserProfile, loading, clerkUser } = useUserProfile();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState({
+    age: '',
+    weight: '', // in lbs for display
+    height: '', // in cm for now, can be enhanced
+    activityLevel: '',
+  });
+  const [saving, setSaving] = useState(false);
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -22,6 +44,64 @@ export default function ProfilePage() {
         },
       },
     ]);
+  };
+
+  const handleEditPress = () => {
+    if (!backendUser) return;
+
+    setEditedData({
+      age: backendUser.age?.toString() || '',
+      weight: backendUser.weight ? Math.round(backendUser.weight * 2.20462).toString() : '',
+      height: backendUser.height?.toString() || '',
+      activityLevel: backendUser.activity_level || '',
+    });
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditedData({ age: '', weight: '', height: '', activityLevel: '' });
+  };
+
+  const handleSaveChanges = async () => {
+    if (!backendUser) return;
+
+    setSaving(true);
+    try {
+      const updates: UserUpdate = {};
+
+      if (editedData.age && editedData.age !== backendUser.age?.toString()) {
+        updates.age = parseInt(editedData.age, 10);
+      }
+
+      if (editedData.weight) {
+        const weightKg = parseFloat(editedData.weight) / 2.20462;
+        if (Math.abs(weightKg - (backendUser.weight || 0)) > 0.1) {
+          updates.weight = weightKg;
+        }
+      }
+
+      if (editedData.height && editedData.height !== backendUser.height?.toString()) {
+        updates.height = parseFloat(editedData.height);
+      }
+
+      if (editedData.activityLevel && editedData.activityLevel !== backendUser.activity_level) {
+        updates.activity_level = editedData.activityLevel;
+      }
+
+      const success = await updateUserProfile(updates);
+
+      if (success) {
+        Alert.alert('Success', 'Profile updated successfully');
+        setIsEditing(false);
+      } else {
+        Alert.alert('Error', 'Failed to update profile. Please try again.');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const menuItems = [
@@ -47,40 +127,139 @@ export default function ProfilePage() {
     },
   ];
 
+  if (loading || !profile || !backendUser) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-          <Text style={styles.headerSubtitle}>Manage your health data</Text>
+          <View>
+            <Text style={styles.headerTitle}>Profile</Text>
+            <Text style={styles.headerSubtitle}>Manage your health data</Text>
+          </View>
+          {!isEditing && (
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={handleEditPress}
+              activeOpacity={0.8}
+            >
+              <Pencil size={20} color={Colors.light.primary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Profile Card */}
-        <TouchableOpacity style={styles.profileCard} activeOpacity={0.9}>
+        <View style={styles.profileCard}>
           <View style={styles.profileInfo}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
-            </View>
-            <View>
-              <Text style={styles.profileName}>Alex Martinez</Text>
-              <Text style={styles.profileEmail}>alex.martinez@email.com</Text>
-              <Text style={styles.activityBadge}>Active Lifestyle</Text>
-            </View>
-          </View>
-          <View style={styles.statsGrid}>
-            {[
-              { label: 'Age', value: '28' },
-              { label: 'Height', value: '5\'10"' },
-              { label: 'Weight', value: '165 lbs' },
-            ].map((stat, i) => (
-              <View key={i} style={styles.statItem}>
-                <Text style={styles.statValue}>{stat.value}</Text>
-                <Text style={styles.statLabel}>{stat.label}</Text>
+            {clerkUser?.imageUrl ? (
+              <Image
+                source={{ uri: clerkUser.imageUrl }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {profile.fullName.charAt(0).toUpperCase()}
+                </Text>
               </View>
-            ))}
+            )}
+            <View>
+              <Text style={styles.profileName}>{profile.fullName}</Text>
+              <Text style={styles.profileEmail}>{profile.email}</Text>
+              <Text style={styles.activityBadge}>{profile.activityLevel}</Text>
+            </View>
           </View>
-        </TouchableOpacity>
+
+          <View style={styles.statsGrid}>
+            {isEditing ? (
+              <>
+                <View style={styles.statItem}>
+                  <TextInput
+                    style={styles.statInput}
+                    value={editedData.age}
+                    onChangeText={(text) => setEditedData({ ...editedData, age: text })}
+                    keyboardType="numeric"
+                    placeholder="Age"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <Text style={styles.statLabel}>Age</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <TextInput
+                    style={styles.statInput}
+                    value={editedData.height}
+                    onChangeText={(text) => setEditedData({ ...editedData, height: text })}
+                    keyboardType="numeric"
+                    placeholder="Height (cm)"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <Text style={styles.statLabel}>Height (cm)</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <TextInput
+                    style={styles.statInput}
+                    value={editedData.weight}
+                    onChangeText={(text) => setEditedData({ ...editedData, weight: text })}
+                    keyboardType="numeric"
+                    placeholder="Weight (lbs)"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <Text style={styles.statLabel}>Weight (lbs)</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{profile.age}</Text>
+                  <Text style={styles.statLabel}>Age</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{profile.height}</Text>
+                  <Text style={styles.statLabel}>Height</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{profile.weight}</Text>
+                  <Text style={styles.statLabel}>Weight</Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Edit Actions */}
+        {isEditing && (
+          <View style={styles.editActions}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancelEdit}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              onPress={handleSaveChanges}
+              disabled={saving}
+              activeOpacity={0.8}
+            >
+              {saving ? (
+                <ActivityIndicator color={Colors.light.surface} size="small" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Settings & Preferences */}
         <View style={styles.section}>
@@ -118,12 +297,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.light.textMuted,
+  },
   scrollContent: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   header: {
     marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
@@ -134,6 +326,14 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: Colors.light.textMuted,
+  },
+  editButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: `${Colors.light.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileCard: {
     backgroundColor: Colors.light.surface,
@@ -155,6 +355,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.light.primary,
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
   },
   avatarText: {
     fontSize: 32,
@@ -201,6 +406,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.light.textMuted,
   },
+  statInput: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.light.primary,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginBottom: 4,
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.light.textMuted,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  saveButton: {
+    flex: 1,
+    backgroundColor: Colors.light.primary,
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    ...Shadows.card,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.surface,
+  },
   section: {
     marginBottom: 24,
   },
@@ -209,24 +461,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
     marginBottom: 16,
-  },
-  card: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: Layout.cardRadius,
-    padding: 20,
-    ...Shadows.card,
-  },
-  microList: {
-    // Top border removed as it's the only thing now
-  },
-  microListLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.light.text,
-  },
-  microListValue: {
-    fontSize: 13,
-    color: Colors.light.textMuted,
   },
   menuContainer: {
     gap: 12,

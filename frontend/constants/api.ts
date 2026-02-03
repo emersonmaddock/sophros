@@ -1,20 +1,11 @@
 // API Configuration for Backend Communication
 
+import { User, UserCreate, UserUpdate } from '@/types/user';
+
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 const API_VERSION = '/api/v1';
 
 export const API_URL = `${API_BASE_URL}${API_VERSION}`;
-
-export interface CreateUserPayload {
-  id: string; // Clerk ID
-  email: string;
-  age: number;
-  weight: number; // kg
-  height: number; // cm
-  gender: string;
-  activity_level: string;
-  pregnancy_status?: string; // only for females
-}
 
 export interface ApiError {
   detail: string;
@@ -44,19 +35,39 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const error: ApiError = await response.json().catch(() => ({
-      detail: 'An unexpected error occurred',
+      detail: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`);
+    
+    // Create error with status code included
+    const errorMessage = `${error.detail} (Status: ${response.status})`;
+    throw new Error(errorMessage);
   }
 
   return response.json();
 }
 
 /**
+ * Fetches the current user's profile from the backend
+ * Returns null if user doesn't exist (404)
+ */
+export async function getUser(token: string): Promise<User | null> {
+  try {
+    return await apiRequest<User>('/users/me', token);
+  } catch (error) {
+    // User doesn't exist in backend yet (404)
+    if (error instanceof Error && (error.message.includes('404') || error.message.includes('Status: 404'))) {
+      return null;
+    }
+    // Re-throw other errors (network, 401, 500, etc.)
+    throw error;
+  }
+}
+
+/**
  * Creates a new user in the backend
  */
-export async function createUser(payload: CreateUserPayload, token: string) {
-  return apiRequest('/users', token, {
+export async function createUser(payload: UserCreate, token: string): Promise<User> {
+  return apiRequest<User>('/users', token, {
     method: 'POST',
     body: JSON.stringify(payload),
   });
@@ -65,8 +76,8 @@ export async function createUser(payload: CreateUserPayload, token: string) {
 /**
  * Updates the current user's profile
  */
-export async function updateUser(payload: Partial<CreateUserPayload>, token: string) {
-  return apiRequest('/users/me', token, {
+export async function updateUser(payload: UserUpdate, token: string): Promise<User> {
+  return apiRequest<User>('/users/me', token, {
     method: 'PUT',
     body: JSON.stringify(payload),
   });
