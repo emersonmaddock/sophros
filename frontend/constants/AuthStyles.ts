@@ -3,7 +3,6 @@ import { Colors, Layout, Shadows } from './theme';
 
 export const styles = StyleSheet.create({
   formContainer: {
-    marginTop: 72,
     width: '100%',
     maxWidth: 420,
     alignSelf: 'center',
@@ -72,5 +71,11 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.light.primary,
+  },
+  error: {
+    color: Colors.light.error,
+    fontSize: 14,
+    marginTop: 12,
+    textAlign: 'center',
   },
 });
