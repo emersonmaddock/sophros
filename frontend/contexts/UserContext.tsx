@@ -1,5 +1,5 @@
-import { getUser, updateUser } from '@/constants/api';
-import { User, UserUpdate } from '@/types/user';
+import { getUser, updateUser } from '@/api/helpers';
+import type { User, UserUpdate } from '@/api/types.gen';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 

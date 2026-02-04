@@ -10,3 +10,4 @@ mv openapi.json frontend/
 cd ./frontend
 pnpm generate-client
 pnpm lint
+pnpm format

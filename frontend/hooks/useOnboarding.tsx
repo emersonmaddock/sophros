@@ -1,7 +1,7 @@
-import { createUser } from '@/constants/api';
+import { createUser } from '@/api/helpers';
+import type { UserCreate } from '@/api/types.gen';
 import { VALIDATION_RULES } from '@/constants/onboarding';
 import { useUser } from '@/contexts/UserContext';
-import { UserCreate } from '@/types/user';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useContext, useState } from 'react';
 
