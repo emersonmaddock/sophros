@@ -19,9 +19,9 @@
     }
   ],
   "pip_requirements": {
-    "fileMatch": [
-      "backend/pyproject.toml",
-      "backend/uv.lock"
+    "managerFilePatterns": [
+      "/backend/pyproject.toml/",
+      "/backend/uv.lock/"
     ]
   },
   "enabledManagers": [
