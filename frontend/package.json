@@ -13,7 +13,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck",
+    "generate-client": "openapi-ts"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.1",
@@ -49,6 +50,7 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.91.1",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
