@@ -1,11 +1,11 @@
 // Helper functions for the generated API SDK
-import { client } from './client.gen';
+import { client } from '../api/client.gen';
 import {
-  createUserApiV1UsersPost,
-  readUserMeApiV1UsersMeGet,
-  updateUserMeApiV1UsersMePut,
-} from './sdk.gen';
-import type { User, UserCreate, UserUpdate } from './types.gen';
+    createUserApiV1UsersPost,
+    readUserMeApiV1UsersMeGet,
+    updateUserMeApiV1UsersMePut,
+} from '../api/sdk.gen';
+import type { User, UserCreate, UserUpdate } from '../api/types.gen';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 

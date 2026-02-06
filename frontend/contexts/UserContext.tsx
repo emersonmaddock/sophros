@@ -1,5 +1,5 @@
 import type { User, UserUpdate } from '@/api/types.gen';
-import { useUpdateUserMutation, useUserQuery } from '@/api/userQueries';
+import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 

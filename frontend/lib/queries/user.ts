@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getUser, updateUser } from './helpers';
-import type { UserUpdate } from './types.gen';
+import type { UserUpdate } from '../../api/types.gen';
+import { getUser, updateUser } from '../api-client';
 
 /**
  * Query key factory for user-related queries.
