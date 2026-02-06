@@ -6,8 +6,6 @@ from app.core.config import settings
 
 # Create Async Engine
 # echo=True enables SQL logging for debugging
-if not settings.DATABASE_URL:
-    raise ValueError("DATABASE_URL must be set")
 engine = create_async_engine(settings.DATABASE_URL, echo=True, future=True)
 
 # Async Session Factory
