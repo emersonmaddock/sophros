@@ -40,7 +40,7 @@ async def test_get_random_recipes_success(client):
     }
 
     with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        # Create a MagicMock for the response object so methods like json() are synchronous
+        # Create a MagicMock for the response object so methods like json() are synch
         mock_response = MagicMock()
         mock_response.json.return_value = mock_response_data
         mock_response.raise_for_status.return_value = None

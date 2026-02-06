@@ -11,7 +11,7 @@ class SpoonacularClient:
     def __init__(self, api_key: str | None = None):
         self.api_key = api_key or settings.SPOONACULAR_API_KEY
         if not self.api_key:
-            # We might want to log a warning here or raise an error depending on strictness
+            # We might want to log a warning here/raise an error depending on strictness
             pass
 
     async def _request(
@@ -23,10 +23,6 @@ class SpoonacularClient:
         url = f"{self.BASE_URL}{endpoint}"
         headers = {"Content-Type": "application/json"}
 
-        # Spoonacular accepts API key via query param 'apiKey' or header 'x-api-key'
-        # We'll use query param as it's common in their docs, but header is cleaner.
-        # Let's use header 'x-api-key' if possible, but docs say 'apiKey' query param is standard.
-        # Checking docs: "authenticating ... by including your request in the header x-api-key"
         headers["x-api-key"] = self.api_key
 
         async with httpx.AsyncClient() as client:
@@ -70,6 +66,7 @@ class SpoonacularClient:
             "number": number,
             "addRecipeInformation": True,  # Gives instructions and detailed info
             "addRecipeNutrition": True,  # Ensures full nutrition data is present
+            "addRecipeInstructions": True,
             "instructionsRequired": True,  # We typically want recipes with instructions
             "fillIngredients": True,
         }
