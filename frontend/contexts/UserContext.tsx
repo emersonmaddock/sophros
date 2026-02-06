@@ -46,7 +46,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isOnboarded = user !== null;
 
   // Convert query error to string for backward compatibility
-  const error = queryError ? (queryError instanceof Error ? queryError.message : 'An error occurred') : null;
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'An error occurred'
+    : null;
 
   const fetchUser = useCallback(async () => {
     await refetch();

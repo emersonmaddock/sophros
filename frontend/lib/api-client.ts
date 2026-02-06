@@ -1,9 +1,9 @@
 // Helper functions for the generated API SDK
 import { client } from '../api/client.gen';
 import {
-    createUserApiV1UsersPost,
-    readUserMeApiV1UsersMeGet,
-    updateUserMeApiV1UsersMePut,
+  createUserApiV1UsersPost,
+  readUserMeApiV1UsersMeGet,
+  updateUserMeApiV1UsersMePut,
 } from '../api/sdk.gen';
 import type { User, UserCreate, UserUpdate } from '../api/types.gen';
 
