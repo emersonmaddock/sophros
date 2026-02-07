@@ -9,7 +9,7 @@ assignees: ''
 
 _Defect Name_: \<Succinct Ticket Name\>
 
-_Reproducibility_:
+_Reproducibility and Current Behavior_:
 \<Insert Steps Here\>
 
 _Expected Behavior_:
