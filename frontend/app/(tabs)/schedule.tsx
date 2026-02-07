@@ -1,5 +1,6 @@
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
+import { useRouter } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -15,6 +16,7 @@ type ScheduleItem = {
 };
 
 export default function SchedulePage() {
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
 
@@ -198,7 +200,7 @@ export default function SchedulePage() {
         </View>
 
         {/* Plan Next Week Button */}
-        <TouchableOpacity style={styles.planButton}>
+        <TouchableOpacity style={styles.planButton} onPress={() => router.push('/week-planning')}>
           <Calendar size={20} color="#FFF" />
           <Text style={styles.planButtonText}>Plan Next Week</Text>
         </TouchableOpacity>
