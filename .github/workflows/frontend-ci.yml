@@ -52,6 +52,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Expo doctor
+        run: npx expo-doctor
+
+      - name: Expo dependency alignment check
+        run: npx expo install --check
+
       - name: Run ESLint
         run: pnpm lint
 
