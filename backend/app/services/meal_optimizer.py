@@ -39,7 +39,9 @@ class MealOptimizer:
         selected = {}
         for s_idx in range(len(slots)):
             for r_idx in valid_indices[s_idx]:
-                selected[(r_idx, s_idx)] = model.NewBoolVar(f"select_r{r_idx}_s{s_idx}")
+                selected[(r_idx, s_idx)] = model.new_bool_var(
+                    f"select_r{r_idx}_s{s_idx}"
+                )
 
         # Constraints
 
@@ -48,7 +50,7 @@ class MealOptimizer:
             # Sum of selected recipes for this slot must be 1
             # If no valid recipes, this will be sum([]) == 1 which is False (Infeasible)
             # preventing crash but returning no solution
-            model.Add(
+            model.add(
                 sum(selected[(r_idx, s_idx)] for r_idx in valid_indices[s_idx]) == 1
             )
 
@@ -86,15 +88,15 @@ class MealOptimizer:
         target_fat = sum(s.fat for s in slots)
 
         # Objective Terms (Absolute Deviations)
-        abs_diff_cals = model.NewIntVar(0, 100000, "abs_diff_cals")
-        abs_diff_prot = model.NewIntVar(0, 100000, "abs_diff_prot")
-        abs_diff_carbs = model.NewIntVar(0, 100000, "abs_diff_carbs")
-        abs_diff_fat = model.NewIntVar(0, 100000, "abs_diff_fat")
+        abs_diff_cals = model.new_int_var(0, 100000, "abs_diff_cals")
+        abs_diff_prot = model.new_int_var(0, 100000, "abs_diff_prot")
+        abs_diff_carbs = model.new_int_var(0, 100000, "abs_diff_carbs")
+        abs_diff_fat = model.new_int_var(0, 100000, "abs_diff_fat")
 
-        model.AddAbsEquality(abs_diff_cals, total_cals - target_cals)
-        model.AddAbsEquality(abs_diff_prot, total_prot - target_prot)
-        model.AddAbsEquality(abs_diff_carbs, total_carbs - target_carbs)
-        model.AddAbsEquality(abs_diff_fat, total_fat - target_fat)
+        model.add_abs_equality(abs_diff_cals, total_cals - target_cals)
+        model.add_abs_equality(abs_diff_prot, total_prot - target_prot)
+        model.add_abs_equality(abs_diff_carbs, total_carbs - target_carbs)
+        model.add_abs_equality(abs_diff_fat, total_fat - target_fat)
 
         # Weighting: Calories might be most important, but generally equal weight
         # is fine. Maybe scale macros since they are smaller numbers than calories?
@@ -112,7 +114,7 @@ class MealOptimizer:
             for r_idx in valid_indices[s_idx]
         )
 
-        model.Minimize(
+        model.minimize(
             abs_diff_cals
             + (abs_diff_prot * 10)
             + (abs_diff_carbs * 10)
