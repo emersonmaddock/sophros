@@ -45,6 +45,6 @@
     "dependencies"
   ],
   "prConcurrentLimit": 10,
-  "prHourlyLimit": 2,
+  "prHourlyLimit": 10,
   "updateNotScheduled": false
 }
