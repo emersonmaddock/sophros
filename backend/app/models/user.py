@@ -1,24 +1,27 @@
-from sqlalchemy import Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy import Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
-from app.domain.enums import ActivityLevel
+from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 
 
+# Database user class - maps to Clerk users
+# Created only after onboarding, therefore will include biological data
 # TODO: Use enums for other attrs
-# TODO: Make profile data not nullable
 class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)  # Clerk ID
-    email: Mapped[str] = mapped_column(String, unique=True, index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)  # from Clerk
 
     # Profile Data
-    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
-    height: Mapped[float | None] = mapped_column(Float, nullable=True)  # cm
-    gender: Mapped[str | None] = mapped_column(String, nullable=True)
-    activity_level: Mapped[ActivityLevel | None] = mapped_column(
-        SAEnum(ActivityLevel, name="activity_level_enum"), nullable=True
+    age: Mapped[int] = mapped_column(Integer)
+    weight: Mapped[float] = mapped_column(Float)  # kg
+    height: Mapped[float] = mapped_column(Float)  # cm
+    gender: Mapped[Sex] = mapped_column(SAEnum(Sex, name="sex_enum"))
+    activity_level: Mapped[ActivityLevel] = mapped_column(
+        SAEnum(ActivityLevel, name="activity_level_enum")
     )
-    pregnancy_status: Mapped[str | None] = mapped_column(String, nullable=True)
+    pregnancy_status: Mapped[PregnancyStatus] = mapped_column(
+        SAEnum(PregnancyStatus, name="pregnancy_status_enum"),
+        default=PregnancyStatus.NOT_PREGNANT,
+    )

@@ -66,12 +66,7 @@ class NutrientCalculator:
         """
         Calculate Total Daily Energy Expenditure (TDEE).
         """
-        # Default to sedentary if unknown logic
-        if activity_level:
-            key = activity_level.lower()
-        else:
-            key = "sedentary"
-        multiplier = ACTIVITY_MULTIPLIERS.get(key, 1.2)
+        multiplier = ACTIVITY_MULTIPLIERS[activity_level]
         return int(bmr * multiplier)
 
     @staticmethod
@@ -124,7 +119,7 @@ class NutrientCalculator:
         gender: str,
         weight_kg: float,
         height_cm: float,
-        activity_level: str,
+        activity_level: ActivityLevel,
     ) -> DRIOutput:
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
