@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from app.domain.enums import ActivityLevel
 
 # USDA Activity Factors
+# https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
 ACTIVITY_MULTIPLIERS = {
     ActivityLevel.SEDENTARY: 1.2,
     ActivityLevel.LIGHT: 1.375,

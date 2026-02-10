@@ -30,26 +30,33 @@ export const PREGNANCY_STATUS_OPTIONS = [
 
 // USDA Physical Activity Levels
 // Based on activities beyond Activities of Daily Living (ADLs)
+// For Total Daily Energy Expenditure (TDEE) calculation
+// https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
 export const ACTIVITY_LEVEL_OPTIONS = [
   {
-    value: 'inactive',
-    label: 'Inactive',
-    description: 'Minimal activity beyond daily routines',
+    value: 'sedentary',
+    label: 'Sedentary',
+    description: 'Little to no exercise',
   },
   {
-    value: 'low_active',
-    label: 'Low Active',
-    description: '60-80 min/week of moderate activity',
+    value: 'light',
+    label: 'Lightly Active',
+    description: 'Light exercise 3-5 times a week',
+  },
+  {
+    value: 'moderate',
+    label: 'Moderately Active',
+    description: 'Moderate exercise 3-5 times a week',
   },
   {
     value: 'active',
     label: 'Active',
-    description: '30-50 min/week moderate + 85 min/week vigorous',
+    description: 'Hard exercise 4-6 times a week',
   },
   {
     value: 'very_active',
     label: 'Very Active',
-    description: '130+ min/week of vigorous activity',
+    description: 'Hard daily exercise (or twice a day)',
   },
 ] as const;
 
