@@ -25,6 +25,18 @@
     },
     {
       "matchManagers": [
+        "pep621"
+      ],
+      "matchFileNames": [
+        "backend/pyproject.toml"
+      ],
+      "groupName": "pytest",
+      "matchPackagePatterns": [
+        "^pytest($|-)"
+      ]
+    },
+    {
+      "matchManagers": [
         "github-actions",
         "npm",
         "pep621"
