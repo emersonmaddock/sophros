@@ -1,6 +1,9 @@
 from pydantic import BaseModel, ConfigDict
 
+from app.domain.enums import ActivityLevel
 
+
+# TODO: Use enums for other attrs
 class UserBase(BaseModel):
     email: str
     is_active: bool = True
@@ -8,7 +11,7 @@ class UserBase(BaseModel):
     weight: float | None = None
     height: float | None = None
     gender: str | None = None
-    activity_level: str | None = None
+    activity_level: ActivityLevel | None = None
     pregnancy_status: str | None = None
 
 
@@ -23,7 +26,7 @@ class UserUpdate(BaseModel):
     weight: float | None = None
     height: float | None = None
     gender: str | None = None
-    activity_level: str | None = None
+    activity_level: ActivityLevel | None = None
     pregnancy_status: str | None = None
 
 
