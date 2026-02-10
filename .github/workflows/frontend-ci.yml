@@ -28,7 +28,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "20.20.0"
+          node-version: "24.13.0"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -51,6 +51,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Expo doctor
+        run: npx expo-doctor
+
+      - name: Expo dependency alignment check
+        run: npx expo install --check
 
       - name: Run ESLint
         run: pnpm lint
@@ -76,7 +82,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "20.20.0"
+          node-version: "24.13.0"
 
       - name: Setup Java
         uses: actions/setup-java@v5

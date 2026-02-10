@@ -7,6 +7,36 @@
   "packageRules": [
     {
       "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "frontend/package.json"
+      ],
+      "groupName": "expo-managed (disabled)",
+      "enabled": false,
+      "matchPackagePatterns": [
+        "^expo($|-)",
+        "^@expo/",
+        "^react$",
+        "^react-dom$",
+        "^react-native($|-)",
+        "^@react-native-"
+      ]
+    },
+    {
+      "matchManagers": [
+        "pep621"
+      ],
+      "matchFileNames": [
+        "backend/pyproject.toml"
+      ],
+      "groupName": "pytest",
+      "matchPackagePatterns": [
+        "^pytest($|-)"
+      ]
+    },
+    {
+      "matchManagers": [
         "github-actions",
         "npm",
         "pep621"
