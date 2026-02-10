@@ -7,6 +7,24 @@
   "packageRules": [
     {
       "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "frontend/package.json"
+      ],
+      "groupName": "expo-managed (disabled)",
+      "enabled": false,
+      "matchPackagePatterns": [
+        "^expo($|-)",
+        "^@expo/",
+        "^react$",
+        "^react-dom$",
+        "^react-native($|-)",
+        "^@react-native-"
+      ]
+    },
+    {
+      "matchManagers": [
         "github-actions",
         "npm",
         "pep621"
