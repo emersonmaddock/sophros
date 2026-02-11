@@ -1,7 +1,31 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 from app.schemas.dietary import Allergy, Cuisine
+
+
+class BusyTime(BaseModel):
+    day: str = "Monday"
+    start: str = "09:00"
+    end: str = "17:00"
+
+
+class UserSchedule(BaseModel):
+    busy_times: list[BusyTime] = Field(default_factory=list)
+    wake_up_time: str = "07:00"
+    sleep_time: str = "23:00"
+
+
+class BusyTime(BaseModel):
+    day: str = "Monday"
+    start: str = "09:00"
+    end: str = "17:00"
+
+
+class UserSchedule(BaseModel):
+    busy_times: list[BusyTime] = Field(default_factory=list)
+    wake_up_time: str = "07:00"
+    sleep_time: str = "23:00"
 
 
 # TODO: Use enums for other attrs
@@ -15,6 +39,7 @@ class UserBase(BaseModel):
     pregnancy_status: PregnancyStatus = (
         PregnancyStatus.NOT_PREGNANT
     )  # Default for males
+    schedule: UserSchedule = Field(default_factory=UserSchedule)
 
     # Dietary Preferences: Allergies & Intolerances
     allergies: list[Allergy] = []
@@ -44,6 +69,7 @@ class UserUpdate(BaseModel):
     gender: Sex | None = None
     activity_level: ActivityLevel | None = None
     pregnancy_status: PregnancyStatus | None = None
+    schedule: UserSchedule | None = None
 
     # Dietary Preferences
     allergies: list[Allergy] | None = None

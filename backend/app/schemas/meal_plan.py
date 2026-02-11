@@ -7,7 +7,6 @@ class MealSlot(StrEnum):
     BREAKFAST = "Breakfast"
     LUNCH = "Lunch"
     DINNER = "Dinner"
-    SNACK = "Snack"
 
 
 class MealSlotTarget(BaseModel):
@@ -15,7 +14,11 @@ class MealSlotTarget(BaseModel):
     calories: int
     protein: int
     carbohydrates: int
+    calories: int
+    protein: int
+    carbohydrates: int
     fat: int
+    time: str | None = None  # "HH:MM" 24h format
 
 
 class MealDistributionConfig(BaseModel):
