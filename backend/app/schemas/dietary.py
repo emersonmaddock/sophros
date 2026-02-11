@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class Cuisine(str, Enum):
+class Cuisine(StrEnum):
     AFRICAN = "African"
     ASIAN = "Asian"
     AMERICAN = "American"
@@ -33,7 +33,7 @@ class Cuisine(str, Enum):
     VIETNAMESE = "Vietnamese"
 
 
-class Allergy(str, Enum):
+class Allergy(StrEnum):
     DAIRY = "Dairy"
     EGG = "Egg"
     GLUTEN = "Gluten"

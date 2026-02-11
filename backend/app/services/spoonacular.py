@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import httpx
@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.schemas.dietary import DietaryConstraints
 
 
-class MealType(str, Enum):
+class MealType(StrEnum):
     MAIN_COURSE = "main course"
     SIDE_DISH = "side dish"
     DESSERT = "dessert"
