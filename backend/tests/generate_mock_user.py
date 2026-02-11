@@ -18,6 +18,7 @@ def create_mock_user(
     is_vegetarian: bool = False,
     is_vegan: bool = False,
     is_pescatarian: bool = False,
+    schedule: dict | None = None,
 ) -> User:
     """
     Creates a mock User instance for testing.
@@ -38,4 +39,5 @@ def create_mock_user(
         is_vegetarian=is_vegetarian,
         is_vegan=is_vegan,
         is_pescatarian=is_pescatarian,
+        schedule=schedule or {},
     )

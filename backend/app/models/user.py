@@ -17,6 +17,9 @@ class User(Base):
     activity_level: Mapped[str | None] = mapped_column(String, nullable=True)
     pregnancy_status: Mapped[str | None] = mapped_column(String, nullable=True)
 
+    # Schedule
+    schedule: Mapped[dict] = mapped_column(JSON, default=dict)
+
     # Dietary Preferences: Allergies & Intolerances
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
 
