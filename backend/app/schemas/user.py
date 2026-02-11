@@ -1,6 +1,18 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.dietary import Allergy, Cuisine
+
+
+class BusyTime(BaseModel):
+    day: str = "Monday"
+    start: str = "09:00"
+    end: str = "17:00"
+
+
+class UserSchedule(BaseModel):
+    busy_times: list[BusyTime] = Field(default_factory=list)
+    wake_up_time: str = "07:00"
+    sleep_time: str = "23:00"
 
 
 class UserBase(BaseModel):
@@ -12,6 +24,7 @@ class UserBase(BaseModel):
     gender: str | None = None
     activity_level: str | None = None
     pregnancy_status: str | None = None
+    schedule: UserSchedule = Field(default_factory=UserSchedule)
 
     # Dietary Preferences: Allergies & Intolerances
     allergies: list[Allergy] = []
@@ -41,6 +54,7 @@ class UserUpdate(BaseModel):
     gender: str | None = None
     activity_level: str | None = None
     pregnancy_status: str | None = None
+    schedule: UserSchedule | None = None
 
     # Dietary Preferences
     allergies: list[Allergy] | None = None
