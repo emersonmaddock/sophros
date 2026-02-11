@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
-from app.services.spoonacular import SpoonacularClient
+from app.schemas.dietary import Allergy, Cuisine, DietaryConstraints
+from app.services.spoonacular import MealType, SpoonacularClient
 
 
 @pytest.fixture
@@ -31,46 +31,6 @@ async def test_request_no_key_raises(client):
     client.api_key = None
     with pytest.raises(ValueError, match="Spoonacular API key is not set"):
         await client._request("GET", "/test")
-
-
-@pytest.mark.asyncio
-async def test_get_random_recipes_success(client):
-    mock_response_data = {
-        "recipes": [{"id": 1, "title": "Pasta"}, {"id": 2, "title": "Salad"}]
-    }
-
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        # Create a MagicMock for the response object so methods like json() are synch
-        mock_response = MagicMock()
-        mock_response.json.return_value = mock_response_data
-        mock_response.raise_for_status.return_value = None
-
-        mock_request.return_value = mock_response
-
-        recipes = await client.get_random_recipes(number=2, tags=["vegetarian"])
-
-        assert len(recipes) == 2
-        assert recipes[0]["title"] == "Pasta"
-
-        mock_request.assert_awaited_once()
-        call_args = mock_request.call_args
-        assert call_args[0] == ("GET", "https://api.spoonacular.com/recipes/random")
-        assert call_args[1]["params"] == {"number": 2, "tags": "vegetarian"}
-        assert call_args[1]["headers"]["x-api-key"] == "test_key"
-
-
-@pytest.mark.asyncio
-async def test_api_error_raises(client):
-    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
-        # Mocking raise_for_status to raise an exception
-        mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "Error", request=None, response=None
-        )
-        mock_request.return_value = mock_response
-
-        with pytest.raises(httpx.HTTPStatusError):
-            await client.get_random_recipes()
 
 
 @pytest.mark.asyncio
@@ -120,3 +80,152 @@ async def test_search_recipes_success(client):
         assert params["instructionsRequired"] is True
         assert params["fillIngredients"] is True
         assert call_args[1]["headers"]["x-api-key"] == "test_key"
+        assert params["fillIngredients"] is True
+        assert call_args[1]["headers"]["x-api-key"] == "test_key"
+
+
+@pytest.mark.asyncio
+async def test_search_recipes_with_constraints_and_enums(client):
+    mock_response_data = {"results": []}
+
+    with patch("httpx.AsyncClient.request", new_callable=AsyncMock) as mock_request:
+        mock_response = MagicMock()
+        mock_response.json.return_value = mock_response_data
+        mock_response.raise_for_status.return_value = None
+        mock_request.return_value = mock_response
+
+        constraints = DietaryConstraints(
+            allergies=[Allergy.PEANUT, Allergy.DAIRY],
+            include_cuisine=[Cuisine.ITALIAN],
+            exclude_cuisine=[Cuisine.MEXICAN],
+            is_vegan=True,
+            is_gluten_free=True,
+        )
+
+        await client.search_recipes(
+            constraints=constraints,
+            type=MealType.MAIN_COURSE,
+            cuisine="Chinese",  # Explicit override/add
+        )
+
+        mock_request.assert_awaited_once()
+        call_args = mock_request.call_args
+        params = call_args[1]["params"]
+
+        # Check Diets
+        assert "vegan" in params["diet"]
+        assert "gluten free" in params["diet"]
+
+        # Check Intolerances (Allergies)
+        assert "peanut" in params["intolerances"]
+        assert "dairy" in params["intolerances"]
+
+        # Check Cuisines
+        assert "Italian" in params["cuisine"]
+        assert "Chinese" in params["cuisine"]  # Explicit added
+        assert "Mexican" in params["excludeCuisine"]
+
+        # Check Type
+        assert params["type"] == "main course"
+
+
+@pytest.mark.asyncio
+async def test_search_recipes_personalized_live():
+    """
+    Live test using a Mock User and Nutrient Calculator.
+    Calculates daily needs, allocates 30% for dinner, and searches Spoonacular.
+    Run with 'pytest -s' to see output.
+    """
+    from app.core.config import settings
+    from app.services.nutrient_calculator import NutrientCalculator
+    from tests.factories import create_mock_user
+
+    if not settings.SPOONACULAR_API_KEY:
+        pytest.skip("SPOONACULAR_API_KEY not set")
+
+    # 1. Create Mock User (Male, 30yo, 80kg, 180cm, Mod Active, Gluten-Free, Italian)
+    user = create_mock_user(
+        is_gluten_free=True,
+        include_cuisine=[Cuisine.ITALIAN],
+        allergies=[Allergy.PEANUT],  # Let's add an allergy for fun
+    )
+
+    print("\n\n--- PERSONALIZED LIVE API TEST ---")
+    print(f"User: {user.age}yo {user.gender}, {user.weight}kg, {user.height}cm")
+    print(f"Activity: {user.activity_level}")
+    print(
+        f"Dietary: Gluten-Free={user.is_gluten_free}, "
+        f"Cuisine={user.include_cuisine}, "
+        f"Allergies={user.allergies}"
+    )
+
+    # 2. Calculate Daily Targets
+    daily_targets = NutrientCalculator.calculate_targets(
+        age=user.age,
+        gender=user.gender,
+        weight_kg=user.weight,
+        height_cm=user.height,
+        activity_level=user.activity_level,
+    )
+
+    tdee = daily_targets.calories.target
+    print(f"\nDaily TDEE: {tdee} kcal")
+
+    # 3. Allocation (Assumed 30% for Dinner)
+    meal_ratio = 0.30
+    meal_calories = int(tdee * meal_ratio)
+    # Range +/- 100kcal
+    min_cal = meal_calories - 100
+    max_cal = meal_calories + 100
+
+    print(f"Dinner Target (30%): {meal_calories} kcal ({min_cal}-{max_cal})")
+
+    # 4. Search API
+    client = SpoonacularClient(api_key=settings.SPOONACULAR_API_KEY)
+
+    # Construct constraints from flat user
+    constraints = DietaryConstraints(
+        is_gluten_free=user.is_gluten_free,
+        is_ketogenic=user.is_ketogenic,
+        is_vegetarian=user.is_vegetarian,
+        is_vegan=user.is_vegan,
+        is_pescatarian=user.is_pescatarian,
+        allergies=user.allergies,
+        include_cuisine=user.include_cuisine,
+        exclude_cuisine=user.exclude_cuisine,
+    )
+
+    results = await client.search_recipes(
+        query="pasta",  # Search for user's preferred cuisine dish
+        number=1,
+        min_calories=min_cal,
+        max_calories=max_cal,
+        constraints=constraints,
+        type=MealType.MAIN_COURSE,
+        add_recipe_information=True,
+        add_recipe_nutrition=True,
+        add_recipe_instructions=True,
+    )
+
+    if not results:
+        print("No results found matching criteria.")
+        return
+
+    recipe = results[0]
+
+    # 5. Output
+    print(f"\nMatch: {recipe.get('title')} (ID: {recipe.get('id')})")
+
+    # Verify Constraints were respected (Visual check)
+    print(f"Diets: {recipe.get('diets', [])}")
+    print(f"Cuisines: {recipe.get('cuisines', [])}")
+
+    if "nutrition" in recipe:
+        nut = recipe["nutrition"]
+        cal_obj = next(
+            (n for n in nut.get("nutrients", []) if n["name"] == "Calories"), None
+        )
+        if cal_obj:
+            print(f"Calories: {cal_obj['amount']} {cal_obj['unit']}")
+
+    print("\n--- TEST END ---\n")

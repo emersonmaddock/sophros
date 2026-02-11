@@ -1,8 +1,27 @@
+from enum import Enum
 from typing import Any
 
 import httpx
 
 from app.core.config import settings
+from app.schemas.dietary import DietaryConstraints
+
+
+class MealType(str, Enum):
+    MAIN_COURSE = "main course"
+    SIDE_DISH = "side dish"
+    DESSERT = "dessert"
+    APPETIZER = "appetizer"
+    SALAD = "salad"
+    BREAD = "bread"
+    BREAKFAST = "breakfast"
+    SOUP = "soup"
+    BEVERAGE = "beverage"
+    SAUCE = "sauce"
+    MARINADE = "marinade"
+    FINGERFOOD = "fingerfood"
+    SNACK = "snack"
+    DRINK = "drink"
 
 
 class SpoonacularClient:
@@ -41,9 +60,16 @@ class SpoonacularClient:
         max_fat: int | None = None,
         min_carbs: int | None = None,
         max_carbs: int | None = None,
+        constraints: DietaryConstraints | None = None,
         diet: str | None = None,
         intolerances: list[str] | None = None,
+        type: MealType | str | None = None,
+        cuisine: str | None = None,
+        exclude_cuisine: str | None = None,
         number: int = 1,
+        add_recipe_information: bool = True,
+        add_recipe_nutrition: bool = True,
+        add_recipe_instructions: bool = True,
     ) -> list[dict[str, Any]]:
         """
         Search for recipes using the complexSearch endpoint.
@@ -53,21 +79,26 @@ class SpoonacularClient:
         - addRecipeNutrition=True: Explicitly adds detailed nutritional information.
 
         FUTURE TODOs:
-        - Custom Diets: We need to configure functionality for custom diets
-          (Halal, Kosher, etc.) that aren't strictly supported by Spoonacular's
-          'diet' param. We can use 'excludeIngredients' or 'tags' for these, and
-          use the 'diet' param for supported ones (Vegan, Vegetarian, etc.).
-        - Cuisine: We should include cuisine filtering later.
+        - confirm if we need to include recipe instructions (if
+        all recipes have a sourceURL then that will suffice)
         - Meal Types: Configure the 'type' endpoint to specify meal types
           (breakfast, main course, etc.) according to Spoonacular.
+
+        Updated notes:
+        - For simplicity, we're following spoonacular's defined diets for now
+        (no halal, kosher, etc.) can implement later
+        - will include spoonacular defined cuisines for now (include & exclude)
+        - Final endpoint list: cuisine, excludeCuisine, diet, intolerances,
+        type, instructions required, recipeinfo/instructions/nutrition,
+        macronutrients, number
         """
         endpoint = "/recipes/complexSearch"
         params: dict[str, Any] = {
             "number": number,
-            "addRecipeInformation": True,  # Gives instructions and detailed info
-            "addRecipeNutrition": True,  # Ensures full nutrition data is present
-            "addRecipeInstructions": True,
-            "instructionsRequired": True,  # We typically want recipes with instructions
+            "addRecipeInformation": add_recipe_information,
+            "addRecipeNutrition": add_recipe_nutrition,
+            "addRecipeInstructions": add_recipe_instructions,
+            "instructionsRequired": True,  # displays the instructions
             "fillIngredients": True,
         }
 
@@ -93,22 +124,63 @@ class SpoonacularClient:
             params["maxCarbs"] = max_carbs
 
         # Diets & Intolerances
-        if diet:
-            params["diet"] = diet
+        # Diets & Intolerances
+        diets = []
+        if constraints:
+            if constraints.is_gluten_free:
+                diets.append("gluten free")
+            if constraints.is_ketogenic:
+                diets.append("ketogenic")
+            if constraints.is_vegetarian:
+                diets.append("vegetarian")
+            if constraints.is_vegan:
+                diets.append("vegan")
+            if constraints.is_pescatarian:
+                diets.append("pescetarian")
 
-        if intolerances:
+            # Allergies as intolerances
+            if constraints.allergies:
+                intolerances_list = [a.value.lower() for a in constraints.allergies]
+                if intolerances:
+                    intolerances_list.extend([i.lower() for i in intolerances])
+                params["intolerances"] = ",".join(list(set(intolerances_list)))
+
+            # Cuisines
+            if constraints.include_cuisine:
+                cuisines_list = [c.value for c in constraints.include_cuisine]
+                # If explicit cuisine passed, add it too
+                if cuisine:
+                    cuisines_list.extend([c.strip() for c in cuisine.split(",")])
+                params["cuisine"] = ",".join(list(set(cuisines_list)))
+
+            if constraints.exclude_cuisine:
+                exclude_cuisines_list = [c.value for c in constraints.exclude_cuisine]
+                # If explicit exclude_cuisine passed, add it too
+                if exclude_cuisine:
+                    exclude_cuisines_list.extend(
+                        [c.strip() for c in exclude_cuisine.split(",")]
+                    )
+                params["excludeCuisine"] = ",".join(list(set(exclude_cuisines_list)))
+
+        # Fallback for direct params if constraints object not used for these fields
+        if diet:
+            diets.extend([d.strip() for d in diet.split(",")])
+
+        if diets:
+            params["diet"] = ",".join(list(set(diets)))
+
+        if "intolerances" not in params and intolerances:
             params["intolerances"] = ",".join(intolerances)
+
+        if "cuisine" not in params and cuisine:
+            params["cuisine"] = cuisine
+
+        if "excludeCuisine" not in params and exclude_cuisine:
+            params["excludeCuisine"] = exclude_cuisine
+
+        # Meal Type
+        if type:
+            params["type"] = type.value if isinstance(type, MealType) else type
 
         data = await self._request("GET", endpoint, params=params)
         return data.get("results", [])
-
-    async def get_random_recipes(
-        self, number: int = 1, tags: list[str] | None = None
-    ) -> list[dict[str, Any]]:
-        endpoint = "/recipes/random"
-        params: dict[str, Any] = {"number": number}
-        if tags:
-            params["tags"] = ",".join(tags)
-
-        data = await self._request("GET", endpoint, params=params)
-        return data.get("recipes", [])
