@@ -7,16 +7,16 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
 
     # Database
-    DATABASE_URL: str | None = None
+    DATABASE_URL: str = ""
 
     # Security / Clerk
-    CLERK_PUBLISHABLE_KEY: str | None = None
-    CLERK_SECRET_KEY: str | None = None
-    CLERK_WEBHOOK_SECRET: str | None = None
-    CLERK_PEM_PUBLIC_KEY: str | None = None
+    CLERK_PUBLISHABLE_KEY: str = ""
+    CLERK_SECRET_KEY: str = ""
+    CLERK_WEBHOOK_SECRET: str = ""
+    CLERK_PEM_PUBLIC_KEY: str = ""
 
     # External APIs
-    OPENAI_API_KEY: str | None = None
+    OPENAI_API_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
