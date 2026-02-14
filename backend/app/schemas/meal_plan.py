@@ -1,9 +1,9 @@
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class MealSlot(str, Enum):
+class MealSlot(StrEnum):
     BREAKFAST = "Breakfast"
     LUNCH = "Lunch"
     DINNER = "Dinner"
