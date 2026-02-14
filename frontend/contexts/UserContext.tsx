@@ -1,10 +1,10 @@
-import type { User, UserUpdate } from '@/api/types.gen';
+import type { UserRead, UserUpdate } from '@/api/types.gen';
 import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 
 interface UserContextType {
-  user: User | null;
+  user: UserRead | null;
   isOnboarded: boolean;
   loading: boolean;
   error: string | null;

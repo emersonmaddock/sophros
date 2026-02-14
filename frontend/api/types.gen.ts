@@ -5,6 +5,11 @@ export type ClientOptions = {
 };
 
 /**
+ * ActivityLevel
+ */
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+
+/**
  * DRIOutput
  */
 export type DriOutput = {
@@ -47,46 +52,18 @@ export type NutrientRange = {
 };
 
 /**
- * User
+ * PregnancyStatus
  */
-export type User = {
-  /**
-   * Email
-   */
-  email: string;
-  /**
-   * Is Active
-   */
-  is_active?: boolean;
-  /**
-   * Age
-   */
-  age?: number | null;
-  /**
-   * Weight
-   */
-  weight?: number | null;
-  /**
-   * Height
-   */
-  height?: number | null;
-  /**
-   * Gender
-   */
-  gender?: string | null;
-  /**
-   * Activity Level
-   */
-  activity_level?: string | null;
-  /**
-   * Pregnancy Status
-   */
-  pregnancy_status?: string | null;
-  /**
-   * Id
-   */
-  id: string;
-};
+export type PregnancyStatus =
+  | 'not_pregnant'
+  | 'pregnant'
+  | 'exclusively_breastfeeding'
+  | 'partially_breastfeeding';
+
+/**
+ * Sex
+ */
+export type Sex = 'male' | 'female';
 
 /**
  * UserCreate
@@ -97,33 +74,49 @@ export type UserCreate = {
    */
   email: string;
   /**
-   * Is Active
-   */
-  is_active?: boolean;
-  /**
    * Age
    */
-  age?: number | null;
+  age: number;
   /**
    * Weight
    */
-  weight?: number | null;
+  weight: number;
   /**
    * Height
    */
-  height?: number | null;
+  height: number;
+  gender: Sex;
+  activity_level: ActivityLevel;
+  pregnancy_status?: PregnancyStatus;
+};
+
+/**
+ * UserRead
+ */
+export type UserRead = {
   /**
-   * Gender
+   * Email
    */
-  gender?: string | null;
+  email: string;
   /**
-   * Activity Level
+   * Age
    */
-  activity_level?: string | null;
+  age: number;
   /**
-   * Pregnancy Status
+   * Weight
    */
-  pregnancy_status?: string | null;
+  weight: number;
+  /**
+   * Height
+   */
+  height: number;
+  gender: Sex;
+  activity_level: ActivityLevel;
+  pregnancy_status?: PregnancyStatus;
+  /**
+   * Id
+   */
+  id: string;
 };
 
 /**
@@ -146,18 +139,9 @@ export type UserUpdate = {
    * Height
    */
   height?: number | null;
-  /**
-   * Gender
-   */
-  gender?: string | null;
-  /**
-   * Activity Level
-   */
-  activity_level?: string | null;
-  /**
-   * Pregnancy Status
-   */
-  pregnancy_status?: string | null;
+  gender?: Sex | null;
+  activity_level?: ActivityLevel | null;
+  pregnancy_status?: PregnancyStatus | null;
 };
 
 /**
@@ -209,7 +193,7 @@ export type CreateUserApiV1UsersPostResponses = {
   /**
    * Successful Response
    */
-  200: User;
+  200: UserRead;
 };
 
 export type CreateUserApiV1UsersPostResponse =
@@ -226,7 +210,7 @@ export type ReadUserMeApiV1UsersMeGetResponses = {
   /**
    * Successful Response
    */
-  200: User;
+  200: UserRead;
 };
 
 export type ReadUserMeApiV1UsersMeGetResponse =
@@ -253,7 +237,7 @@ export type UpdateUserMeApiV1UsersMePutResponses = {
   /**
    * Successful Response
    */
-  200: User;
+  200: UserRead;
 };
 
 export type UpdateUserMeApiV1UsersMePutResponse =

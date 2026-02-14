@@ -36,7 +36,6 @@ export default function ProfilePage() {
     age: '',
     weight: '', // in lbs for display
     height: '', // in cm for now, can be enhanced
-    activityLevel: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -61,14 +60,13 @@ export default function ProfilePage() {
       age: backendUser.age?.toString() || '',
       weight: backendUser.weight ? Math.round(backendUser.weight * 2.20462).toString() : '',
       height: backendUser.height?.toString() || '',
-      activityLevel: backendUser.activity_level || '',
     });
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditedData({ age: '', weight: '', height: '', activityLevel: '' });
+    setEditedData({ age: '', weight: '', height: '' });
   };
 
   const handleSaveChanges = async () => {
@@ -91,10 +89,6 @@ export default function ProfilePage() {
 
       if (editedData.height && editedData.height !== backendUser.height?.toString()) {
         updates.height = parseFloat(editedData.height);
-      }
-
-      if (editedData.activityLevel && editedData.activityLevel !== backendUser.activity_level) {
-        updates.activity_level = editedData.activityLevel;
       }
 
       const success = await updateUserProfile(updates);
@@ -179,7 +173,6 @@ export default function ProfilePage() {
             <View>
               <Text style={styles.profileName}>{profile.fullName}</Text>
               <Text style={styles.profileEmail}>{profile.email}</Text>
-              <Text style={styles.activityBadge}>{profile.activityLevel}</Text>
             </View>
           </View>
 
@@ -379,17 +372,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
     marginBottom: 6,
-  },
-  activityBadge: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.light.primary,
-    backgroundColor: `${Colors.light.primary}15`,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-    overflow: 'hidden',
   },
   statsGrid: {
     flexDirection: 'row',

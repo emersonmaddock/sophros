@@ -5,7 +5,7 @@ import {
   readUserMeApiV1UsersMeGet,
   updateUserMeApiV1UsersMePut,
 } from '../api/sdk.gen';
-import type { User, UserCreate, UserUpdate } from '../api/types.gen';
+import type { UserCreate, UserRead, UserUpdate } from '../api/types.gen';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -18,7 +18,7 @@ client.setConfig({
  * Fetches the current user's profile from the backend
  * Returns null if user doesn't exist (404)
  */
-export async function getUser(token: string): Promise<User | null> {
+export async function getUser(token: string): Promise<UserRead | null> {
   try {
     // Configure client with auth token
     client.setConfig({
@@ -45,7 +45,7 @@ export async function getUser(token: string): Promise<User | null> {
 /**
  * Creates a new user in the backend
  */
-export async function createUser(payload: UserCreate, token: string): Promise<User> {
+export async function createUser(payload: UserCreate, token: string): Promise<UserRead> {
   // Configure client with auth token
   client.setConfig({
     headers: {
@@ -66,7 +66,7 @@ export async function createUser(payload: UserCreate, token: string): Promise<Us
 /**
  * Updates the current user's profile
  */
-export async function updateUser(payload: UserUpdate, token: string): Promise<User> {
+export async function updateUser(payload: UserUpdate, token: string): Promise<UserRead> {
   // Configure client with auth token
   client.setConfig({
     headers: {
