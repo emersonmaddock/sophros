@@ -1,11 +1,19 @@
 // Onboarding Constants
 
-export const GENDER_OPTIONS = [
+import type { ActivityLevel, PregnancyStatus, Sex } from '@/api/types.gen';
+
+interface EnumOption<T extends string> {
+  value: T;
+  label: string;
+  description?: string;
+}
+
+export const SEX_OPTIONS: EnumOption<Sex>[] = [
   { value: 'male', label: 'Male' },
   { value: 'female', label: 'Female' },
 ] as const;
 
-export const PREGNANCY_STATUS_OPTIONS = [
+export const PREGNANCY_STATUS_OPTIONS: EnumOption<PregnancyStatus>[] = [
   {
     value: 'not_pregnant',
     label: 'Not Pregnant or Breastfeeding',
@@ -17,12 +25,12 @@ export const PREGNANCY_STATUS_OPTIONS = [
     description: 'Increased nutritional needs for pregnancy',
   },
   {
-    value: 'breastfeeding_exclusive',
+    value: 'exclusively_breastfeeding',
     label: 'Exclusively Breastfeeding',
     description: '0 to 6 months postpartum',
   },
   {
-    value: 'breastfeeding_partial',
+    value: 'partially_breastfeeding',
     label: 'Partially Breastfeeding',
     description: '7 to 12 months postpartum',
   },
@@ -32,7 +40,7 @@ export const PREGNANCY_STATUS_OPTIONS = [
 // Based on activities beyond Activities of Daily Living (ADLs)
 // For Total Daily Energy Expenditure (TDEE) calculation
 // https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
-export const ACTIVITY_LEVEL_OPTIONS = [
+export const ACTIVITY_LEVEL_OPTIONS: EnumOption<ActivityLevel>[] = [
   {
     value: 'sedentary',
     label: 'Sedentary',

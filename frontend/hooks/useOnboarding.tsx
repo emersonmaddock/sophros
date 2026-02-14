@@ -1,4 +1,4 @@
-import type { UserCreate } from '@/api/types.gen';
+import type { ActivityLevel, PregnancyStatus, Sex, UserCreate } from '@/api/types.gen';
 import { VALIDATION_RULES } from '@/constants/onboarding';
 import { useUser } from '@/contexts/UserContext';
 import { createUser } from '@/lib/api-client';
@@ -7,19 +7,21 @@ import React, { createContext, useContext, useState } from 'react';
 
 export interface OnboardingData {
   age: string;
-  gender: string;
+  gender: Sex | null;
   weight: string; // kg
   height: string; // cm
   weightUnit: 'kg' | 'lbs';
   heightUnit: 'cm' | 'ft';
-  pregnancyStatus?: string;
-  activityLevel: string;
+  pregnancyStatus?: PregnancyStatus;
+  activityLevel: ActivityLevel | null;
 }
 
 interface ValidationErrors {
   age?: string;
   weight?: string;
   height?: string;
+  gender?: string;
+  activityLevel?: string;
 }
 
 interface OnboardingContextType {
@@ -46,13 +48,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const [data, setData] = useState<OnboardingData>({
     age: '',
-    gender: '',
+    gender: null,
     weight: '',
     height: '',
     weightUnit: 'lbs',
     heightUnit: 'ft',
     pregnancyStatus: undefined,
-    activityLevel: '',
+    activityLevel: null,
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -128,13 +130,21 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     const heightError = validateHeight(data.height);
     if (heightError) newErrors.height = heightError;
 
+    if (data.gender === null) {
+      newErrors.gender = 'Gender is required';
+    }
+
+    if (data.activityLevel === null) {
+      newErrors.activityLevel = 'Activity level is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Check if a section is complete
   const isSection1Complete = () => {
-    return data.age !== '' && data.gender !== '' && !validateAge(data.age);
+    return data.age !== '' && data.gender !== null && !validateAge(data.age);
   };
 
   const isSection2Complete = () => {
@@ -149,13 +159,13 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const isSection3Complete = () => {
     // Only required for females
     if (data.gender === 'female') {
-      return data.pregnancyStatus !== undefined && data.pregnancyStatus !== '';
+      return data.pregnancyStatus !== undefined;
     }
     return true; // Skip for non-females
   };
 
   const isSection4Complete = () => {
-    return data.activityLevel !== '';
+    return data.activityLevel !== undefined;
   };
 
   const canSubmit = () => {
@@ -189,8 +199,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         age: parseInt(data.age, 10),
         weight: parseFloat(data.weight), // Already in kg
         height: parseFloat(data.height), // Already in cm
-        gender: data.gender,
-        activity_level: data.activityLevel,
+        gender: data.gender as Sex, // Validated in validate()
+        activity_level: data.activityLevel as ActivityLevel, // Validated in validate()
       };
 
       // Only include pregnancy status for females

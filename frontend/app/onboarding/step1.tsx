@@ -1,6 +1,6 @@
 import { MetricInput } from '@/components/MetricInput';
 import { SelectionCard } from '@/components/SelectionCard';
-import { GENDER_OPTIONS } from '@/constants/onboarding';
+import { SEX_OPTIONS } from '@/constants/onboarding';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { router } from 'expo-router';
@@ -59,7 +59,7 @@ export default function Step1Screen() {
                 Required for accurate health recommendations
               </Text>
               <View style={styles.selectionGrid}>
-                {GENDER_OPTIONS.map((option) => (
+                {SEX_OPTIONS.map((option) => (
                   <SelectionCard
                     key={option.value}
                     title={option.label}
