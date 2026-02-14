@@ -10,6 +10,7 @@ export {
   updateUserMeApiV1UsersMePut,
 } from './sdk.gen';
 export type {
+  ActivityLevel,
   ClientOptions,
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostError,
@@ -21,6 +22,7 @@ export type {
   HealthCheckHealthGetResponses,
   HttpValidationError,
   NutrientRange,
+  PregnancyStatus,
   ReadUserMeApiV1UsersMeGetData,
   ReadUserMeApiV1UsersMeGetResponse,
   ReadUserMeApiV1UsersMeGetResponses,
@@ -29,13 +31,14 @@ export type {
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
   RootGetData,
   RootGetResponses,
+  Sex,
   UpdateUserMeApiV1UsersMePutData,
   UpdateUserMeApiV1UsersMePutError,
   UpdateUserMeApiV1UsersMePutErrors,
   UpdateUserMeApiV1UsersMePutResponse,
   UpdateUserMeApiV1UsersMePutResponses,
-  User,
   UserCreate,
+  UserRead,
   UserUpdate,
   ValidationError,
 } from './types.gen';
