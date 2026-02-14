@@ -1,6 +1,6 @@
+import type { UserUpdate } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { UserUpdate } from '@/types/user';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import {
