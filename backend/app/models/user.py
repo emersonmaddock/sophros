@@ -1,5 +1,5 @@
+from sqlalchemy import JSON, Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base_class import Base
@@ -25,3 +25,17 @@ class User(Base):
         SAEnum(PregnancyStatus, name="pregnancy_status_enum"),
         default=PregnancyStatus.NOT_PREGNANT,
     )
+
+    # Dietary Preferences: Allergies & Intolerances
+    allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    # Dietary Preferences: Cuisines
+    include_cuisine: Mapped[list[str]] = mapped_column(JSON, default=list)
+    exclude_cuisine: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+    # Dietary Preferences: Diets
+    is_gluten_free: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_ketogenic: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_vegetarian: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_vegan: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_pescatarian: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # External APIs
     OPENAI_API_KEY: str = ""
+    SPOONACULAR_API_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

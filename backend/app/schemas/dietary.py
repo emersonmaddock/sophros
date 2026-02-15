@@ -1,18 +1,64 @@
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 
-# Includes all dietery constraints (allergies, dislikes, religious restrictions, etc.)
+class Cuisine(StrEnum):
+    AFRICAN = "African"
+    ASIAN = "Asian"
+    AMERICAN = "American"
+    BRITISH = "British"
+    CAJUN = "Cajun"
+    CARIBBEAN = "Caribbean"
+    CHINESE = "Chinese"
+    EASTERN_EUROPEAN = "Eastern European"
+    EUROPEAN = "European"
+    FRENCH = "French"
+    GERMAN = "German"
+    GREEK = "Greek"
+    INDIAN = "Indian"
+    IRISH = "Irish"
+    ITALIAN = "Italian"
+    JAPANESE = "Japanese"
+    JEWISH = "Jewish"
+    KOREAN = "Korean"
+    LATIN_AMERICAN = "Latin American"
+    MEDITERRANEAN = "Mediterranean"
+    MEXICAN = "Mexican"
+    MIDDLE_EASTERN = "Middle Eastern"
+    NORDIC = "Nordic"
+    SOUTHERN = "Southern"
+    SPANISH = "Spanish"
+    THAI = "Thai"
+    VIETNAMESE = "Vietnamese"
+
+
+class Allergy(StrEnum):
+    DAIRY = "Dairy"
+    EGG = "Egg"
+    GLUTEN = "Gluten"
+    GRAIN = "Grain"
+    PEANUT = "Peanut"
+    SEAFOOD = "Seafood"
+    SESAME = "Sesame"
+    SHELLFISH = "Shellfish"
+    SOY = "Soy"
+    SULFITE = "Sulfite"
+    TREE_NUT = "Tree Nut"
+    WHEAT = "Wheat"
+
+
+# Includes all dietery constraints (allergies, cuisines, etc.)
 class DietaryConstraints(BaseModel):
-    allergies: list[str] = Field(
-        default_factory=list
-    )  # e.g. "peanuts", "gluten", also religious/other restrictions
-    dislikes: list[str] = Field(default_factory=list)  # e.g. "mushrooms"
+    allergies: list[Allergy] = Field(default_factory=list)
+
+    # Cuisine preferences
+    include_cuisine: list[Cuisine] = Field(default_factory=list)
+    exclude_cuisine: list[Cuisine] = Field(default_factory=list)
 
     # Diets
+    is_gluten_free: bool = False
+    is_ketogenic: bool = False
     is_vegetarian: bool = False
     is_vegan: bool = False
-    is_gluten_free: bool = False
-    is_dairy_free: bool = False
     is_pescatarian: bool = False
-    is_halal: bool = False
-    is_kosher: bool = False

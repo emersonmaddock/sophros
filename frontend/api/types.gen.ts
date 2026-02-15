@@ -10,6 +10,55 @@ export type ClientOptions = {
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 
 /**
+ * Allergy
+ */
+export type Allergy =
+  | 'Dairy'
+  | 'Egg'
+  | 'Gluten'
+  | 'Grain'
+  | 'Peanut'
+  | 'Seafood'
+  | 'Sesame'
+  | 'Shellfish'
+  | 'Soy'
+  | 'Sulfite'
+  | 'Tree Nut'
+  | 'Wheat';
+
+/**
+ * Cuisine
+ */
+export type Cuisine =
+  | 'African'
+  | 'Asian'
+  | 'American'
+  | 'British'
+  | 'Cajun'
+  | 'Caribbean'
+  | 'Chinese'
+  | 'Eastern European'
+  | 'European'
+  | 'French'
+  | 'German'
+  | 'Greek'
+  | 'Indian'
+  | 'Irish'
+  | 'Italian'
+  | 'Japanese'
+  | 'Jewish'
+  | 'Korean'
+  | 'Latin American'
+  | 'Mediterranean'
+  | 'Mexican'
+  | 'Middle Eastern'
+  | 'Nordic'
+  | 'Southern'
+  | 'Spanish'
+  | 'Thai'
+  | 'Vietnamese';
+
+/**
  * DRIOutput
  */
 export type DriOutput = {
@@ -88,6 +137,38 @@ export type UserCreate = {
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
+  /**
+   * Allergies
+   */
+  allergies?: Array<Allergy>;
+  /**
+   * Include Cuisine
+   */
+  include_cuisine?: Array<Cuisine>;
+  /**
+   * Exclude Cuisine
+   */
+  exclude_cuisine?: Array<Cuisine>;
+  /**
+   * Is Gluten Free
+   */
+  is_gluten_free?: boolean;
+  /**
+   * Is Ketogenic
+   */
+  is_ketogenic?: boolean;
+  /**
+   * Is Vegetarian
+   */
+  is_vegetarian?: boolean;
+  /**
+   * Is Vegan
+   */
+  is_vegan?: boolean;
+  /**
+   * Is Pescatarian
+   */
+  is_pescatarian?: boolean;
 };
 
 /**
@@ -113,6 +194,38 @@ export type UserRead = {
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
+  /**
+   * Allergies
+   */
+  allergies?: Array<Allergy>;
+  /**
+   * Include Cuisine
+   */
+  include_cuisine?: Array<Cuisine>;
+  /**
+   * Exclude Cuisine
+   */
+  exclude_cuisine?: Array<Cuisine>;
+  /**
+   * Is Gluten Free
+   */
+  is_gluten_free?: boolean;
+  /**
+   * Is Ketogenic
+   */
+  is_ketogenic?: boolean;
+  /**
+   * Is Vegetarian
+   */
+  is_vegetarian?: boolean;
+  /**
+   * Is Vegan
+   */
+  is_vegan?: boolean;
+  /**
+   * Is Pescatarian
+   */
+  is_pescatarian?: boolean;
   /**
    * Id
    */
@@ -142,6 +255,38 @@ export type UserUpdate = {
   gender?: Sex | null;
   activity_level?: ActivityLevel | null;
   pregnancy_status?: PregnancyStatus | null;
+  /**
+   * Allergies
+   */
+  allergies?: Array<Allergy> | null;
+  /**
+   * Include Cuisine
+   */
+  include_cuisine?: Array<Cuisine> | null;
+  /**
+   * Exclude Cuisine
+   */
+  exclude_cuisine?: Array<Cuisine> | null;
+  /**
+   * Is Gluten Free
+   */
+  is_gluten_free?: boolean | null;
+  /**
+   * Is Ketogenic
+   */
+  is_ketogenic?: boolean | null;
+  /**
+   * Is Vegetarian
+   */
+  is_vegetarian?: boolean | null;
+  /**
+   * Is Vegan
+   */
+  is_vegan?: boolean | null;
+  /**
+   * Is Pescatarian
+   */
+  is_pescatarian?: boolean | null;
 };
 
 /**
