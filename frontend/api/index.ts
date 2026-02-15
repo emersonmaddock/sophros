@@ -11,12 +11,14 @@ export {
 } from './sdk.gen';
 export type {
   ActivityLevel,
+  Allergy,
   ClientOptions,
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostError,
   CreateUserApiV1UsersPostErrors,
   CreateUserApiV1UsersPostResponse,
   CreateUserApiV1UsersPostResponses,
+  Cuisine,
   DriOutput,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
