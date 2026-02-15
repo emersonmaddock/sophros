@@ -1,10 +1,10 @@
-import { getUser, updateUser } from '@/constants/api';
-import { User, UserUpdate } from '@/types/user';
+import type { UserRead, UserUpdate } from '@/api/types.gen';
+import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo } from 'react';
 
 interface UserContextType {
-  user: User | null;
+  user: UserRead | null;
   isOnboarded: boolean;
   loading: boolean;
   error: string | null;
@@ -20,105 +20,77 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const { getToken, isSignedIn } = useAuth();
   const { user: clerkUser } = useClerkUser();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isFetching, setIsFetching] = useState(false);
+  // Get authentication token
+  const [token, setToken] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isSignedIn && clerkUser) {
+      getToken().then(setToken);
+    } else {
+      setToken(null);
+    }
+  }, [isSignedIn, clerkUser, getToken]);
+
+  // Query user data with TanStack Query
+  const {
+    data: user,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = useUserQuery(token, isSignedIn && !!clerkUser);
+
+  // Mutation for updating user
+  const updateMutation = useUpdateUserMutation(token);
 
   // Derived state: user is onboarded if they exist in backend
   const isOnboarded = user !== null;
 
+  // Convert query error to string for backward compatibility
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'An error occurred'
+    : null;
+
   const fetchUser = useCallback(async () => {
-    if (!isSignedIn) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    // Prevent multiple simultaneous fetches
-    if (isFetching) {
-      return;
-    }
-
-    try {
-      setIsFetching(true);
-      setLoading(true);
-      setError(null);
-
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Could not get authentication token');
-      }
-
-      const userData = await getUser(token);
-      // userData will be null if user doesn't exist (404), which is expected
-      setUser(userData);
-    } catch (err) {
-      // Only set error for actual errors (not 404s, which return null above)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch user data';
-      setError(errorMessage);
-      console.error('[UserContext] Error fetching user:', errorMessage);
-      setUser(null);
-    } finally {
-      setLoading(false);
-      setIsFetching(false);
-    }
-  }, [isSignedIn, getToken, isFetching]);
+    await refetch();
+  }, [refetch]);
 
   const refreshUser = useCallback(async () => {
-    await fetchUser();
-  }, [fetchUser]);
+    await refetch();
+  }, [refetch]);
 
   const updateUserProfile = useCallback(
     async (updates: UserUpdate): Promise<boolean> => {
       try {
-        setError(null);
-
-        const token = await getToken();
-        if (!token) {
-          throw new Error('Could not get authentication token');
-        }
-
-        const updatedUser = await updateUser(updates, token);
-        setUser(updatedUser);
+        await updateMutation.mutateAsync(updates);
         return true;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to update user profile';
-        setError(errorMessage);
-        console.error('Error updating user:', err);
+        console.error('[UserContext] Error updating user:', err);
         return false;
       }
     },
-    [getToken]
+    [updateMutation]
   );
 
   const clearUser = useCallback(() => {
-    setUser(null);
-    setError(null);
+    // Clearing is handled by signing out via Clerk
+    // The query will automatically clear when isSignedIn becomes false
   }, []);
 
-  // Auto-fetch user when Clerk user becomes available
-  // IMPORTANT: Don't include fetchUser in dependencies to avoid infinite loop
-  useEffect(() => {
-    if (isSignedIn && clerkUser) {
-      fetchUser();
-    } else {
-      setUser(null);
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, clerkUser]);
-
-  const value: UserContextType = {
-    user,
-    isOnboarded,
-    loading,
-    error,
-    fetchUser,
-    refreshUser,
-    updateUserProfile,
-    clearUser,
-  };
+  const value: UserContextType = useMemo(
+    () => ({
+      user: user ?? null,
+      isOnboarded,
+      loading: isLoading,
+      error,
+      fetchUser,
+      refreshUser,
+      updateUserProfile,
+      clearUser,
+    }),
+    [user, isOnboarded, isLoading, error, fetchUser, refreshUser, updateUserProfile, clearUser]
+  );
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

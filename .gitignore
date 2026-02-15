@@ -1,0 +1,5 @@
+# Only for expo-doctor, which for some reason doesn't like frontend/.gitignore
+
+.expo/
+android/
+ios/

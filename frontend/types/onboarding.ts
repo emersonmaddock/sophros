@@ -1,6 +1,4 @@
-export type Gender = 'male' | 'female';
-
-export type ActivityLevel = 'sedentary' | 'lightly-active' | 'moderately-active' | 'very-active';
+import type { ActivityLevel, Sex } from '@/api/types.gen';
 
 export type PrimaryGoal =
   | 'build-muscle'
@@ -20,7 +18,7 @@ export type DietaryRestriction =
   | 'no-restrictions';
 
 export interface BiologicalProfile {
-  gender: Gender | null;
+  gender: Sex | null;
   age: number | null;
   heightFeet: number | null;
   heightInches: number | null;

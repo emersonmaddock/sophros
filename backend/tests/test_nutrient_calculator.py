@@ -1,28 +1,29 @@
+from app.domain.enums import ActivityLevel, Sex
 from app.services.nutrient_calculator import DRIOutput, NutrientCalculator
 
 
 def test_calculate_bmr_male():
     # Male: 10*80 + 6.25*180 - 5*30 + 5 = 1780
-    bmr = NutrientCalculator.calculate_bmr(80, 180, 30, "male")
+    bmr = NutrientCalculator.calculate_bmr(80, 180, 30, Sex.MALE)
     assert bmr == 1780
 
 
 def test_calculate_bmr_female():
     # Female: 10*60 + 6.25*165 - 5*25 - 161
     # 600 + 1031.25 - 125 - 161 = 1345.25 -> 1345
-    bmr = NutrientCalculator.calculate_bmr(60, 165, 25, "female")
+    bmr = NutrientCalculator.calculate_bmr(60, 165, 25, Sex.FEMALE)
     assert bmr == 1345  # int conversion floors 1345.25
 
 
 def test_calculate_tdee_sedentary():
     # BMR 1500 * 1.2 = 1800
-    tdee = NutrientCalculator.calculate_tdee(1500, "sedentary")
+    tdee = NutrientCalculator.calculate_tdee(1500, ActivityLevel.SEDENTARY)
     assert tdee == 1800
 
 
 def test_calculate_tdee_active():
     # BMR 1500 * 1.725 = 2587.5 -> 2587
-    tdee = NutrientCalculator.calculate_tdee(1500, "active")
+    tdee = NutrientCalculator.calculate_tdee(1500, ActivityLevel.ACTIVE)
     assert tdee == 2587
 
 
@@ -34,10 +35,10 @@ def test_calculate_targets_integration():
 
     result = NutrientCalculator.calculate_targets(
         age=30,
-        gender="male",
+        gender=Sex.MALE,
         weight_kg=80,
         height_cm=180,
-        activity_level="moderately_active",
+        activity_level=ActivityLevel.MODERATE,
     )
 
     assert isinstance(result, DRIOutput)
@@ -62,10 +63,3 @@ def test_calculate_targets_integration():
     # /4
     assert result.carbohydrates.min == int(2759 * 0.45 / 4)
     assert result.carbohydrates.max == int(2759 * 0.65 / 4)
-
-
-def test_invalid_activity_defaults():
-    # Should default to sedentary (1.2)
-    bmr = 1000
-    tdee = NutrientCalculator.calculate_tdee(bmr, "super_unknown_activity")
-    assert tdee == 1200

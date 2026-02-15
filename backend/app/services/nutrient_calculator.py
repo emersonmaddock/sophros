@@ -1,12 +1,15 @@
 from dataclasses import dataclass
 
+from app.domain.enums import ActivityLevel
+
 # USDA Activity Factors
+# https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
 ACTIVITY_MULTIPLIERS = {
-    "sedentary": 1.2,
-    "lightly_active": 1.375,
-    "moderately_active": 1.55,
-    "active": 1.725,
-    "very_active": 1.9,
+    ActivityLevel.SEDENTARY: 1.2,
+    ActivityLevel.LIGHT: 1.375,
+    ActivityLevel.MODERATE: 1.55,
+    ActivityLevel.ACTIVE: 1.725,
+    ActivityLevel.VERY_ACTIVE: 1.9,
 }
 
 # AMDR Ranges (Adults)
@@ -60,16 +63,11 @@ class NutrientCalculator:
             return int(base_bmr - 161)
 
     @staticmethod
-    def calculate_tdee(bmr: int, activity_level: str) -> int:
+    def calculate_tdee(bmr: int, activity_level: ActivityLevel) -> int:
         """
         Calculate Total Daily Energy Expenditure (TDEE).
         """
-        # Default to sedentary if unknown logic
-        if activity_level:
-            key = activity_level.lower()
-        else:
-            key = "sedentary"
-        multiplier = ACTIVITY_MULTIPLIERS.get(key, 1.2)
+        multiplier = ACTIVITY_MULTIPLIERS[activity_level]
         return int(bmr * multiplier)
 
     @staticmethod
@@ -122,7 +120,7 @@ class NutrientCalculator:
         gender: str,
         weight_kg: float,
         height_cm: float,
-        activity_level: str,
+        activity_level: ActivityLevel,
     ) -> DRIOutput:
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
