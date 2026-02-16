@@ -1,5 +1,5 @@
 from app.schemas.dietary import Allergy, Cuisine
-from app.schemas.user import User
+from app.schemas.user import UserRead
 
 
 def create_mock_user(
@@ -18,11 +18,11 @@ def create_mock_user(
     is_vegetarian: bool = False,
     is_vegan: bool = False,
     is_pescatarian: bool = False,
-) -> User:
+) -> UserRead:
     """
-    Creates a mock User instance for testing.
+    Creates a mock UserRead instance for testing.
     """
-    return User(
+    return UserRead(
         id=id,
         email=email,
         age=age,

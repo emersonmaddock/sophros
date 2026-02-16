@@ -1,8 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.dietary import Allergy, Cuisine
-
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
+from app.schemas.dietary import Allergy, Cuisine
 
 
 # TODO: Use enums for other attrs
