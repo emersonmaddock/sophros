@@ -31,6 +31,7 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+extend-exclude = ["alembic"]
 
 [tool.ruff.lint]
 select = [

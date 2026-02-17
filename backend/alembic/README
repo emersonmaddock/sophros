@@ -1,1 +1,10 @@
 Generic single-database configuration.
+
+To update the database schema:
+1. Make changes to the models in app/models/
+2. Run: alembic revision --autogenerate -m "Description of changes"
+3. Run: alembic upgrade head
+
+Notes:
+- Make sure that the DATABASE_URL in .env is set correctly.
+- If adding a new model, make sure to import it in env.py

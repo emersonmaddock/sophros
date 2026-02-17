@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 
 # 1. Import config and models
+# Need to import models here to register them
 from app.core.config import settings
 from app.db.base_class import Base
+from app.models.user import User
 
 config = context.config
 
