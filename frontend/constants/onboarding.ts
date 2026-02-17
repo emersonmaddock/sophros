@@ -5,7 +5,10 @@ import type { ActivityLevel, PregnancyStatus, Sex } from '@/api/types.gen';
 interface EnumOption<T extends string> {
   value: T;
   label: string;
-  description?: string;
+}
+
+interface EnumOptionWithDescription<T extends string> extends EnumOption<T> {
+  description: string;
 }
 
 export const SEX_OPTIONS: EnumOption<Sex>[] = [
@@ -13,7 +16,7 @@ export const SEX_OPTIONS: EnumOption<Sex>[] = [
   { value: 'female', label: 'Female' },
 ] as const;
 
-export const PREGNANCY_STATUS_OPTIONS: EnumOption<PregnancyStatus>[] = [
+export const PREGNANCY_STATUS_OPTIONS: EnumOptionWithDescription<PregnancyStatus>[] = [
   {
     value: 'not_pregnant',
     label: 'Not Pregnant or Breastfeeding',
@@ -40,7 +43,7 @@ export const PREGNANCY_STATUS_OPTIONS: EnumOption<PregnancyStatus>[] = [
 // Based on activities beyond Activities of Daily Living (ADLs)
 // For Total Daily Energy Expenditure (TDEE) calculation
 // https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
-export const ACTIVITY_LEVEL_OPTIONS: EnumOption<ActivityLevel>[] = [
+export const ACTIVITY_LEVEL_OPTIONS: EnumOptionWithDescription<ActivityLevel>[] = [
   {
     value: 'sedentary',
     label: 'Sedentary',
