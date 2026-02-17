@@ -134,6 +134,10 @@ export type UserCreate = {
    * Height
    */
   height: number;
+  /**
+   * Is Metric
+   */
+  is_metric: boolean;
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
@@ -191,6 +195,10 @@ export type UserRead = {
    * Height
    */
   height: number;
+  /**
+   * Is Metric
+   */
+  is_metric: boolean;
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
@@ -252,6 +260,10 @@ export type UserUpdate = {
    * Height
    */
   height?: number | null;
+  /**
+   * Is Metric
+   */
+  is_metric?: boolean | null;
   gender?: Sex | null;
   activity_level?: ActivityLevel | null;
   pregnancy_status?: PregnancyStatus | null;
