@@ -8,8 +8,9 @@ from app.schemas.dietary import Allergy, Cuisine
 class UserBase(BaseModel):
     email: str
     age: int
-    weight: float  # kg
-    height: float  # cm
+    weight: float  # kg or lbs
+    height: float  # cm or inches
+    is_metric: bool
     gender: Sex
     activity_level: ActivityLevel
     pregnancy_status: PregnancyStatus = (
@@ -39,8 +40,9 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     email: str | None = None
     age: int | None = None
-    weight: float | None = None  # kg
-    height: float | None = None  # cm
+    weight: float | None = None  # kg or lbs
+    height: float | None = None  # cm or inches
+    is_metric: bool | None = None
     gender: Sex | None = None
     activity_level: ActivityLevel | None = None
     pregnancy_status: PregnancyStatus | None = None

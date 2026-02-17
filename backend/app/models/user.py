@@ -15,8 +15,9 @@ class User(Base):
 
     # Profile Data
     age: Mapped[int] = mapped_column(Integer)
-    weight: Mapped[float] = mapped_column(Float)  # kg
-    height: Mapped[float] = mapped_column(Float)  # cm
+    weight: Mapped[float] = mapped_column(Float)  # kg or lbs
+    height: Mapped[float] = mapped_column(Float)  # cm or inches
+    is_metric: Mapped[bool] = mapped_column(Boolean)
     gender: Mapped[Sex] = mapped_column(SAEnum(Sex, name="sex_enum"))
     activity_level: Mapped[ActivityLevel] = mapped_column(
         SAEnum(ActivityLevel, name="activity_level_enum")

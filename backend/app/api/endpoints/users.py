@@ -64,11 +64,18 @@ async def read_user_targets(current_user: User = Depends(deps.get_current_user))
     Get nutrient targets based on user profile.
     """
 
+    # Convert to metric if needed
+    weight_kg = current_user.weight
+    height_cm = current_user.height
+    if not current_user.is_metric:
+        weight_kg = current_user.weight * 0.453592
+        height_cm = current_user.height * 2.54
+
     # Calculate targets
     return NutrientCalculator.calculate_targets(
         age=current_user.age,
         gender=current_user.gender,
-        weight_kg=current_user.weight,
-        height_cm=current_user.height,
+        weight_kg=weight_kg,
+        height_cm=height_cm,
         activity_level=current_user.activity_level,
     )
