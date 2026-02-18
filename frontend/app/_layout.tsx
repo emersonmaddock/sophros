@@ -44,6 +44,7 @@ export default function RootLayout() {
                 <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                 <Stack.Screen name="week-planning" options={{ headerShown: false }} />
                 <Stack.Screen name="health-score" options={{ headerShown: false }} />
+                <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
               </Stack>
               <StatusBar style="dark" />
             </ThemeProvider>

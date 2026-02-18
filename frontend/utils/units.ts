@@ -18,7 +18,7 @@ export function kgToLbs(kg: number): number {
 }
 
 export function cmToInches(cm: number): number {
-  return cm * UNIT_CONVERSION.INCHES_TO_CM;
+  return cm / UNIT_CONVERSION.INCHES_TO_CM;
 }
 
 export function inchesToCm(inches: number): number {
