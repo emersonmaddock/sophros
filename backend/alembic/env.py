@@ -12,6 +12,7 @@ from alembic import context
 from app.core.config import settings
 from app.db.base_class import Base
 from app.models.user import User
+from app.models.schedule import Schedule_Item
 
 config = context.config
 
@@ -29,6 +30,7 @@ config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
+    print("Running migrations offline")
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -50,6 +52,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
+    print("Running migrations online")
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",

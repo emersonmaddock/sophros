@@ -1,6 +1,6 @@
 from sqlalchemy import JSON, Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
@@ -10,6 +10,8 @@ from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 # Created only after onboarding, therefore will include biological data
 # TODO: Use enums for other attrs
 class User(Base):
+    __tablename__ = "user"
+
     id: Mapped[str] = mapped_column(String, primary_key=True)  # Clerk ID
     email: Mapped[str] = mapped_column(String, unique=True, index=True)  # from Clerk
 
@@ -40,3 +42,6 @@ class User(Base):
     is_vegetarian: Mapped[bool] = mapped_column(Boolean, default=False)
     is_vegan: Mapped[bool] = mapped_column(Boolean, default=False)
     is_pescatarian: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Relationships
+    schedules: Mapped[list["Schedule_Item"]] = relationship("Schedule_Item", back_populates="user")
