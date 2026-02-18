@@ -1,3 +1,4 @@
+from app.models.user import User
 from app.schemas.dietary import Allergy, Cuisine
 from app.schemas.user import UserRead
 
@@ -9,7 +10,7 @@ def create_mock_user(
     weight: float = 80.0,
     height: float = 180.0,
     gender: str = "male",
-    activity_level: str = "moderately_active",
+    activity_level: str = "moderate",
     allergies: list[Allergy] | None = None,
     include_cuisine: list[Cuisine] | None = None,
     exclude_cuisine: list[Cuisine] | None = None,
@@ -18,7 +19,8 @@ def create_mock_user(
     is_vegetarian: bool = False,
     is_vegan: bool = False,
     is_pescatarian: bool = False,
-) -> UserRead:
+    schedule: dict | None = None,
+) -> User:
     """
     Creates a mock UserRead instance for testing.
     """
@@ -38,4 +40,5 @@ def create_mock_user(
         is_vegetarian=is_vegetarian,
         is_vegan=is_vegan,
         is_pescatarian=is_pescatarian,
+        schedule=schedule or {},
     )

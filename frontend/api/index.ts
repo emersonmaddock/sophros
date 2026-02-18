@@ -2,6 +2,7 @@
 
 export {
   createUserApiV1UsersPost,
+  generateMealPlanApiV1MealPlansGeneratePost,
   healthCheckHealthGet,
   type Options,
   readUserMeApiV1UsersMeGet,
@@ -12,6 +13,7 @@ export {
 export type {
   ActivityLevel,
   Allergy,
+  BusyTime,
   ClientOptions,
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostError,
@@ -19,10 +21,19 @@ export type {
   CreateUserApiV1UsersPostResponse,
   CreateUserApiV1UsersPostResponses,
   Cuisine,
+  DailyMealPlan,
+  Day,
   DriOutput,
+  GenerateMealPlanApiV1MealPlansGeneratePostData,
+  GenerateMealPlanApiV1MealPlansGeneratePostError,
+  GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+  GenerateMealPlanApiV1MealPlansGeneratePostResponse,
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   HttpValidationError,
+  MealSlot,
+  MealSlotTarget,
   NutrientRange,
   PregnancyStatus,
   ReadUserMeApiV1UsersMeGetData,
@@ -41,6 +52,7 @@ export type {
   UpdateUserMeApiV1UsersMePutResponses,
   UserCreate,
   UserRead,
+  UserSchedule,
   UserUpdate,
   ValidationError,
 } from './types.gen';

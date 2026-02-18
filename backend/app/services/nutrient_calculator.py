@@ -1,6 +1,5 @@
-from dataclasses import dataclass
-
 from app.domain.enums import ActivityLevel
+from app.schemas.nutrient import DRIOutput, NutrientRange
 
 # USDA Activity Factors
 # https://goldenplains.extension.colostate.edu/wp-content/uploads/sites/56/2020/12/Basal-Metabolic-Rate-Eating-Plan.pdf
@@ -25,22 +24,6 @@ CALORIES_PER_GRAM = {
     "fat": 9,
     "carbohydrates": 4,
 }
-
-
-@dataclass
-class NutrientRange:
-    min: int
-    target: int
-    max: int
-    unit: str = "g"
-
-
-@dataclass
-class DRIOutput:
-    calories: NutrientRange  # Target is TDEE
-    protein: NutrientRange
-    carbohydrates: NutrientRange
-    fat: NutrientRange
 
 
 class NutrientCalculator:

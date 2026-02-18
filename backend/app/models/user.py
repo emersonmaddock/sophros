@@ -26,6 +26,9 @@ class User(Base):
         default=PregnancyStatus.NOT_PREGNANT,
     )
 
+    # Schedule
+    schedule: Mapped[dict] = mapped_column(JSON, default=dict)
+
     # Dietary Preferences: Allergies & Intolerances
     allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
 
