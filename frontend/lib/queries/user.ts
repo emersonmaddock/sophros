@@ -82,12 +82,6 @@ export function useUserQuery(enabled: boolean = true) {
       );
     },
     enabled,
-    retry: (failureCount, error) => {
-      if (getErrorStatus(error) === 401) {
-        return false;
-      }
-      return failureCount < 3;
-    },
     // Prevent showing stale data after logout
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
