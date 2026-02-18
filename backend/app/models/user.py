@@ -1,3 +1,5 @@
+import typing
+
 from sqlalchemy import JSON, Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -5,6 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base_class import Base
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 
+if typing.TYPE_CHECKING:
+    from app.models.schedule import ScheduleItem
 
 # Database user class - maps to Clerk users
 # Created only after onboarding, therefore will include biological data
@@ -44,4 +48,5 @@ class User(Base):
     is_pescatarian: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
-    schedules: Mapped[list["Schedule_Item"]] = relationship("Schedule_Item", back_populates="user")
+    schedules: Mapped[list[ScheduleItem]] = relationship("ScheduleItem",
+                                                    back_populates="user")

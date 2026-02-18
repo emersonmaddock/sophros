@@ -1,4 +1,4 @@
-"""Add Schedule_Item table
+"""Add ScheduleItem table
 
 Revision ID: 3dd430e1a7c2
 Revises: 51db8ff87aba

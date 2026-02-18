@@ -5,9 +5,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
-from app.models.schedule import Schedule_Item
+from app.models.schedule import ScheduleItem
 from app.models.user import User
-from app.schemas.schedule import ScheduleItemCreate, ScheduleItemRead, ScheduleItemUpdate
+from app.schemas.schedule import (
+    ScheduleItemCreate,
+    ScheduleItemRead,
+    ScheduleItemUpdate,
+)
 
 router = APIRouter()
 
@@ -21,7 +25,7 @@ async def create_schedule_item(
     """
     Create a new schedule item for the current user.
     """
-    item = Schedule_Item(**item_in.model_dump(), user_id=current_user.id)
+    item = ScheduleItem(**item_in.model_dump(), user_id=current_user.id)
     db.add(item)
     await db.commit()
     await db.refresh(item)
@@ -30,8 +34,10 @@ async def create_schedule_item(
 
 @router.get("", response_model=list[ScheduleItemRead])
 async def get_schedule_items(
-    start_date: datetime = Query(..., description="Start of the date range (inclusive)"),
-    end_date: datetime = Query(..., description="End of the date range (inclusive)"),
+    start_date: datetime = Query(...,
+                            description="Start of the date range (inclusive)"),
+    end_date: datetime = Query(...,
+                            description="End of the date range (inclusive)"),
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
@@ -39,13 +45,13 @@ async def get_schedule_items(
     Fetch schedule items for the current user within a date range.
     """
     stmt = (
-        select(Schedule_Item)
+        select(ScheduleItem)
         .where(
-            Schedule_Item.user_id == current_user.id,
-            Schedule_Item.date >= start_date,
-            Schedule_Item.date <= end_date,
+            ScheduleItem.user_id == current_user.id,
+            ScheduleItem.date >= start_date,
+            ScheduleItem.date <= end_date,
         )
-        .order_by(Schedule_Item.date)
+        .order_by(ScheduleItem.date)
     )
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -61,9 +67,10 @@ async def update_schedule_item(
     """
     Update a schedule item by ID (must belong to the current user).
     """
-    item = await db.get(Schedule_Item, item_id)
+    item = await db.get(ScheduleItem, item_id)
     if not item or item.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Schedule item not found")
 
     update_data = item_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -84,9 +91,10 @@ async def delete_schedule_item(
     """
     Delete a schedule item by ID (must belong to the current user).
     """
-    item = await db.get(Schedule_Item, item_id)
+    item = await db.get(ScheduleItem, item_id)
     if not item or item.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail="Schedule item not found")
 
     await db.delete(item)
     await db.commit()
