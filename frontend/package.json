@@ -17,13 +17,13 @@
     "generate-client": "openapi-ts"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.19.22",
+    "@clerk/clerk-expo": "^2.19.25",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@react-navigation/bottom-tabs": "^7.4.0",
     "@react-navigation/elements": "~2.9.5",
     "@react-navigation/native": "^7.1.8",
-    "@tanstack/react-query": "^5.90.20",
+    "@tanstack/react-query": "^5.90.21",
     "expo": "~54.0.33",
     "expo-auth-session": "~7.0.10",
     "expo-constants": "~18.0.13",
@@ -39,7 +39,7 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
-    "lucide-react-native": "^0.563.0",
+    "lucide-react-native": "^0.574.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -52,10 +52,10 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
-    "@hey-api/openapi-ts": "^0.91.1",
+    "@hey-api/openapi-ts": "^0.92.4",
     "@types/react": "~19.1.17",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.0",
+    "@typescript-eslint/parser": "^8.56.0",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.39.2",
     "eslint-config-expo": "~10.0.0",
@@ -65,5 +65,5 @@
     "typescript": "~5.9.3"
   },
   "private": true,
-  "packageManager": "pnpm@10.29.2+sha512.bef43fa759d91fd2da4b319a5a0d13ef7a45bb985a3d7342058470f9d2051a3ba8674e629672654686ef9443ad13a82da2beb9eeb3e0221c87b8154fff9d74b8"
+  "packageManager": "pnpm@10.30.0+sha512.2b5753de015d480eeb88f5b5b61e0051f05b4301808a82ec8b840c9d2adf7748eb352c83f5c1593ca703ff1017295bc3fdd3119abb9686efc96b9fcb18200937"
 }
