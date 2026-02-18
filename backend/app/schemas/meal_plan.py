@@ -1,4 +1,5 @@
-from enum import StrEnum
+from datetime import time as timeofday
+from enum import Enum, StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -9,16 +10,23 @@ class MealSlot(StrEnum):
     DINNER = "Dinner"
 
 
+class Day(str, Enum):
+    MONDAY = "Monday"
+    TUESDAY = "Tuesday"
+    WEDNESDAY = "Wednesday"
+    THURSDAY = "Thursday"
+    FRIDAY = "Friday"
+    SATURDAY = "Saturday"
+    SUNDAY = "Sunday"
+
+
 class MealSlotTarget(BaseModel):
     slot_name: MealSlot
     calories: int
     protein: int
     carbohydrates: int
-    calories: int
-    protein: int
-    carbohydrates: int
     fat: int
-    time: str | None = None  # "HH:MM" 24h format
+    time: timeofday | None = None
 
 
 class MealDistributionConfig(BaseModel):

@@ -1,3 +1,5 @@
+from datetime import time
+
 from app.schemas.meal_plan import MealDistributionConfig, MealSlot
 from app.schemas.nutrient import DRIOutput, NutrientRange
 from app.schemas.user import BusyTime, UserSchedule
@@ -71,7 +73,7 @@ def test_allocate_with_schedule():
     # Helper starts at 06:00.
     # Let's block 06:00 to 09:00 completely.
     schedule = UserSchedule(
-        busy_times=[BusyTime(day="Monday", start="06:00", end="09:00")]
+        busy_times=[BusyTime(day="Monday", start=time(6, 0), end=time(9, 0))]
     )
 
     plan = MealAllocator.allocate_targets(daily, user_schedule=schedule, day="Monday")
@@ -80,13 +82,15 @@ def test_allocate_with_schedule():
 
     # Should be at 09:00 or later
     assert breakfast.time is not None
-    assert breakfast.time >= "09:00"
-    assert breakfast.time <= "10:00"
+    assert breakfast.time >= time(9, 0)
+    assert breakfast.time <= time(10, 0)
 
     # Test Dinner conflict
     # Dinner Window: 18:00-21:00
     # Busy: 18:00-19:30
-    schedule.busy_times.append(BusyTime(day="Monday", start="18:00", end="19:30"))
+    schedule.busy_times.append(
+        BusyTime(day="Monday", start=time(18, 0), end=time(19, 30))
+    )
 
     plan_conflict = MealAllocator.allocate_targets(
         daily, user_schedule=schedule, day="Monday"
@@ -94,4 +98,4 @@ def test_allocate_with_schedule():
     dinner = next(s for s in plan_conflict.slots if s.slot_name == MealSlot.DINNER)
 
     assert dinner.time is not None
-    assert dinner.time >= "19:30"
+    assert dinner.time >= time(19, 30)

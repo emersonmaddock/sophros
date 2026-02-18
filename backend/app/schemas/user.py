@@ -1,3 +1,5 @@
+from datetime import time
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
@@ -6,26 +8,14 @@ from app.schemas.dietary import Allergy, Cuisine
 
 class BusyTime(BaseModel):
     day: str = "Monday"
-    start: str = "09:00"
-    end: str = "17:00"
+    start: time = time(9, 0)
+    end: time = time(17, 0)
 
 
 class UserSchedule(BaseModel):
     busy_times: list[BusyTime] = Field(default_factory=list)
-    wake_up_time: str = "07:00"
-    sleep_time: str = "23:00"
-
-
-class BusyTime(BaseModel):
-    day: str = "Monday"
-    start: str = "09:00"
-    end: str = "17:00"
-
-
-class UserSchedule(BaseModel):
-    busy_times: list[BusyTime] = Field(default_factory=list)
-    wake_up_time: str = "07:00"
-    sleep_time: str = "23:00"
+    wake_up_time: time = time(7, 0)
+    sleep_time: time = time(23, 0)
 
 
 # TODO: Use enums for other attrs

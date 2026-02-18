@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User as DBUser
-from app.schemas.meal_plan import DailyMealPlan
+from app.schemas.meal_plan import DailyMealPlan, Day
 from app.services.meal_plan import MealPlanService
 
 router = APIRouter()
@@ -11,7 +11,7 @@ router = APIRouter()
 
 @router.post("/generate", response_model=DailyMealPlan)
 async def generate_meal_plan(
-    day: str = "Monday",
+    day: Day = Day.MONDAY,
     current_user: DBUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DailyMealPlan:
@@ -33,4 +33,4 @@ async def generate_meal_plan(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Failed to generate meal plan: {str(e)}"
-        )
+        ) from e
