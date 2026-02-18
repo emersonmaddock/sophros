@@ -34,10 +34,10 @@ async def create_schedule_item(
 
 @router.get("", response_model=list[ScheduleItemRead])
 async def get_schedule_items(
-    start_date: datetime = Query(...,
-                            description="Start of the date range (inclusive)"),
-    end_date: datetime = Query(...,
-                            description="End of the date range (inclusive)"),
+    start_date: datetime = Query(
+        ..., description="Start of the date range (inclusive)"
+    ),
+    end_date: datetime = Query(..., description="End of the date range (inclusive)"),
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
@@ -69,8 +69,9 @@ async def update_schedule_item(
     """
     item = await db.get(ScheduleItem, item_id)
     if not item or item.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Schedule item not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
+        )
 
     update_data = item_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -93,8 +94,9 @@ async def delete_schedule_item(
     """
     item = await db.get(ScheduleItem, item_id)
     if not item or item.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Schedule item not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
+        )
 
     await db.delete(item)
     await db.commit()

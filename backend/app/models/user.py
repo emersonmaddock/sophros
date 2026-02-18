@@ -10,6 +10,7 @@ from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 if typing.TYPE_CHECKING:
     from app.models.schedule import ScheduleItem
 
+
 # Database user class - maps to Clerk users
 # Created only after onboarding, therefore will include biological data
 # TODO: Use enums for other attrs
@@ -48,5 +49,6 @@ class User(Base):
     is_pescatarian: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
-    schedules: Mapped[list[ScheduleItem]] = relationship("ScheduleItem",
-                                                    back_populates="user")
+    schedules: Mapped[list[ScheduleItem]] = relationship(
+        "ScheduleItem", back_populates="user"
+    )
