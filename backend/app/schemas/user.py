@@ -76,3 +76,7 @@ class UserUpdate(BaseModel):
 class UserRead(UserBase):
     id: str
     model_config = ConfigDict(from_attributes=True)
+
+
+# Alias for backward compatibility
+User = UserRead

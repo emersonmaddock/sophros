@@ -10,7 +10,7 @@ def create_mock_user(
     weight: float = 80.0,
     height: float = 180.0,
     gender: str = "male",
-    activity_level: str = "moderately_active",
+    activity_level: str = "moderate",
     allergies: list[Allergy] | None = None,
     include_cuisine: list[Cuisine] | None = None,
     exclude_cuisine: list[Cuisine] | None = None,

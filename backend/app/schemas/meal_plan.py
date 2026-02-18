@@ -1,5 +1,5 @@
 from datetime import time as timeofday
-from enum import Enum, StrEnum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ class MealSlot(StrEnum):
     DINNER = "Dinner"
 
 
-class Day(str, Enum):
+class Day(StrEnum):
     MONDAY = "Monday"
     TUESDAY = "Tuesday"
     WEDNESDAY = "Wednesday"

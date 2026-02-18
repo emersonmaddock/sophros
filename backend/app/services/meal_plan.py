@@ -1,5 +1,5 @@
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import DailyMealPlan, MealSlot
+from app.schemas.meal_plan import DailyMealPlan, Day, MealSlot
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import User
 from app.services.meal_allocator import MealAllocator
@@ -23,7 +23,7 @@ class MealPlanService:
         self.spoonacular_client = spoonacular_client or SpoonacularClient()
 
     async def generate_daily_plan(
-        self, user: User, day: str = "Monday"
+        self, user: User, day: Day = Day.MONDAY
     ) -> DailyMealPlan:
         """
         Generates a complete daily meal plan for the user.

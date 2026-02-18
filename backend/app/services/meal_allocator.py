@@ -2,6 +2,7 @@ from datetime import time
 
 from app.schemas.meal_plan import (
     DailyMealPlan,
+    Day,
     MealDistributionConfig,
     MealSlot,
     MealSlotTarget,
@@ -32,7 +33,7 @@ class MealAllocator:
         daily_targets: DRIOutput,
         config: MealDistributionConfig | None = None,
         user_schedule: UserSchedule | None = None,
-        day: str = "Monday",
+        day: Day = Day.MONDAY,
     ) -> DailyMealPlan:
         """
         Distributes the daily nutritional targets into meal slots based on the
@@ -84,7 +85,7 @@ class MealAllocator:
 
     @classmethod
     def _find_time_for_slot(
-        cls, slot: MealSlot, schedule: UserSchedule, day: str
+        cls, slot: MealSlot, schedule: UserSchedule, day: Day
     ) -> time | None:
         """
         Finds the first available 30-min window within the standard range for the slot.

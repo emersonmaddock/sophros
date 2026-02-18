@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user, get_db
 from app.models.user import User as DBUser
 from app.schemas.meal_plan import DailyMealPlan, Day
+from app.schemas.user import UserRead
 from app.services.meal_plan import MealPlanService
 
 router = APIRouter()
@@ -27,8 +28,11 @@ async def generate_meal_plan(
     """
     service = MealPlanService()
 
+    # Convert DB user to schema model for the service
+    user_schema = UserRead.model_validate(current_user)
+
     try:
-        plan = await service.generate_daily_plan(current_user, day=day)
+        plan = await service.generate_daily_plan(user_schema, day=day)
         return plan
     except Exception as e:
         raise HTTPException(

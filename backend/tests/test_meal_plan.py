@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.schemas.dietary import Allergy, Cuisine
-from app.schemas.meal_plan import MealSlot
+from app.schemas.meal_plan import Day, MealSlot
 from app.schemas.user import UserSchedule
 from app.services.meal_plan import MealPlanService
 from tests.generate_mock_user import create_mock_user
@@ -21,7 +21,7 @@ async def test_generate_daily_plan_integration():
         weight=80.0,
         height=180.0,
         gender="male",
-        activity_level="moderately_active",
+        activity_level="moderate",
         schedule=UserSchedule().model_dump(),
         allergies=[Allergy.PEANUT],
         include_cuisine=[Cuisine.ITALIAN],
@@ -123,7 +123,7 @@ async def test_generate_daily_plan_integration():
     service = MealPlanService(spoonacular_client=mock_client)
 
     # Generate plan
-    plan = await service.generate_daily_plan(user, day="Monday")
+    plan = await service.generate_daily_plan(user, day=Day.MONDAY)
 
     # Verify plan structure
     assert plan is not None
