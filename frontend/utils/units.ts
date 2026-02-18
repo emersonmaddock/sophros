@@ -2,12 +2,9 @@
 export const UNIT_CONVERSION = {
   // Weight
   LBS_TO_KG: 0.453592,
-  KG_TO_LBS: 2.20462,
 
   // Height
-  CM_TO_INCHES: 0.393701,
   INCHES_TO_CM: 2.54,
-  CM_TO_FEET: 0.0328084,
   FEET_TO_CM: 30.48,
 } as const;
 
@@ -17,11 +14,11 @@ export function lbsToKg(lbs: number): number {
 }
 
 export function kgToLbs(kg: number): number {
-  return kg * UNIT_CONVERSION.KG_TO_LBS;
+  return kg / UNIT_CONVERSION.LBS_TO_KG;
 }
 
 export function cmToInches(cm: number): number {
-  return cm * UNIT_CONVERSION.CM_TO_INCHES;
+  return cm * UNIT_CONVERSION.INCHES_TO_CM;
 }
 
 export function inchesToCm(inches: number): number {

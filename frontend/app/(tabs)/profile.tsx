@@ -63,13 +63,13 @@ export default function ProfilePage() {
       age: backendUser.age?.toString() || '',
       weight: backendUser.weight
         ? useImperial
-          ? kgToLbs(backendUser.weight).toFixed(1)
-          : backendUser.weight.toFixed(1)
+          ? kgToLbs(backendUser.weight).toString()
+          : backendUser.weight.toString()
         : '',
       height: backendUser.height
         ? useImperial
-          ? cmToInches(backendUser.height).toFixed(1)
-          : backendUser.height.toFixed(1)
+          ? cmToInches(backendUser.height).toString()
+          : backendUser.height.toString()
         : '',
     });
     setIsEditing(true);

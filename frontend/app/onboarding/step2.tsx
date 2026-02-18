@@ -39,7 +39,7 @@ export default function Step2Screen() {
 
     if (data.weight) {
       const weightKg = parseFloat(data.weight);
-      setImperialWeight(Number.isNaN(weightKg) ? '' : kgToLbs(weightKg).toFixed(1));
+      setImperialWeight(Number.isNaN(weightKg) ? '' : kgToLbs(weightKg).toString());
     } else {
       setImperialWeight('');
     }
@@ -79,7 +79,7 @@ export default function Step2Screen() {
 
     const weightLbs = parseFloat(value);
     if (Number.isNaN(weightLbs)) return;
-    updateField('weight', lbsToKg(weightLbs).toFixed(2));
+    updateField('weight', lbsToKg(weightLbs).toString());
   };
 
   const updateHeightFromImperial = (feetText: string, inchesText: string) => {
@@ -92,7 +92,7 @@ export default function Step2Screen() {
     const inches = parseInt(inchesText || '0', 10);
     if (Number.isNaN(feet) || Number.isNaN(inches)) return;
 
-    updateField('height', feetAndInchesToCm(feet, inches).toFixed(0));
+    updateField('height', feetAndInchesToCm(feet, inches).toString());
   };
 
   const handleHeightFeetChange = (value: string) => {
