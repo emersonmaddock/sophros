@@ -6,6 +6,9 @@ import type {
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostErrors,
   CreateUserApiV1UsersPostResponses,
+  GenerateMealPlanApiV1MealPlansGeneratePostData,
+  GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
@@ -110,6 +113,31 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me/targets',
+    ...options,
+  });
+
+/**
+ * Generate Meal Plan
+ *
+ * Generate a complete daily meal plan for the current user.
+ *
+ * Uses:
+ * - NutrientCalculator to determine daily targets
+ * - MealAllocator to split targets into timed meal slots
+ * - SpoonacularClient to fetch suitable recipes
+ *
+ * Returns a populated DailyMealPlan with recipes for Breakfast, Lunch, Dinner.
+ */
+export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends boolean = false>(
+  options?: Options<GenerateMealPlanApiV1MealPlansGeneratePostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+    GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/generate',
     ...options,
   });
 
