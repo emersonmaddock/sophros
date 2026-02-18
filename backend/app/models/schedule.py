@@ -6,7 +6,7 @@ from app.db.base_class import Base
 class Schedule_Item(Base):
     __tablename__ = "schedules"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id"), nullable=False)
     date: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     activity_type: Mapped[str] = mapped_column(String, nullable=False)
