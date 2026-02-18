@@ -1,5 +1,6 @@
+import { client } from '@/api/client.gen';
 import type { UserRead, UserUpdate } from '@/api/types.gen';
-import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
+import { getErrorStatus, useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 
@@ -17,18 +18,19 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, signOut } = useAuth();
   const { user: clerkUser } = useClerkUser();
 
-  // Get authentication token
-  const [token, setToken] = React.useState<string | null>(null);
-
+  // Set hey-api auth callback whenever authentication state changes.
   React.useEffect(() => {
-    if (isSignedIn && clerkUser) {
-      getToken().then(setToken);
-    } else {
-      setToken(null);
-    }
+    client.setConfig({
+      auth: async () => {
+        if (!isSignedIn || !clerkUser) {
+          return undefined;
+        }
+        return (await getToken()) ?? undefined;
+      },
+    });
   }, [isSignedIn, clerkUser, getToken]);
 
   // Query user data with TanStack Query
@@ -37,10 +39,37 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     error: queryError,
     refetch,
-  } = useUserQuery(token, isSignedIn && !!clerkUser);
+  } = useUserQuery(isSignedIn && !!clerkUser);
+  const hasTriggeredUnauthorizedSignOut = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!isSignedIn) {
+      hasTriggeredUnauthorizedSignOut.current = false;
+    }
+  }, [isSignedIn]);
+
+  React.useEffect(() => {
+    if (!isSignedIn || !queryError) {
+      return;
+    }
+
+    if (getErrorStatus(queryError) !== 401) {
+      return;
+    }
+
+    if (hasTriggeredUnauthorizedSignOut.current) {
+      return;
+    }
+
+    hasTriggeredUnauthorizedSignOut.current = true;
+    signOut().catch((error) => {
+      console.error('[UserContext] Failed to sign out after 401:', error);
+      hasTriggeredUnauthorizedSignOut.current = false;
+    });
+  }, [queryError, isSignedIn, signOut]);
 
   // Mutation for updating user
-  const updateMutation = useUpdateUserMutation(token);
+  const updateMutation = useUpdateUserMutation();
 
   // Derived state: user is onboarded if they exist in backend
   const isOnboarded = user !== null;

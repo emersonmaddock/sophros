@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { queryClient } from '@/config/queryClient';
 import { OnboardingProvider } from '@/contexts/onboarding-context';
 import { UserProvider } from '@/contexts/UserContext';
+import { client } from '../api/client.gen';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -21,6 +22,13 @@ if (!publishableKey) {
 export const unstable_settings = {
   initialRouteName: '(tabs)',
 };
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Configure the client with base URL
+client.setConfig({
+  baseUrl: API_BASE_URL,
+});
 
 export default function RootLayout() {
   return (

@@ -1,9 +1,9 @@
 import { MetricInput } from '@/components/MetricInput';
-import { feetAndInchesToCm, kgToLbs, lbsToKg } from '@/constants/onboarding';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,72 +17,92 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step2Screen() {
   const { data, updateField, errors, isSection2Complete } = useOnboarding();
+  const [imperialWeight, setImperialWeight] = useState('');
   const [heightFeet, setHeightFeet] = useState('');
   const [heightInches, setHeightInches] = useState('');
+  const hasInitializedImperialInputs = useRef(false);
 
   const canContinue = isSection2Complete();
 
-  // Handle weight unit toggle
-  const toggleWeightUnit = () => {
-    if (data.weight) {
-      const currentWeight = parseFloat(data.weight);
-      if (data.weightUnit === 'kg') {
-        updateField('weight', kgToLbs(currentWeight).toFixed(1));
-        updateField('weightUnit', 'lbs');
-      } else {
-        updateField('weight', lbsToKg(currentWeight).toFixed(1));
-        updateField('weightUnit', 'kg');
-      }
-    } else {
-      updateField('weightUnit', data.weightUnit === 'kg' ? 'lbs' : 'kg');
+  useEffect(() => {
+    if (!data.showImperial) {
+      setImperialWeight('');
+      setHeightFeet('');
+      setHeightInches('');
+      hasInitializedImperialInputs.current = false;
+      return;
     }
-  };
 
-  // Handle height unit toggle
-  const toggleHeightUnit = () => {
-    if (data.heightUnit === 'cm') {
-      // Convert cm to feet/inches
-      if (data.height) {
-        const totalInches = parseFloat(data.height) * 0.393701;
-        const feet = Math.floor(totalInches / 12);
-        const inches = Math.round(totalInches % 12);
-        setHeightFeet(feet.toString());
-        setHeightInches(inches.toString());
-        updateField('height', '');
-      }
-      updateField('heightUnit', 'ft');
+    if (hasInitializedImperialInputs.current) {
+      return;
+    }
+
+    if (data.weight) {
+      const weightKg = parseFloat(data.weight);
+      setImperialWeight(Number.isNaN(weightKg) ? '' : kgToLbs(weightKg).toFixed(1));
     } else {
-      // Convert feet/inches to cm
-      if (heightFeet || heightInches) {
-        const feet = parseInt(heightFeet || '0', 10);
-        const inches = parseInt(heightInches || '0', 10);
-        const cm = feetAndInchesToCm(feet, inches).toFixed(0);
-        updateField('height', cm);
+      setImperialWeight('');
+    }
+
+    if (data.height) {
+      const heightCm = parseFloat(data.height);
+      if (Number.isNaN(heightCm)) {
         setHeightFeet('');
         setHeightInches('');
+      } else {
+        const { feet, inches } = cmToFeetAndInches(heightCm);
+        setHeightFeet(feet.toString());
+        setHeightInches(inches.toString());
       }
-      updateField('heightUnit', 'cm');
+    } else {
+      setHeightFeet('');
+      setHeightInches('');
     }
+    hasInitializedImperialInputs.current = true;
+  }, [data.showImperial, data.weight, data.height]);
+
+  const toggleUnits = () => {
+    updateField('showImperial', !data.showImperial);
+  };
+
+  const handleWeightChange = (value: string) => {
+    if (!data.showImperial) {
+      updateField('weight', value);
+      return;
+    }
+
+    setImperialWeight(value);
+    if (!value) {
+      updateField('weight', '');
+      return;
+    }
+
+    const weightLbs = parseFloat(value);
+    if (Number.isNaN(weightLbs)) return;
+    updateField('weight', lbsToKg(weightLbs).toFixed(2));
+  };
+
+  const updateHeightFromImperial = (feetText: string, inchesText: string) => {
+    if (!feetText && !inchesText) {
+      updateField('height', '');
+      return;
+    }
+
+    const feet = parseInt(feetText || '0', 10);
+    const inches = parseInt(inchesText || '0', 10);
+    if (Number.isNaN(feet) || Number.isNaN(inches)) return;
+
+    updateField('height', feetAndInchesToCm(feet, inches).toFixed(0));
   };
 
   const handleHeightFeetChange = (value: string) => {
     setHeightFeet(value);
-    if (value && heightInches) {
-      const feet = parseInt(value, 10);
-      const inches = parseInt(heightInches, 10);
-      const cm = feetAndInchesToCm(feet, inches).toFixed(0);
-      updateField('height', cm);
-    }
+    updateHeightFromImperial(value, heightInches);
   };
 
   const handleHeightInchesChange = (value: string) => {
     setHeightInches(value);
-    if (heightFeet && value) {
-      const feet = parseInt(heightFeet, 10);
-      const inches = parseInt(value, 10);
-      const cm = feetAndInchesToCm(feet, inches).toFixed(0);
-      updateField('height', cm);
-    }
+    updateHeightFromImperial(heightFeet, value);
   };
 
   return (
@@ -111,11 +131,11 @@ export default function Step2Screen() {
             <View>
               <View style={styles.inputHeader}>
                 <Text style={styles.fieldLabel}>Weight</Text>
-                <TouchableOpacity style={styles.unitToggle} onPress={toggleWeightUnit}>
+                <TouchableOpacity style={styles.unitToggle} onPress={toggleUnits}>
                   <Text
                     style={[
                       styles.unitToggleText,
-                      data.weightUnit === 'kg' && styles.unitToggleTextActive,
+                      !data.showImperial && styles.unitToggleTextActive,
                     ]}
                   >
                     kg
@@ -124,7 +144,7 @@ export default function Step2Screen() {
                   <Text
                     style={[
                       styles.unitToggleText,
-                      data.weightUnit === 'lbs' && styles.unitToggleTextActive,
+                      data.showImperial && styles.unitToggleTextActive,
                     ]}
                   >
                     lbs
@@ -133,22 +153,22 @@ export default function Step2Screen() {
               </View>
               <MetricInput
                 label=""
-                value={data.weight}
-                onChangeText={(value) => updateField('weight', value)}
-                placeholder={`Enter weight in ${data.weightUnit}`}
+                value={data.showImperial ? imperialWeight : data.weight}
+                onChangeText={handleWeightChange}
+                placeholder={`Enter weight in ${data.showImperial ? 'lbs' : 'kg'}`}
                 error={errors.weight}
-                unit={data.weightUnit}
+                unit={data.showImperial ? 'lbs' : 'kg'}
               />
             </View>
 
             <View>
               <View style={styles.inputHeader}>
                 <Text style={styles.fieldLabel}>Height</Text>
-                <TouchableOpacity style={styles.unitToggle} onPress={toggleHeightUnit}>
+                <TouchableOpacity style={styles.unitToggle} onPress={toggleUnits}>
                   <Text
                     style={[
                       styles.unitToggleText,
-                      data.heightUnit === 'cm' && styles.unitToggleTextActive,
+                      !data.showImperial && styles.unitToggleTextActive,
                     ]}
                   >
                     cm
@@ -157,7 +177,7 @@ export default function Step2Screen() {
                   <Text
                     style={[
                       styles.unitToggleText,
-                      data.heightUnit === 'ft' && styles.unitToggleTextActive,
+                      data.showImperial && styles.unitToggleTextActive,
                     ]}
                   >
                     ft/in
@@ -165,7 +185,7 @@ export default function Step2Screen() {
                 </TouchableOpacity>
               </View>
 
-              {data.heightUnit === 'cm' ? (
+              {!data.showImperial ? (
                 <MetricInput
                   label=""
                   value={data.height}

@@ -1,6 +1,7 @@
 import type { UserUpdate } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { cmToInches, inchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import {
@@ -34,10 +35,11 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState({
     age: '',
-    weight: '', // in lbs for display
-    height: '', // in cm for now, can be enhanced
+    weight: '',
+    height: '',
   });
   const [saving, setSaving] = useState(false);
+  const showImperial = backendUser?.show_imperial ?? false;
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -55,11 +57,20 @@ export default function ProfilePage() {
 
   const handleEditPress = () => {
     if (!backendUser) return;
+    const useImperial = backendUser.show_imperial;
 
     setEditedData({
       age: backendUser.age?.toString() || '',
-      weight: backendUser.weight ? Math.round(backendUser.weight * 2.20462).toString() : '',
-      height: backendUser.height?.toString() || '',
+      weight: backendUser.weight
+        ? useImperial
+          ? kgToLbs(backendUser.weight).toFixed(1)
+          : backendUser.weight.toFixed(1)
+        : '',
+      height: backendUser.height
+        ? useImperial
+          ? cmToInches(backendUser.height).toFixed(1)
+          : backendUser.height.toFixed(1)
+        : '',
     });
     setIsEditing(true);
   };
@@ -77,18 +88,35 @@ export default function ProfilePage() {
       const updates: UserUpdate = {};
 
       if (editedData.age && editedData.age !== backendUser.age?.toString()) {
-        updates.age = parseInt(editedData.age, 10);
-      }
-
-      if (editedData.weight) {
-        const weightKg = parseFloat(editedData.weight) / 2.20462;
-        if (Math.abs(weightKg - (backendUser.weight || 0)) > 0.1) {
-          updates.weight = weightKg;
+        const age = parseInt(editedData.age, 10);
+        if (!Number.isNaN(age)) {
+          updates.age = age;
         }
       }
 
-      if (editedData.height && editedData.height !== backendUser.height?.toString()) {
-        updates.height = parseFloat(editedData.height);
+      if (editedData.weight) {
+        const enteredWeight = parseFloat(editedData.weight);
+        if (!Number.isNaN(enteredWeight)) {
+          const weightKg = showImperial ? lbsToKg(enteredWeight) : enteredWeight;
+          if (Math.abs(weightKg - (backendUser.weight || 0)) > 0.1) {
+            updates.weight = weightKg;
+          }
+        }
+      }
+
+      if (editedData.height) {
+        const enteredHeight = parseFloat(editedData.height);
+        if (!Number.isNaN(enteredHeight)) {
+          const heightCm = showImperial ? inchesToCm(enteredHeight) : enteredHeight;
+          if (Math.abs(heightCm - (backendUser.height || 0)) > 0.1) {
+            updates.height = heightCm;
+          }
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        setIsEditing(false);
+        return;
       }
 
       const success = await updateUserProfile(updates);
@@ -196,10 +224,12 @@ export default function ProfilePage() {
                     value={editedData.height}
                     onChangeText={(text) => setEditedData({ ...editedData, height: text })}
                     keyboardType="numeric"
-                    placeholder="Height (cm)"
+                    placeholder={showImperial ? 'Height (in)' : 'Height (cm)'}
                     placeholderTextColor={Colors.light.textMuted}
                   />
-                  <Text style={styles.statLabel}>Height (cm)</Text>
+                  <Text style={styles.statLabel}>
+                    {showImperial ? 'Height (in)' : 'Height (cm)'}
+                  </Text>
                 </View>
                 <View style={styles.statItem}>
                   <TextInput
@@ -207,10 +237,12 @@ export default function ProfilePage() {
                     value={editedData.weight}
                     onChangeText={(text) => setEditedData({ ...editedData, weight: text })}
                     keyboardType="numeric"
-                    placeholder="Weight (lbs)"
+                    placeholder={showImperial ? 'Weight (lbs)' : 'Weight (kg)'}
                     placeholderTextColor={Colors.light.textMuted}
                   />
-                  <Text style={styles.statLabel}>Weight (lbs)</Text>
+                  <Text style={styles.statLabel}>
+                    {showImperial ? 'Weight (lbs)' : 'Weight (kg)'}
+                  </Text>
                 </View>
               </>
             ) : (

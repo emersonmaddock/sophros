@@ -363,6 +363,17 @@ export type ReadUserMeApiV1UsersMeGetData = {
   url: '/api/v1/users/me';
 };
 
+export type ReadUserMeApiV1UsersMeGetErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown;
+  /**
+   * User not found
+   */
+  404: unknown;
+};
+
 export type ReadUserMeApiV1UsersMeGetResponses = {
   /**
    * Successful Response

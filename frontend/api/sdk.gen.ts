@@ -9,6 +9,7 @@ import type {
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
+  ReadUserMeApiV1UsersMeGetErrors,
   ReadUserMeApiV1UsersMeGetResponses,
   ReadUserTargetsApiV1UsersMeTargetsGetData,
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
@@ -67,7 +68,11 @@ export const createUserApiV1UsersPost = <ThrowOnError extends boolean = false>(
 export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
   options?: Options<ReadUserMeApiV1UsersMeGetData, ThrowOnError>
 ) =>
-  (options?.client ?? client).get<ReadUserMeApiV1UsersMeGetResponses, unknown, ThrowOnError>({
+  (options?.client ?? client).get<
+    ReadUserMeApiV1UsersMeGetResponses,
+    ReadUserMeApiV1UsersMeGetErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me',
     ...options,
