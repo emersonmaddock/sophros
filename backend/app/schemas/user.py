@@ -10,6 +10,7 @@ class UserBase(BaseModel):
     age: int
     weight: float  # kg
     height: float  # cm
+    show_imperial: bool
     gender: Sex
     activity_level: ActivityLevel
     pregnancy_status: PregnancyStatus = (
@@ -41,6 +42,7 @@ class UserUpdate(BaseModel):
     age: int | None = None
     weight: float | None = None  # kg
     height: float | None = None  # cm
+    show_imperial: bool | None = None
     gender: Sex | None = None
     activity_level: ActivityLevel | None = None
     pregnancy_status: PregnancyStatus | None = None

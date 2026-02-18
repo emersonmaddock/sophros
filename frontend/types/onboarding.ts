@@ -23,7 +23,7 @@ export interface BiologicalProfile {
   heightFeet: number | null;
   heightInches: number | null;
   heightCm: number | null;
-  useMetric: boolean;
+  showImperial: boolean;
   weightLbs: number | null;
   weightKg: number | null;
 }
@@ -54,7 +54,7 @@ export const initialOnboardingData: OnboardingData = {
     heightFeet: null,
     heightInches: null,
     heightCm: null,
-    useMetric: false,
+    showImperial: true,
     weightLbs: null,
     weightKg: null,
   },

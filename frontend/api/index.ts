@@ -26,6 +26,7 @@ export type {
   NutrientRange,
   PregnancyStatus,
   ReadUserMeApiV1UsersMeGetData,
+  ReadUserMeApiV1UsersMeGetErrors,
   ReadUserMeApiV1UsersMeGetResponse,
   ReadUserMeApiV1UsersMeGetResponses,
   ReadUserTargetsApiV1UsersMeTargetsGetData,
