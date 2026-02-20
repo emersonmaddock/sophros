@@ -1,14 +1,9 @@
-import typing
-
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 from app.domain.enums import ActivityType
-
-if typing.TYPE_CHECKING:
-    from app.models.user import User
 
 
 class ScheduleItem(Base):
@@ -25,4 +20,7 @@ class ScheduleItem(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    user: Mapped[User] = relationship("User", back_populates="schedules")
+    # Relationships
+    # Use string of class name
+    # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/type-annotation-strings/
+    user: Mapped["User"] = relationship("User", back_populates="schedules")  # type: ignore[name-defined] # noqa: F821

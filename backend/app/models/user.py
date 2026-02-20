@@ -1,14 +1,9 @@
-import typing
-
 from sqlalchemy import JSON, Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
-
-if typing.TYPE_CHECKING:
-    from app.models.schedule import ScheduleItem
 
 
 # Database user class - maps to Clerk users
@@ -49,6 +44,8 @@ class User(Base):
     is_pescatarian: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
-    schedules: Mapped[list[ScheduleItem]] = relationship(
+    # Use string of class name
+    # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/type-annotation-strings/
+    schedules: Mapped[list["ScheduleItem"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "ScheduleItem", back_populates="user"
     )
