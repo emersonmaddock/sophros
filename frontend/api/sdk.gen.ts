@@ -3,9 +3,18 @@
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
 import type {
+  CreateScheduleItemApiV1SchedulesPostData,
+  CreateScheduleItemApiV1SchedulesPostErrors,
+  CreateScheduleItemApiV1SchedulesPostResponses,
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostErrors,
   CreateUserApiV1UsersPostResponses,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+  GetScheduleItemsApiV1SchedulesGetData,
+  GetScheduleItemsApiV1SchedulesGetErrors,
+  GetScheduleItemsApiV1SchedulesGetResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
@@ -14,6 +23,9 @@ import type {
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
   RootGetData,
   RootGetResponses,
+  UpdateScheduleItemApiV1SchedulesItemIdPutData,
+  UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
+  UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
   UpdateUserMeApiV1UsersMePutData,
   UpdateUserMeApiV1UsersMePutErrors,
   UpdateUserMeApiV1UsersMePutResponses,
@@ -111,6 +123,86 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me/targets',
     ...options,
+  });
+
+/**
+ * Get Schedule Items
+ *
+ * Fetch schedule items for the current user within a date range.
+ */
+export const getScheduleItemsApiV1SchedulesGet = <ThrowOnError extends boolean = false>(
+  options: Options<GetScheduleItemsApiV1SchedulesGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetScheduleItemsApiV1SchedulesGetResponses,
+    GetScheduleItemsApiV1SchedulesGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules',
+    ...options,
+  });
+
+/**
+ * Create Schedule Item
+ *
+ * Create a new schedule item for the current user.
+ */
+export const createScheduleItemApiV1SchedulesPost = <ThrowOnError extends boolean = false>(
+  options: Options<CreateScheduleItemApiV1SchedulesPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    CreateScheduleItemApiV1SchedulesPostResponses,
+    CreateScheduleItemApiV1SchedulesPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete Schedule Item
+ *
+ * Delete a schedule item by ID (must belong to the current user).
+ */
+export const deleteScheduleItemApiV1SchedulesItemIdDelete = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteScheduleItemApiV1SchedulesItemIdDeleteData, ThrowOnError>
+) =>
+  (options.client ?? client).delete<
+    DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+    DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules/{item_id}',
+    ...options,
+  });
+
+/**
+ * Update Schedule Item
+ *
+ * Update a schedule item by ID (must belong to the current user).
+ */
+export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateScheduleItemApiV1SchedulesItemIdPutData, ThrowOnError>
+) =>
+  (options.client ?? client).put<
+    UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
+    UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules/{item_id}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**
