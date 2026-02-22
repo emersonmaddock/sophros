@@ -28,12 +28,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.13.0"
+          node-version: "24.13.1"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.29.2
+          version: 10.30.0
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -82,7 +82,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.13.0"
+          node-version: "24.13.1"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -96,7 +96,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.29.2
+          version: 10.30.0
 
       - name: Get pnpm store directory
         id: pnpm-cache

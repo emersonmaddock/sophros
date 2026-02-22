@@ -1,17 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    "schedule:weekly"
-  ],
+  "extends": ["config:recommended", "schedule:weekly"],
   "packageRules": [
     {
-      "matchManagers": [
-        "npm"
-      ],
-      "matchFileNames": [
-        "frontend/package.json"
-      ],
+      "matchManagers": ["npm"],
+      "matchFileNames": ["frontend/package.json"],
       "groupName": "expo-managed (disabled)",
       "enabled": false,
       "matchPackagePatterns": [
@@ -20,60 +13,34 @@
         "^react$",
         "^react-dom$",
         "^react-native($|-)",
-        "^@react-native-"
+        "^@react-native-",
+        "^@react-navigation/",
+        "^@types/react$"
       ]
     },
     {
-      "matchManagers": [
-        "pep621"
-      ],
-      "matchFileNames": [
-        "backend/pyproject.toml"
-      ],
+      "matchManagers": ["pep621"],
+      "matchFileNames": ["backend/pyproject.toml"],
       "groupName": "pytest",
-      "matchPackagePatterns": [
-        "^pytest($|-)"
-      ]
+      "matchPackagePatterns": ["^pytest($|-)"]
     },
     {
-      "matchManagers": [
-        "github-actions",
-        "npm",
-        "pep621"
-      ],
+      "matchManagers": ["github-actions", "npm", "pep621"],
       "groupName": "{{manager}} non-major",
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ]
+      "matchUpdateTypes": ["minor", "patch"]
     }
   ],
   "pip_requirements": {
-    "managerFilePatterns": [
-      "/backend/pyproject.toml/",
-      "/backend/uv.lock/"
-    ]
+    "managerFilePatterns": ["/backend/pyproject.toml/", "/backend/uv.lock/"]
   },
-  "enabledManagers": [
-    "github-actions",
-    "npm",
-    "pep621"
-  ],
+  "enabledManagers": ["github-actions", "npm", "pep621"],
   "rangeStrategy": "bump",
   "lockFileMaintenance": {
     "enabled": true
   },
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/__pycache__/**"
-  ],
-  "ignoreDeps": [
-    "bcrypt",
-    "python"
-  ],
-  "labels": [
-    "dependencies"
-  ],
+  "ignorePaths": ["**/node_modules/**", "**/__pycache__/**"],
+  "ignoreDeps": ["bcrypt", "python"],
+  "labels": ["dependencies"],
   "prConcurrentLimit": 10,
   "prHourlyLimit": 10,
   "updateNotScheduled": false

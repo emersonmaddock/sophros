@@ -10,8 +10,7 @@ export interface OnboardingData {
   gender: Sex | null;
   weight: string; // kg
   height: string; // cm
-  weightUnit: 'kg' | 'lbs';
-  heightUnit: 'cm' | 'ft';
+  showImperial: boolean;
   pregnancyStatus?: PregnancyStatus;
   activityLevel: ActivityLevel | null;
 }
@@ -51,8 +50,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     gender: null,
     weight: '',
     height: '',
-    weightUnit: 'lbs',
-    heightUnit: 'ft',
+    showImperial: true,
     pregnancyStatus: undefined,
     activityLevel: null,
   });
@@ -201,6 +199,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         height: parseFloat(data.height), // Already in cm
         gender: data.gender as Sex, // Validated in validate()
         activity_level: data.activityLevel as ActivityLevel, // Validated in validate()
+        show_imperial: data.showImperial,
       };
 
       // Only include pregnancy status for females

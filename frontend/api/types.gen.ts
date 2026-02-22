@@ -10,6 +10,11 @@ export type ClientOptions = {
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
 
 /**
+ * ActivityType
+ */
+export type ActivityType = 'meal' | 'sleep' | 'work' | 'exercise' | 'leisure' | 'other';
+
+/**
  * Allergy
  */
 export type Allergy =
@@ -198,6 +203,71 @@ export type PregnancyStatus =
   | 'partially_breastfeeding';
 
 /**
+ * ScheduleItemCreate
+ */
+export type ScheduleItemCreate = {
+  /**
+   * Date
+   */
+  date: string;
+  activity_type: ActivityType;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes: number;
+  /**
+   * Is Completed
+   */
+  is_completed?: boolean;
+};
+
+/**
+ * ScheduleItemRead
+ */
+export type ScheduleItemRead = {
+  /**
+   * Date
+   */
+  date: string;
+  activity_type: ActivityType;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes: number;
+  /**
+   * Is Completed
+   */
+  is_completed?: boolean;
+  /**
+   * Id
+   */
+  id: number;
+  /**
+   * User Id
+   */
+  user_id: string;
+};
+
+/**
+ * ScheduleItemUpdate
+ */
+export type ScheduleItemUpdate = {
+  /**
+   * Date
+   */
+  date?: string | null;
+  activity_type?: ActivityType | null;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes?: number | null;
+  /**
+   * Is Completed
+   */
+  is_completed?: boolean | null;
+};
+
+/**
  * Sex
  */
 export type Sex = 'male' | 'female';
@@ -222,6 +292,10 @@ export type UserCreate = {
    * Height
    */
   height: number;
+  /**
+   * Show Imperial
+   */
+  show_imperial: boolean;
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
@@ -280,6 +354,10 @@ export type UserRead = {
    * Height
    */
   height: number;
+  /**
+   * Show Imperial
+   */
+  show_imperial: boolean;
   gender: Sex;
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
@@ -360,6 +438,10 @@ export type UserUpdate = {
    * Height
    */
   height?: number | null;
+  /**
+   * Show Imperial
+   */
+  show_imperial?: boolean | null;
   gender?: Sex | null;
   activity_level?: ActivityLevel | null;
   pregnancy_status?: PregnancyStatus | null;
@@ -460,6 +542,17 @@ export type ReadUserMeApiV1UsersMeGetData = {
   url: '/api/v1/users/me';
 };
 
+export type ReadUserMeApiV1UsersMeGetErrors = {
+  /**
+   * Unauthorized
+   */
+  401: unknown;
+  /**
+   * User not found
+   */
+  404: unknown;
+};
+
 export type ReadUserMeApiV1UsersMeGetResponses = {
   /**
    * Successful Response
@@ -530,6 +623,33 @@ export type GenerateMealPlanApiV1MealPlansGeneratePostErrors = {
   422: HttpValidationError;
 };
 
+export type GetScheduleItemsApiV1SchedulesGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Start Date
+     *
+     * Start of the date range (inclusive)
+     */
+    start_date: string;
+    /**
+     * End Date
+     *
+     * End of the date range (inclusive)
+     */
+    end_date: string;
+  };
+  url: '/api/v1/schedules';
+};
+
+export type GetScheduleItemsApiV1SchedulesGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
 export type GenerateMealPlanApiV1MealPlansGeneratePostError =
   GenerateMealPlanApiV1MealPlansGeneratePostErrors[keyof GenerateMealPlanApiV1MealPlansGeneratePostErrors];
 
@@ -542,6 +662,111 @@ export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
 
 export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
   GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
+export type GetScheduleItemsApiV1SchedulesGetError =
+  GetScheduleItemsApiV1SchedulesGetErrors[keyof GetScheduleItemsApiV1SchedulesGetErrors];
+
+export type GetScheduleItemsApiV1SchedulesGetResponses = {
+  /**
+   * Response Get Schedule Items Api V1 Schedules Get
+   *
+   * Successful Response
+   */
+  200: Array<ScheduleItemRead>;
+};
+
+export type GetScheduleItemsApiV1SchedulesGetResponse =
+  GetScheduleItemsApiV1SchedulesGetResponses[keyof GetScheduleItemsApiV1SchedulesGetResponses];
+
+export type CreateScheduleItemApiV1SchedulesPostData = {
+  body: ScheduleItemCreate;
+  path?: never;
+  query?: never;
+  url: '/api/v1/schedules';
+};
+
+export type CreateScheduleItemApiV1SchedulesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CreateScheduleItemApiV1SchedulesPostError =
+  CreateScheduleItemApiV1SchedulesPostErrors[keyof CreateScheduleItemApiV1SchedulesPostErrors];
+
+export type CreateScheduleItemApiV1SchedulesPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScheduleItemRead;
+};
+
+export type CreateScheduleItemApiV1SchedulesPostResponse =
+  CreateScheduleItemApiV1SchedulesPostResponses[keyof CreateScheduleItemApiV1SchedulesPostResponses];
+
+export type DeleteScheduleItemApiV1SchedulesItemIdDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Item Id
+     */
+    item_id: number;
+  };
+  query?: never;
+  url: '/api/v1/schedules/{item_id}';
+};
+
+export type DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteScheduleItemApiV1SchedulesItemIdDeleteError =
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors[keyof DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors];
+
+export type DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  204: void;
+};
+
+export type DeleteScheduleItemApiV1SchedulesItemIdDeleteResponse =
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses[keyof DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses];
+
+export type UpdateScheduleItemApiV1SchedulesItemIdPutData = {
+  body: ScheduleItemUpdate;
+  path: {
+    /**
+     * Item Id
+     */
+    item_id: number;
+  };
+  query?: never;
+  url: '/api/v1/schedules/{item_id}';
+};
+
+export type UpdateScheduleItemApiV1SchedulesItemIdPutErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateScheduleItemApiV1SchedulesItemIdPutError =
+  UpdateScheduleItemApiV1SchedulesItemIdPutErrors[keyof UpdateScheduleItemApiV1SchedulesItemIdPutErrors];
+
+export type UpdateScheduleItemApiV1SchedulesItemIdPutResponses = {
+  /**
+   * Successful Response
+   */
+  200: ScheduleItemRead;
+};
+
+export type UpdateScheduleItemApiV1SchedulesItemIdPutResponse =
+  UpdateScheduleItemApiV1SchedulesItemIdPutResponses[keyof UpdateScheduleItemApiV1SchedulesItemIdPutResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;

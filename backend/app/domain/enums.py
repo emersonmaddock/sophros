@@ -22,3 +22,12 @@ class PregnancyStatus(StrEnum):
     PREGNANT = "pregnant"
     EXCLUSIVELY_BREASTFEEDING = "exclusively_breastfeeding"  # 0 to 6 months postpartum
     PARTIALLY_BREASTFEEDING = "partially_breastfeeding"  # 7 to 12 months postpartum
+
+
+class ActivityType(StrEnum):
+    MEAL = "meal"
+    SLEEP = "sleep"
+    WORK = "work"
+    EXERCISE = "exercise"
+    LEISURE = "leisure"
+    OTHER = "other"

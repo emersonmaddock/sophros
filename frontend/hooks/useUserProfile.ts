@@ -1,4 +1,6 @@
+import { ActivityLevel, Sex } from '@/api';
 import { useUser } from '@/contexts/UserContext';
+import { cmToFeetAndInches, kgToLbs } from '@/utils/units';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useMemo } from 'react';
 
@@ -15,14 +17,15 @@ interface FormattedUserProfile {
   pregnancyStatus: string;
 }
 
-const ACTIVITY_LEVEL_LABELS: Record<string, string> = {
+const ACTIVITY_LEVEL_LABELS: Record<ActivityLevel, string> = {
   sedentary: 'Sedentary',
-  'lightly-active': 'Lightly Active',
-  'moderately-active': 'Moderately Active',
-  'very-active': 'Very Active',
+  light: 'Lightly Active',
+  moderate: 'Moderately Active',
+  active: 'Active',
+  very_active: 'Very Active',
 };
 
-const GENDER_LABELS: Record<string, string> = {
+const SEX_LABELS: Record<Sex, string> = {
   male: 'Male',
   female: 'Female',
 };
@@ -33,36 +36,32 @@ export function useUserProfile() {
 
   const profile = useMemo<FormattedUserProfile | null>(() => {
     if (!clerkUser || !backendUser) return null;
+    const showImperial = backendUser.show_imperial;
+
+    const formattedWeight = showImperial
+      ? `${kgToLbs(backendUser.weight).toFixed(1)} lbs`
+      : `${backendUser.weight.toFixed(1)} kg`;
+
+    const formattedHeight = showImperial
+      ? (() => {
+          const { feet, inches } = cmToFeetAndInches(backendUser.height);
+          return `${feet}' ${inches}"`;
+        })()
+      : `${backendUser.height.toFixed(0)} cm`;
 
     return {
       firstName: clerkUser.firstName || '',
       lastName: clerkUser.lastName || '',
       fullName: `${clerkUser.firstName || ''} ${clerkUser.lastName || ''}`.trim() || 'User',
       email: backendUser.email,
-      age: backendUser.age?.toString() || 'Not set',
-      weight: backendUser.weight ? `${Math.round(backendUser.weight * 2.20462)} lbs` : 'Not set',
-      height: backendUser.height
-        ? `${Math.floor(backendUser.height / 30.48)}' ${Math.round((backendUser.height % 30.48) / 2.54)}"`
-        : 'Not set',
-      gender: backendUser.gender
-        ? GENDER_LABELS[backendUser.gender] || backendUser.gender
-        : 'Not set',
-      activityLevel: backendUser.activity_level
-        ? ACTIVITY_LEVEL_LABELS[backendUser.activity_level] || backendUser.activity_level
-        : 'Not set',
+      age: backendUser.age?.toString(),
+      weight: formattedWeight,
+      height: formattedHeight,
+      gender: SEX_LABELS[backendUser.gender],
+      activityLevel: ACTIVITY_LEVEL_LABELS[backendUser.activity_level],
       pregnancyStatus: backendUser.pregnancy_status || 'N/A',
     };
   }, [clerkUser, backendUser]);
-
-  // Convert lbs to kg
-  const lbsToKg = (lbs: number): number => {
-    return lbs / 2.20462;
-  };
-
-  // Convert feet/inches to cm
-  const feetInchesToCm = (feet: number, inches: number): number => {
-    return feet * 30.48 + inches * 2.54;
-  };
 
   return {
     profile,
@@ -71,7 +70,5 @@ export function useUserProfile() {
     updateUserProfile,
     loading,
     error,
-    lbsToKg,
-    feetInchesToCm,
   };
 }
