@@ -1,10 +1,5 @@
 import { Colors } from '@/constants/theme';
-import type {
-  ExerciseType,
-  LogEntry,
-  LogEntryType,
-  MealType,
-} from '@/types/logging';
+import type { ExerciseType, LogEntry, LogEntryType, MealType } from '@/types/logging';
 import { Dumbbell, Moon, Utensils, X } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
@@ -205,10 +200,7 @@ export function LogEntryModal({
                         onPress={() => setMealType(mt.value)}
                       >
                         <Text
-                          style={[
-                            styles.chipText,
-                            mealType === mt.value && styles.chipTextActive,
-                          ]}
+                          style={[styles.chipText, mealType === mt.value && styles.chipTextActive]}
                         >
                           {mt.label}
                         </Text>
@@ -337,10 +329,7 @@ export function LogEntryModal({
                         onPress={() => setQuality(q)}
                       >
                         <Text
-                          style={[
-                            styles.qualityText,
-                            q <= quality && styles.qualityTextActive,
-                          ]}
+                          style={[styles.qualityText, q <= quality && styles.qualityTextActive]}
                         >
                           {q}
                         </Text>

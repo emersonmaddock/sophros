@@ -2,17 +2,7 @@ import { LogEntryModal } from '@/components/LogEntryModal';
 import { Colors } from '@/constants/theme';
 import type { LogEntry, LogEntryType } from '@/types/logging';
 import { useRouter } from 'expo-router';
-import {
-  Calendar,
-  Check,
-  Dumbbell,
-  Moon,
-  Plus,
-  RefreshCw,
-  Trash2,
-  Utensils,
-  X,
-} from 'lucide-react-native';
+import { Calendar, Check, Plus, RefreshCw, Trash2, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,14 +22,76 @@ type ScheduleItem = {
 };
 
 const INITIAL_ITEMS: ScheduleItem[] = [
-  { id: 's1', time: '7:00 AM', title: 'Wake Up & Stretch', duration: '30 min', type: 'exercise', status: 'completed' },
-  { id: 's2', time: '7:30 AM', title: 'Breakfast', subtitle: 'Greek Yogurt Bowl (380 cal)', duration: '20 min', type: 'meal', status: 'completed' },
-  { id: 's3', time: '9:00 AM', title: 'Morning Workout', subtitle: 'HIIT Training', duration: '45 min', type: 'exercise', status: 'completed' },
-  { id: 's4', time: '12:30 PM', title: 'Lunch', subtitle: 'Grilled Chicken Salad (520 cal)', duration: '30 min', type: 'meal', status: 'current' },
-  { id: 's5', time: '3:00 PM', title: 'Snack', subtitle: 'Protein Shake (180 cal)', duration: '10 min', type: 'meal', status: 'upcoming' },
-  { id: 's6', time: '6:30 PM', title: 'Evening Walk', duration: '30 min', type: 'exercise', status: 'upcoming' },
-  { id: 's7', time: '7:30 PM', title: 'Dinner', subtitle: 'Salmon & Vegetables (640 cal)', duration: '40 min', type: 'meal', status: 'upcoming' },
-  { id: 's8', time: '10:30 PM', title: 'Sleep', subtitle: 'Target: 8 hours', duration: '8 hrs', type: 'sleep', status: 'upcoming' },
+  {
+    id: 's1',
+    time: '7:00 AM',
+    title: 'Wake Up & Stretch',
+    duration: '30 min',
+    type: 'exercise',
+    status: 'completed',
+  },
+  {
+    id: 's2',
+    time: '7:30 AM',
+    title: 'Breakfast',
+    subtitle: 'Greek Yogurt Bowl (380 cal)',
+    duration: '20 min',
+    type: 'meal',
+    status: 'completed',
+  },
+  {
+    id: 's3',
+    time: '9:00 AM',
+    title: 'Morning Workout',
+    subtitle: 'HIIT Training',
+    duration: '45 min',
+    type: 'exercise',
+    status: 'completed',
+  },
+  {
+    id: 's4',
+    time: '12:30 PM',
+    title: 'Lunch',
+    subtitle: 'Grilled Chicken Salad (520 cal)',
+    duration: '30 min',
+    type: 'meal',
+    status: 'current',
+  },
+  {
+    id: 's5',
+    time: '3:00 PM',
+    title: 'Snack',
+    subtitle: 'Protein Shake (180 cal)',
+    duration: '10 min',
+    type: 'meal',
+    status: 'upcoming',
+  },
+  {
+    id: 's6',
+    time: '6:30 PM',
+    title: 'Evening Walk',
+    duration: '30 min',
+    type: 'exercise',
+    status: 'upcoming',
+  },
+  {
+    id: 's7',
+    time: '7:30 PM',
+    title: 'Dinner',
+    subtitle: 'Salmon & Vegetables (640 cal)',
+    duration: '40 min',
+    type: 'meal',
+    status: 'upcoming',
+  },
+  {
+    id: 's8',
+    time: '10:30 PM',
+    title: 'Sleep',
+    subtitle: 'Target: 8 hours',
+    duration: '8 hrs',
+    type: 'sleep',
+    status: 'upcoming',
+  },
 ];
 
 const scheduleTimeToMinutes = (time: string): number => {
@@ -86,21 +138,21 @@ export default function SchedulePage() {
 
   const confirmItem = (id: string) => {
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, logStatus: 'confirmed' as LogStatus } : item)),
+      prev.map((item) => (item.id === id ? { ...item, logStatus: 'confirmed' as LogStatus } : item))
     );
   };
 
   const skipItem = (id: string) => {
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, logStatus: 'skipped' as LogStatus } : item)),
+      prev.map((item) => (item.id === id ? { ...item, logStatus: 'skipped' as LogStatus } : item))
     );
   };
 
   const undoLogStatus = (id: string) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, logStatus: undefined, replacement: undefined } : item,
-      ),
+        item.id === id ? { ...item, logStatus: undefined, replacement: undefined } : item
+      )
     );
   };
 
@@ -114,8 +166,8 @@ export default function SchedulePage() {
         prev.map((item) =>
           item.id === replaceModal.itemId
             ? { ...item, logStatus: 'replaced' as LogStatus, replacement: entry }
-            : item,
-        ),
+            : item
+        )
       );
     }
     setReplaceModal({ visible: false, itemId: null, initialType: 'meal' });
@@ -135,25 +187,34 @@ export default function SchedulePage() {
     if (logStatus === 'confirmed') return Colors.light.success;
     if (logStatus === 'skipped') return '#D1D5DB';
     switch (type) {
-      case 'meal': return Colors.light.secondary;
-      case 'exercise': return Colors.light.primary;
-      default: return Colors.light.charts.carbs;
+      case 'meal':
+        return Colors.light.secondary;
+      case 'exercise':
+        return Colors.light.primary;
+      default:
+        return Colors.light.charts.carbs;
     }
   };
 
   const getTypeColor = (type: string): string => {
     switch (type) {
-      case 'meal': return Colors.light.secondary;
-      case 'exercise': return Colors.light.primary;
-      default: return Colors.light.charts.carbs;
+      case 'meal':
+        return Colors.light.secondary;
+      case 'exercise':
+        return Colors.light.primary;
+      default:
+        return Colors.light.charts.carbs;
     }
   };
 
   const getReplacementLabel = (entry: LogEntry): string => {
     switch (entry.type) {
-      case 'meal': return `${entry.name} (${entry.calories} cal)`;
-      case 'exercise': return `${entry.name} (${entry.durationMinutes} min)`;
-      case 'sleep': return `${entry.bedtime} – ${entry.wakeTime}`;
+      case 'meal':
+        return `${entry.name} (${entry.calories} cal)`;
+      case 'exercise':
+        return `${entry.name} (${entry.durationMinutes} min)`;
+      case 'sleep':
+        return `${entry.bedtime} – ${entry.wakeTime}`;
     }
   };
 
@@ -163,9 +224,15 @@ export default function SchedulePage() {
       case 'meal':
         return { title: entry.name, subtitle: `${cap(entry.mealType)} · ${entry.calories} cal` };
       case 'exercise':
-        return { title: entry.name, subtitle: `${cap(entry.exerciseType)} · ${entry.durationMinutes} min` };
+        return {
+          title: entry.name,
+          subtitle: `${cap(entry.exerciseType)} · ${entry.durationMinutes} min`,
+        };
       case 'sleep':
-        return { title: 'Sleep', subtitle: `${entry.bedtime} – ${entry.wakeTime} · Quality ${entry.quality}/5` };
+        return {
+          title: 'Sleep',
+          subtitle: `${entry.bedtime} – ${entry.wakeTime} · Quality ${entry.quality}/5`,
+        };
     }
   };
 
@@ -176,7 +243,11 @@ export default function SchedulePage() {
     | { kind: 'extra'; entry: LogEntry; minutes: number };
 
   const timelineRows: TimelineRow[] = [
-    ...items.map((item) => ({ kind: 'scheduled' as const, item, minutes: scheduleTimeToMinutes(item.time) })),
+    ...items.map((item) => ({
+      kind: 'scheduled' as const,
+      item,
+      minutes: scheduleTimeToMinutes(item.time),
+    })),
     ...extraEntries.map((entry) => ({
       kind: 'extra' as const,
       entry,
@@ -189,7 +260,6 @@ export default function SchedulePage() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -222,7 +292,6 @@ export default function SchedulePage() {
         {/* Timeline */}
         <View style={styles.timeline}>
           {timelineRows.map((row) => {
-
             // ── Extra (unscheduled) entry ──────────────────────────────────
             if (row.kind === 'extra') {
               const { entry } = row;
