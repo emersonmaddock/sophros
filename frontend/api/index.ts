@@ -2,12 +2,17 @@
 
 export {
   createScheduleItemApiV1SchedulesPost,
-  createUserApiV1UsersPost, deleteScheduleItemApiV1SchedulesItemIdDelete, generateMealPlanApiV1MealPlansGeneratePost, getScheduleItemsApiV1SchedulesGet,
-  healthCheckHealthGet, readUserMeApiV1UsersMeGet,
+  createUserApiV1UsersPost,
+  deleteScheduleItemApiV1SchedulesItemIdDelete,
+  generateMealPlanApiV1MealPlansGeneratePost,
+  getScheduleItemsApiV1SchedulesGet,
+  healthCheckHealthGet,
+  type Options,
+  readUserMeApiV1UsersMeGet,
   readUserTargetsApiV1UsersMeTargetsGet,
   rootGet,
   updateScheduleItemApiV1SchedulesItemIdPut,
-  updateUserMeApiV1UsersMePut, type Options
+  updateUserMeApiV1UsersMePut,
 } from './sdk.gen';
 export type {
   ActivityLevel,
@@ -27,16 +32,19 @@ export type {
   CreateUserApiV1UsersPostResponses,
   Cuisine,
   DailyMealPlan,
-  Day, DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
+  Day,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteError,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponse,
-  DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses, DriOutput,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+  DriOutput,
   GenerateMealPlanApiV1MealPlansGeneratePostData,
   GenerateMealPlanApiV1MealPlansGeneratePostError,
   GenerateMealPlanApiV1MealPlansGeneratePostErrors,
   GenerateMealPlanApiV1MealPlansGeneratePostResponse,
-  GenerateMealPlanApiV1MealPlansGeneratePostResponses, GetScheduleItemsApiV1SchedulesGetData,
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+  GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetError,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponse,
@@ -75,6 +83,5 @@ export type {
   UserRead,
   UserSchedule,
   UserUpdate,
-  ValidationError
+  ValidationError,
 } from './types.gen';
-

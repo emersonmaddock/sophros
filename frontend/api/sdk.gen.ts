@@ -134,31 +134,6 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
   });
 
 /**
- * Generate Meal Plan
- *
- * Generate a complete daily meal plan for the current user.
- *
- * Uses:
- * - NutrientCalculator to determine daily targets
- * - MealAllocator to split targets into timed meal slots
- * - SpoonacularClient to fetch suitable recipes
- *
- * Returns a populated DailyMealPlan with recipes for Breakfast, Lunch, Dinner.
- */
-export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends boolean = false>(
-  options?: Options<GenerateMealPlanApiV1MealPlansGeneratePostData, ThrowOnError>
-) =>
-  (options?.client ?? client).post<
-    GenerateMealPlanApiV1MealPlansGeneratePostResponses,
-    GenerateMealPlanApiV1MealPlansGeneratePostErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/meal-plans/generate',
-    ...options,
-  });
-
-/**
  * Get Schedule Items
  *
  * Fetch schedule items for the current user within a date range.
@@ -236,6 +211,31 @@ export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends b
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Generate Meal Plan
+ *
+ * Generate a complete daily meal plan for the current user.
+ *
+ * Uses:
+ * - NutrientCalculator to determine daily targets
+ * - MealAllocator to split targets into timed meal slots
+ * - SpoonacularClient to fetch suitable recipes
+ *
+ * Returns a populated DailyMealPlan with recipes for Breakfast, Lunch, Dinner.
+ */
+export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends boolean = false>(
+  options?: Options<GenerateMealPlanApiV1MealPlansGeneratePostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+    GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/generate',
+    ...options,
   });
 
 /**
