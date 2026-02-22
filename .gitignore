@@ -3,3 +3,8 @@
 .expo/
 android/
 ios/
+
+
+# AI
+.agents/
+skills-lock.json

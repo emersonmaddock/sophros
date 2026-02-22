@@ -2,7 +2,14 @@ import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
+import {
+  Calendar,
+  ChevronRight,
+  Dumbbell,
+  Plus,
+  TrendingUp,
+  Utensils,
+} from 'lucide-react-native';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,12 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Get user for name
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
 
-  // Get date for subtitle
-  // e.g., 'Wednesday, Dec 23'
   const today = new Date();
   const day = today.getDate();
   const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
@@ -28,7 +32,6 @@ export default function DashboardPage() {
       subtitle: 'Chicken & Quinoa',
       icon: Utensils,
       color: Colors.light.secondary,
-      status: 'upcoming',
     },
     {
       time: '3:00 PM',
@@ -36,7 +39,6 @@ export default function DashboardPage() {
       subtitle: 'Protein Shake',
       icon: Utensils,
       color: Colors.light.secondary,
-      status: 'upcoming',
     },
     {
       time: '6:00 PM',
@@ -44,7 +46,6 @@ export default function DashboardPage() {
       subtitle: '45 min Strength',
       icon: Dumbbell,
       color: Colors.light.primary,
-      status: 'scheduled',
     },
   ];
 
@@ -99,7 +100,7 @@ export default function DashboardPage() {
           </View>
         </TouchableOpacity>
 
-        {/* Today's Schedule */}
+        {/* Upcoming */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming</Text>
@@ -114,7 +115,11 @@ export default function DashboardPage() {
 
           <View style={styles.listContainer}>
             {upcomingItems.map((item, i) => (
-              <TouchableOpacity key={i} style={[styles.listItem, i === 0 && styles.activeListItem]}>
+              <TouchableOpacity
+                key={i}
+                style={[styles.listItem, i === 0 && styles.activeListItem]}
+                onPress={() => router.push('/(tabs)/schedule')}
+              >
                 <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
                   <item.icon size={24} color={item.color} />
                 </View>
@@ -122,18 +127,15 @@ export default function DashboardPage() {
                   <Text style={styles.itemTitle}>{item.title}</Text>
                   <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
                 </View>
-                <View style={styles.timeBox}>
-                  <View style={styles.timeBadge}>
-                    <Text style={styles.timeText}>{item.time}</Text>
-                  </View>
-                  {i === 0 && <Text style={styles.nowText}>• Now</Text>}
+                <View style={styles.timeBadge}>
+                  <Text style={styles.timeText}>{item.time}</Text>
                 </View>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Macros Progress */}
+        {/* Today's Macros */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
@@ -164,7 +166,10 @@ export default function DashboardPage() {
               <Text style={styles.actionText}>Plan Week</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => router.push('/(tabs)/schedule')}
+            >
               <Plus size={24} color={Colors.light.primary} />
               <Text style={styles.actionText}>Log Activity</Text>
             </TouchableOpacity>
@@ -271,7 +276,6 @@ const styles = StyleSheet.create({
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 0,
   },
   viewAllText: {
     fontSize: 16,
@@ -284,10 +288,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 24,
     ...Shadows.card,
-  },
-  macrosContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
   },
   listContainer: {
     gap: 12,
@@ -325,10 +325,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textMuted,
   },
-  timeBox: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
   timeBadge: {
     backgroundColor: Colors.light.background,
     borderRadius: 8,
@@ -339,12 +335,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: Colors.light.text,
-  },
-  nowText: {
-    display: 'none', // Hide for now
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.light.primary,
   },
   actionsGrid: {
     flexDirection: 'row',
