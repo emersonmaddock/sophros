@@ -18,7 +18,6 @@ export type {
   ActivityLevel,
   ActivityType,
   Allergy,
-  BusyTime,
   ClientOptions,
   CreateScheduleItemApiV1SchedulesPostData,
   CreateScheduleItemApiV1SchedulesPostError,
@@ -81,7 +80,6 @@ export type {
   UpdateUserMeApiV1UsersMePutResponses,
   UserCreate,
   UserRead,
-  UserSchedule,
   UserUpdate,
   ValidationError,
 } from './types.gen';
