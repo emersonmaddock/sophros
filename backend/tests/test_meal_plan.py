@@ -4,7 +4,6 @@ import pytest
 
 from app.schemas.dietary import Allergy, Cuisine
 from app.schemas.meal_plan import Day, MealSlot
-from app.schemas.user import UserSchedule
 from app.services.meal_plan import MealPlanService
 from tests.generate_mock_user import create_mock_user
 
@@ -22,7 +21,6 @@ async def test_generate_daily_plan_integration():
         height=180.0,
         gender="male",
         activity_level="moderate",
-        schedule=UserSchedule().model_dump(),
         allergies=[Allergy.PEANUT],
         include_cuisine=[Cuisine.ITALIAN],
         is_gluten_free=True,

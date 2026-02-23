@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Boolean, Float, Integer, String
+from sqlalchemy import Boolean, Float, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,16 +29,6 @@ class User(Base):
         default=PregnancyStatus.NOT_PREGNANT,
     )
 
-    # Schedule
-    schedule: Mapped[dict] = mapped_column(JSON, default=dict)
-
-    # Dietary Preferences: Allergies & Intolerances
-    allergies: Mapped[list[str]] = mapped_column(JSON, default=list)
-
-    # Dietary Preferences: Cuisines
-    include_cuisine: Mapped[list[str]] = mapped_column(JSON, default=list)
-    exclude_cuisine: Mapped[list[str]] = mapped_column(JSON, default=list)
-
     # Dietary Preferences: Diets
     is_gluten_free: Mapped[bool] = mapped_column(Boolean, default=False)
     is_ketogenic: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -51,4 +41,13 @@ class User(Base):
     # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/type-annotation-strings/
     schedules: Mapped[list["ScheduleItem"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "ScheduleItem", back_populates="user"
+    )
+    user_allergies: Mapped[list["UserAllergy"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "UserAllergy", back_populates="user"
+    )
+    user_include_cuisines: Mapped[list["UserIncludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "UserIncludeCuisine", back_populates="user"
+    )
+    user_exclude_cuisines: Mapped[list["UserExcludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "UserExcludeCuisine", back_populates="user"
     )

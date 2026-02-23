@@ -45,9 +45,10 @@ class MealPlanService:
         )
 
         # Step 2: Allocate to Slots
+        # TODO: Wire user.schedules (ScheduleItem rows) into meal timing logic
         meal_plan = MealAllocator.allocate_targets(
             daily_targets=daily_targets,
-            user_schedule=user.schedule,
+            user_schedule=None,
             day=day,
         )
 
