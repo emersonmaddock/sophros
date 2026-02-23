@@ -607,22 +607,6 @@ export type ReadUserTargetsApiV1UsersMeTargetsGetResponses = {
 export type ReadUserTargetsApiV1UsersMeTargetsGetResponse =
   ReadUserTargetsApiV1UsersMeTargetsGetResponses[keyof ReadUserTargetsApiV1UsersMeTargetsGetResponses];
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostData = {
-  body?: never;
-  path?: never;
-  query?: {
-    day?: Day;
-  };
-  url: '/api/v1/meal-plans/generate';
-};
-
-export type GenerateMealPlanApiV1MealPlansGeneratePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
 export type GetScheduleItemsApiV1SchedulesGetData = {
   body?: never;
   path?: never;
@@ -650,18 +634,6 @@ export type GetScheduleItemsApiV1SchedulesGetErrors = {
   422: HttpValidationError;
 };
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostError =
-  GenerateMealPlanApiV1MealPlansGeneratePostErrors[keyof GenerateMealPlanApiV1MealPlansGeneratePostErrors];
-
-export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: DailyMealPlan;
-};
-
-export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
-  GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
 export type GetScheduleItemsApiV1SchedulesGetError =
   GetScheduleItemsApiV1SchedulesGetErrors[keyof GetScheduleItemsApiV1SchedulesGetErrors];
 
@@ -767,6 +739,35 @@ export type UpdateScheduleItemApiV1SchedulesItemIdPutResponses = {
 
 export type UpdateScheduleItemApiV1SchedulesItemIdPutResponse =
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses[keyof UpdateScheduleItemApiV1SchedulesItemIdPutResponses];
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostData = {
+  body?: never;
+  path?: never;
+  query?: {
+    day?: Day;
+  };
+  url: '/api/v1/meal-plans/generate';
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostError =
+  GenerateMealPlanApiV1MealPlansGeneratePostErrors[keyof GenerateMealPlanApiV1MealPlansGeneratePostErrors];
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: DailyMealPlan;
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;
