@@ -19,6 +19,9 @@ class ScheduleItem(Base):
     )
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    google_event_id: Mapped[str | None] = mapped_column(
+        String, unique=True, index=True, nullable=True
+    )
 
     # Relationships
     # Use string of class name
