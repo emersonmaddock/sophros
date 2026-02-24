@@ -97,6 +97,8 @@ export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
  * Update User Me
  *
  * Update current user profile.
+ * Dietary list fields (allergies, include_cuisine, exclude_cuisine) are
+ * replaced wholesale — existing rows are deleted and new ones inserted.
  */
 export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false>(
   options: Options<UpdateUserMeApiV1UsersMePutData, ThrowOnError>
