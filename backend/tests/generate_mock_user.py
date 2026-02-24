@@ -1,4 +1,5 @@
-from app.schemas.dietary import Allergy, Cuisine
+from app.domain.enums import Allergy, Cuisine
+from app.models.user import User
 from app.schemas.user import UserRead
 
 
@@ -10,7 +11,7 @@ def create_mock_user(
     height: float = 180.0,
     show_imperial: bool = False,
     gender: str = "male",
-    activity_level: str = "moderately_active",
+    activity_level: str = "moderate",
     allergies: list[Allergy] | None = None,
     include_cuisine: list[Cuisine] | None = None,
     exclude_cuisine: list[Cuisine] | None = None,
@@ -19,7 +20,7 @@ def create_mock_user(
     is_vegetarian: bool = False,
     is_vegan: bool = False,
     is_pescatarian: bool = False,
-) -> UserRead:
+) -> User:
     """
     Creates a mock UserRead instance for testing.
     """

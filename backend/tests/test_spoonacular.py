@@ -138,7 +138,7 @@ async def test_search_recipes_personalized_live():
     """
     from app.core.config import settings
     from app.services.nutrient_calculator import NutrientCalculator
-    from tests.factories import create_mock_user
+    from tests.generate_mock_user import create_mock_user
 
     if not settings.SPOONACULAR_API_KEY:
         pytest.skip("SPOONACULAR_API_KEY not set")
@@ -147,7 +147,7 @@ async def test_search_recipes_personalized_live():
     user = create_mock_user(
         is_gluten_free=True,
         include_cuisine=[Cuisine.ITALIAN],
-        allergies=[Allergy.PEANUT],  # Let's add an allergy for fun
+        allergies=[Allergy.PEANUT],
     )
 
     print("\n\n--- PERSONALIZED LIVE API TEST ---")

@@ -1,13 +1,8 @@
-from enum import StrEnum
+from datetime import time as timeofday
 
 from pydantic import BaseModel, Field
 
-
-class MealSlot(StrEnum):
-    BREAKFAST = "Breakfast"
-    LUNCH = "Lunch"
-    DINNER = "Dinner"
-    SNACK = "Snack"
+from app.domain.enums import MealSlot
 
 
 class MealSlotTarget(BaseModel):
@@ -16,6 +11,7 @@ class MealSlotTarget(BaseModel):
     protein: int
     carbohydrates: int
     fat: int
+    time: timeofday | None = None
 
 
 class MealDistributionConfig(BaseModel):
