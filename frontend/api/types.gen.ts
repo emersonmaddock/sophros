@@ -74,6 +74,44 @@ export type DriOutput = {
 };
 
 /**
+ * DailyMealPlan
+ */
+export type DailyMealPlan = {
+  /**
+   * Slots
+   */
+  slots: Array<MealSlotTarget>;
+  /**
+   * Total Calories
+   */
+  total_calories: number;
+  /**
+   * Total Protein
+   */
+  total_protein: number;
+  /**
+   * Total Carbs
+   */
+  total_carbs: number;
+  /**
+   * Total Fat
+   */
+  total_fat: number;
+};
+
+/**
+ * Day
+ */
+export type Day =
+  | 'Monday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday'
+  | 'Sunday';
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -81,6 +119,38 @@ export type HttpValidationError = {
    * Detail
    */
   detail?: Array<ValidationError>;
+};
+
+/**
+ * MealSlot
+ */
+export type MealSlot = 'Breakfast' | 'Lunch' | 'Dinner';
+
+/**
+ * MealSlotTarget
+ */
+export type MealSlotTarget = {
+  slot_name: MealSlot;
+  /**
+   * Calories
+   */
+  calories: number;
+  /**
+   * Protein
+   */
+  protein: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates: number;
+  /**
+   * Fat
+   */
+  fat: number;
+  /**
+   * Time
+   */
+  time?: string | null;
 };
 
 /**
@@ -630,6 +700,35 @@ export type UpdateScheduleItemApiV1SchedulesItemIdPutResponses = {
 
 export type UpdateScheduleItemApiV1SchedulesItemIdPutResponse =
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses[keyof UpdateScheduleItemApiV1SchedulesItemIdPutResponses];
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostData = {
+  body?: never;
+  path?: never;
+  query?: {
+    day?: Day;
+  };
+  url: '/api/v1/meal-plans/generate';
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostError =
+  GenerateMealPlanApiV1MealPlansGeneratePostErrors[keyof GenerateMealPlanApiV1MealPlansGeneratePostErrors];
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: DailyMealPlan;
+};
+
+export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;

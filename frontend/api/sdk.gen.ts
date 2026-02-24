@@ -12,6 +12,9 @@ import type {
   DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+  GenerateMealPlanApiV1MealPlansGeneratePostData,
+  GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+  GenerateMealPlanApiV1MealPlansGeneratePostResponses,
   GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponses,
@@ -94,6 +97,8 @@ export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
  * Update User Me
  *
  * Update current user profile.
+ * Dietary list fields (allergies, include_cuisine, exclude_cuisine) are
+ * replaced wholesale — existing rows are deleted and new ones inserted.
  */
 export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false>(
   options: Options<UpdateUserMeApiV1UsersMePutData, ThrowOnError>
@@ -208,6 +213,31 @@ export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends b
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Generate Meal Plan
+ *
+ * Generate a complete daily meal plan for the current user.
+ *
+ * Uses:
+ * - NutrientCalculator to determine daily targets
+ * - MealAllocator to split targets into timed meal slots
+ * - SpoonacularClient to fetch suitable recipes
+ *
+ * Returns a populated DailyMealPlan with recipes for Breakfast, Lunch, Dinner.
+ */
+export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends boolean = false>(
+  options?: Options<GenerateMealPlanApiV1MealPlansGeneratePostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+    GenerateMealPlanApiV1MealPlansGeneratePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/generate',
+    ...options,
   });
 
 /**

@@ -1,5 +1,8 @@
+from datetime import time
+
 from app.schemas.meal_plan import MealDistributionConfig, MealSlot
 from app.schemas.nutrient import DRIOutput, NutrientRange
+from app.schemas.user import BusyTime, UserSchedule
 from app.services.meal_allocator import MealAllocator
 
 
@@ -54,3 +57,45 @@ def test_allocate_uneven_split():
     sum_calories = sum(s.calories for s in plan.slots)
     # 330 + 330 + 340 = 1000
     assert sum_calories == 1000
+
+
+def test_allocate_with_schedule():
+    # Setup Daily Targets
+    daily = DRIOutput(
+        calories=NutrientRange(min=1800, target=2000, max=2200),
+        protein=NutrientRange(min=100, target=150, max=200),
+        carbohydrates=NutrientRange(min=200, target=250, max=300),
+        fat=NutrientRange(min=50, target=70, max=90),
+    )
+
+    # Schedule: Busy during standard Breakfast start (08:00-09:00)
+    # Default Breakfast search is 06:00-10:00.
+    # Helper starts at 06:00.
+    # Let's block 06:00 to 09:00 completely.
+    schedule = UserSchedule(
+        busy_times=[BusyTime(day="Monday", start=time(6, 0), end=time(9, 0))]
+    )
+
+    plan = MealAllocator.allocate_targets(daily, user_schedule=schedule, day="Monday")
+
+    breakfast = next(s for s in plan.slots if s.slot_name == MealSlot.BREAKFAST)
+
+    # Should be at 09:00 or later
+    assert breakfast.time is not None
+    assert breakfast.time >= time(9, 0)
+    assert breakfast.time <= time(10, 0)
+
+    # Test Dinner conflict
+    # Dinner Window: 18:00-21:00
+    # Busy: 18:00-19:30
+    schedule.busy_times.append(
+        BusyTime(day="Monday", start=time(18, 0), end=time(19, 30))
+    )
+
+    plan_conflict = MealAllocator.allocate_targets(
+        daily, user_schedule=schedule, day="Monday"
+    )
+    dinner = next(s for s in plan_conflict.slots if s.slot_name == MealSlot.DINNER)
+
+    assert dinner.time is not None
+    assert dinner.time >= time(19, 30)

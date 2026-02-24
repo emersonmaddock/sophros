@@ -1,7 +1,23 @@
-from pydantic import BaseModel, ConfigDict
+from datetime import time
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
 from app.schemas.dietary import Allergy, Cuisine
+
+
+# Kept for use by MealAllocator (schedule-based meal timing logic)
+class BusyTime(BaseModel):
+    day: str = "Monday"
+    start: time = time(9, 0)
+    end: time = time(17, 0)
+
+
+class UserSchedule(BaseModel):
+    busy_times: list[BusyTime] = Field(default_factory=list)
+    wake_up_time: time = time(7, 0)
+    sleep_time: time = time(23, 0)
 
 
 # TODO: Use enums for other attrs
@@ -13,9 +29,7 @@ class UserBase(BaseModel):
     show_imperial: bool
     gender: Sex
     activity_level: ActivityLevel
-    pregnancy_status: PregnancyStatus = (
-        PregnancyStatus.NOT_PREGNANT
-    )  # Default for males
+    pregnancy_status: PregnancyStatus = PregnancyStatus.NOT_PREGNANT
 
     # Dietary Preferences: Allergies & Intolerances
     allergies: list[Allergy] = []
@@ -62,3 +76,41 @@ class UserUpdate(BaseModel):
 class UserRead(UserBase):
     id: str
     model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def flatten_relationships(cls, data: Any) -> Any:
+        """
+        When constructing from an ORM User object, flatten the dietary
+        relationship lists (list[UserAllergy] etc.) into plain enum value lists.
+        Dict inputs (e.g. direct construction in tests) pass through unchanged.
+        """
+        if isinstance(data, dict):
+            return data
+        return {
+            "id": data.id,
+            "email": data.email,
+            "age": data.age,
+            "weight": data.weight,
+            "height": data.height,
+            "show_imperial": data.show_imperial,
+            "gender": data.gender,
+            "activity_level": data.activity_level,
+            "pregnancy_status": data.pregnancy_status,
+            "allergies": [item.value for item in (data.user_allergies or [])],
+            "include_cuisine": [
+                item.value for item in (data.user_include_cuisines or [])
+            ],
+            "exclude_cuisine": [
+                item.value for item in (data.user_exclude_cuisines or [])
+            ],
+            "is_gluten_free": data.is_gluten_free,
+            "is_ketogenic": data.is_ketogenic,
+            "is_vegetarian": data.is_vegetarian,
+            "is_vegan": data.is_vegan,
+            "is_pescatarian": data.is_pescatarian,
+        }
+
+
+# Alias for backward compatibility
+User = UserRead
