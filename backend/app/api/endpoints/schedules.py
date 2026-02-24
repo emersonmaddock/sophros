@@ -7,13 +7,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.models.schedule import ScheduleItem
 from app.models.user import User
+from app.schemas.google_calendar import SyncResult
 from app.schemas.schedule import (
     ScheduleItemCreate,
     ScheduleItemRead,
     ScheduleItemUpdate,
 )
+from app.services.google_calendar import GoogleCalendarService
 
 router = APIRouter()
+
+
+@router.post("/sync/google", response_model=SyncResult)
+async def sync_google_calendar(
+    current_user: User = Depends(deps.get_current_user),
+    db: AsyncSession = Depends(deps.get_db),
+):
+    """
+    Sync the current user's Google Calendar events to their Sophros schedule.
+    """
+    service = GoogleCalendarService()
+    try:
+        result = await service.sync_calendar(db, current_user.id)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to sync Google Calendar: {str(e)}",
+        ) from e
 
 
 @router.post("", response_model=ScheduleItemRead)

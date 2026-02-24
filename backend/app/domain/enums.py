@@ -27,9 +27,7 @@ class PregnancyStatus(StrEnum):
 class ActivityType(StrEnum):
     MEAL = "meal"
     SLEEP = "sleep"
-    WORK = "work"
     EXERCISE = "exercise"
-    LEISURE = "leisure"
     OTHER = "other"
 
 

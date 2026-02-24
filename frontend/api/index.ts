@@ -11,6 +11,7 @@ export {
   readUserMeApiV1UsersMeGet,
   readUserTargetsApiV1UsersMeTargetsGet,
   rootGet,
+  syncGoogleCalendarApiV1SchedulesSyncGooglePost,
   updateScheduleItemApiV1SchedulesItemIdPut,
   updateUserMeApiV1UsersMePut,
 } from './sdk.gen';
@@ -68,6 +69,10 @@ export type {
   ScheduleItemRead,
   ScheduleItemUpdate,
   Sex,
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostData,
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponse,
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses,
+  SyncResult,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutError,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
