@@ -140,9 +140,7 @@ class MealPlanService:
             )
 
         slot.recipe = self._convert_to_recipe(results[0])
-        slot.alternatives = [
-            self._convert_to_recipe(r) for r in results[1:]
-        ]
+        slot.alternatives = [self._convert_to_recipe(r) for r in results[1:]]
 
         logger.info(
             "Got %d recipes for %s: primary=%s",

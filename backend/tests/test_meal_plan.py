@@ -132,7 +132,9 @@ async def test_generate_daily_plan_integration():
 
     # Verify each slot has a time assigned (defaults)
     for slot in plan.slots:
-        assert slot.time is not None, f"Slot {slot.slot_name} should have a default time"
+        assert slot.time is not None, (
+            f"Slot {slot.slot_name} should have a default time"
+        )
 
     # Verify API was called 3 times (once per meal, number=3)
     assert mock_client.search_recipes.await_count == 3
