@@ -91,7 +91,7 @@ class MealPlanService:
         )
 
         return WeeklyMealPlan(
-            days={day: plan for day, plan in zip(all_days, daily_plans)}
+            days={day: plan for day, plan in zip(all_days, daily_plans, strict=True)}
         )
 
     async def _fetch_slot_recipes(
