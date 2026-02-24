@@ -12,13 +12,13 @@ def google_service():
 
 
 def test_classify_activity(google_service):
-    assert google_service.classify_activity("Team Standup") == ActivityType.WORK
+    assert google_service.classify_activity("Team Standup") == ActivityType.OTHER
     assert (
         google_service.classify_activity("Morning Gym Session") == ActivityType.EXERCISE
     )
     assert google_service.classify_activity("Dinner with family") == ActivityType.MEAL
     assert google_service.classify_activity("Sleep") == ActivityType.SLEEP
-    assert google_service.classify_activity("Watching a movie") == ActivityType.LEISURE
+    assert google_service.classify_activity("Watching a movie") == ActivityType.OTHER
     assert google_service.classify_activity("Random task") == ActivityType.OTHER
 
 
@@ -52,12 +52,12 @@ async def test_sync_calendar_success(google_service):
     with (
         patch.object(google_service, "get_google_token_from_clerk", return_value=token),
         patch("app.services.google_calendar.build") as mock_build,
-        patch("app.services.google_calendar.select") as mock_select,
         patch("app.services.google_calendar.ScheduleItem") as mock_schedule_item_class,
     ):
         # Setup mock service
         mock_calendar_service = mock_build.return_value
-        mock_calendar_service.events.return_value.list.return_value.execute.return_value = mock_events
+        mock_events_list = mock_calendar_service.events.return_value.list
+        mock_events_list.return_value.execute.return_value = mock_events
 
         # Setup mock DB result (event doesn't exist)
         db_result = MagicMock()  # Sync mock because scalar_one_or_none is sync

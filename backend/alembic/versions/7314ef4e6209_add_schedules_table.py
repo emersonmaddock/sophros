@@ -25,7 +25,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('user_id', sa.String(), nullable=False),
     sa.Column('date', sa.DateTime(), nullable=False),
-    sa.Column('activity_type', sa.Enum('MEAL', 'SLEEP', 'WORK', 'EXERCISE', 'LEISURE', 'OTHER', name='activity_type_enum'), nullable=False),
+    sa.Column('activity_type', sa.Enum('MEAL', 'SLEEP', 'EXERCISE', 'OTHER', name='activity_type_enum'), nullable=False),
     sa.Column('duration_minutes', sa.Integer(), nullable=False),
     sa.Column('is_completed', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),

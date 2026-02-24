@@ -52,29 +52,6 @@ class GoogleCalendarService:
                 "brunch",
             ],
             ActivityType.SLEEP: ["sleep", "nap", "bed"],
-            ActivityType.WORK: [
-                "meeting",
-                "standup",
-                "office",
-                "work",
-                "sync",
-                "call",
-                "zoom",
-                "teams",
-                "interview",
-                "presentation",
-            ],
-            ActivityType.LEISURE: [
-                "movie",
-                "game",
-                "party",
-                "relax",
-                "chill",
-                "vacation",
-                "holiday",
-                "concert",
-                "theatre",
-            ],
         }
 
         for activity_type, word_list in keywords.items():
@@ -164,7 +141,7 @@ class GoogleCalendarService:
                 # Parse datetime
                 if "T" in start_dt_str:
                     # 2024-02-23T15:00:00Z or 2024-02-23T15:00:00-05:00
-                    # For simplicity, we remove TZ info for now or use fromisoformat if 3.11+
+                    # For simplicity, we remove TZ info for now
                     start_dt = datetime.datetime.fromisoformat(
                         start_dt_str.replace("Z", "+00:00")
                     )
