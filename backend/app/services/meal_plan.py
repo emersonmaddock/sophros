@@ -1,5 +1,6 @@
+from app.domain.enums import Day, MealSlot
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import DailyMealPlan, Day, MealSlot
+from app.schemas.meal_plan import DailyMealPlan
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import User
 from app.services.meal_allocator import MealAllocator

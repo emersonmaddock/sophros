@@ -1,10 +1,9 @@
 from datetime import time
 
+from app.domain.enums import Day, MealSlot
 from app.schemas.meal_plan import (
     DailyMealPlan,
-    Day,
     MealDistributionConfig,
-    MealSlot,
     MealSlotTarget,
 )
 from app.schemas.nutrient import DRIOutput

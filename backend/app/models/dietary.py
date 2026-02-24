@@ -3,7 +3,7 @@ from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.schemas.dietary import Allergy, Cuisine
+from app.domain.enums import Allergy, Cuisine
 
 
 class UserAllergy(Base):

@@ -1,23 +1,8 @@
 from datetime import time as timeofday
-from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-
-class MealSlot(StrEnum):
-    BREAKFAST = "Breakfast"
-    LUNCH = "Lunch"
-    DINNER = "Dinner"
-
-
-class Day(StrEnum):
-    MONDAY = "Monday"
-    TUESDAY = "Tuesday"
-    WEDNESDAY = "Wednesday"
-    THURSDAY = "Thursday"
-    FRIDAY = "Friday"
-    SATURDAY = "Saturday"
-    SUNDAY = "Sunday"
+from app.domain.enums import MealSlot
 
 
 class MealSlotTarget(BaseModel):

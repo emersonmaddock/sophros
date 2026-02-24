@@ -1,5 +1,5 @@
+from app.domain.enums import Allergy, Cuisine
 from app.models.user import User
-from app.schemas.dietary import Allergy, Cuisine
 from app.schemas.user import UserRead
 
 

@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
+from app.domain.enums import Day
 from app.models.user import User as DBUser
-from app.schemas.meal_plan import DailyMealPlan, Day
+from app.schemas.meal_plan import DailyMealPlan
 from app.schemas.user import UserRead
 from app.services.meal_plan import MealPlanService
 

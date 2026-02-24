@@ -2,8 +2,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.schemas.dietary import Allergy, Cuisine
-from app.schemas.meal_plan import Day, MealSlot
+from app.domain.enums import Allergy, Cuisine, Day, MealSlot
 from app.services.meal_plan import MealPlanService
 from tests.generate_mock_user import create_mock_user
 

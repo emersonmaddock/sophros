@@ -1,27 +1,10 @@
-from enum import StrEnum
 from typing import Any
 
 import httpx
 
 from app.core.config import settings
+from app.domain.enums import MealType
 from app.schemas.dietary import DietaryConstraints
-
-
-class MealType(StrEnum):
-    MAIN_COURSE = "main course"
-    SIDE_DISH = "side dish"
-    DESSERT = "dessert"
-    APPETIZER = "appetizer"
-    SALAD = "salad"
-    BREAD = "bread"
-    BREAKFAST = "breakfast"
-    SOUP = "soup"
-    BEVERAGE = "beverage"
-    SAUCE = "sauce"
-    MARINADE = "marinade"
-    FINGERFOOD = "fingerfood"
-    SNACK = "snack"
-    DRINK = "drink"
 
 
 class SpoonacularClient:
