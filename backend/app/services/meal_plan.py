@@ -1,11 +1,16 @@
+import asyncio
+import logging
+
 from app.domain.enums import Day, MealSlot
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import DailyMealPlan
+from app.schemas.meal_plan import DailyMealPlan, MealSlotTarget, WeeklyMealPlan
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import User
 from app.services.meal_allocator import MealAllocator
 from app.services.nutrient_calculator import NutrientCalculator
 from app.services.spoonacular import MealType, SpoonacularClient
+
+logger = logging.getLogger(__name__)
 
 
 class MealPlanService:
@@ -32,8 +37,8 @@ class MealPlanService:
         Steps:
         1. Calculate daily nutrient targets
         2. Allocate targets to meal slots with times
-        3. Fetch 1 recipe per slot from Spoonacular
-        4. Return populated meal plan
+        3. Fetch recipes per slot from Spoonacular (primary + 2 alternatives)
+        4. Return populated meal plan with recipes
         """
 
         # Step 1: Calculate Daily Targets
@@ -46,15 +51,13 @@ class MealPlanService:
         )
 
         # Step 2: Allocate to Slots
-        # TODO: Wire user.schedules (ScheduleItem rows) into meal timing logic
         meal_plan = MealAllocator.allocate_targets(
             daily_targets=daily_targets,
             user_schedule=None,
             day=day,
         )
 
-        # Step 3: Fetch Recipes for Each Slot
-        # Build dietary constraints from user profile
+        # Step 3: Build dietary constraints from user profile
         dietary_constraints = DietaryConstraints(
             allergies=user.allergies,
             include_cuisine=user.include_cuisine,
@@ -66,49 +69,89 @@ class MealPlanService:
             is_pescatarian=user.is_pescatarian,
         )
 
-        recipes: list[Recipe | None] = []
+        # Step 4: Fetch recipes for all slots in parallel
+        async def fetch_for_slot(slot: MealSlotTarget) -> MealSlotTarget:
+            return await self._fetch_slot_recipes(slot, dietary_constraints)
 
-        for slot in meal_plan.slots:
-            # Map slot to Spoonacular meal type
-            meal_type = self.MEAL_TYPE_MAP.get(slot.slot_name)
+        populated_slots = await asyncio.gather(
+            *[fetch_for_slot(slot) for slot in meal_plan.slots]
+        )
 
-            # Calculate calorie/macro ranges (±10% tolerance)
-            tolerance = 0.10
-            min_cals = int(slot.calories * (1 - tolerance))
-            max_cals = int(slot.calories * (1 + tolerance))
-            min_protein = int(slot.protein * (1 - tolerance))
-            max_protein = int(slot.protein * (1 + tolerance))
-            min_carbs = int(slot.carbohydrates * (1 - tolerance))
-            max_carbs = int(slot.carbohydrates * (1 + tolerance))
-            min_fat = int(slot.fat * (1 - tolerance))
-            max_fat = int(slot.fat * (1 + tolerance))
+        meal_plan.slots = list(populated_slots)
+        return meal_plan
 
-            # Fetch 1 recipe
-            results = await self.spoonacular_client.search_recipes(
-                type=meal_type,
-                min_calories=min_cals,
-                max_calories=max_cals,
-                min_protein=min_protein,
-                max_protein=max_protein,
-                min_carbs=min_carbs,
-                max_carbs=max_carbs,
-                min_fat=min_fat,
-                max_fat=max_fat,
-                constraints=dietary_constraints,
-                number=1,
+    async def generate_weekly_plan(self, user: User) -> WeeklyMealPlan:
+        """
+        Generates a complete weekly meal plan by running all 7 days in parallel.
+        """
+        all_days = list(Day)
+
+        daily_plans = await asyncio.gather(
+            *[self.generate_daily_plan(user, day=day) for day in all_days]
+        )
+
+        return WeeklyMealPlan(
+            days={day: plan for day, plan in zip(all_days, daily_plans)}
+        )
+
+    async def _fetch_slot_recipes(
+        self, slot: MealSlotTarget, constraints: DietaryConstraints
+    ) -> MealSlotTarget:
+        """
+        Fetches primary recipe + 2 alternatives for a single slot.
+        Uses a single API call with number=3.
+
+        Strategy: search by calorie range + meal type only.
+        Individual macro constraints (protein/carbs/fat) are too restrictive
+        and cause Spoonacular to return 0 results. We use a wide ±30%
+        calorie tolerance to maximize the chance of getting results.
+
+        Raises ValueError if Spoonacular returns no recipes.
+        """
+        meal_type = self.MEAL_TYPE_MAP.get(slot.slot_name)
+
+        # Wide calorie range only — individual macro filters dropped
+        tolerance = 0.30
+        min_cals = int(slot.calories * (1 - tolerance))
+        max_cals = int(slot.calories * (1 + tolerance))
+
+        logger.info(
+            "Fetching recipes for %s: %d-%d cal, type=%s",
+            slot.slot_name,
+            min_cals,
+            max_cals,
+            meal_type,
+        )
+
+        results = await self.spoonacular_client.search_recipes(
+            type=meal_type,
+            min_calories=min_cals,
+            max_calories=max_cals,
+            constraints=constraints,
+            number=3,
+            sort="random",
+        )
+
+        if not results:
+            raise ValueError(
+                f"Spoonacular returned no recipes for {slot.slot_name} "
+                f"({min_cals}-{max_cals} cal, type={meal_type}). "
+                f"Check API key and dietary constraints."
             )
 
-            # Convert to Recipe model
-            if results:
-                recipe = self._convert_to_recipe(results[0])
-                recipes.append(recipe)
-            else:
-                recipes.append(None)  # No recipe found for this slot
+        slot.recipe = self._convert_to_recipe(results[0])
+        slot.alternatives = [
+            self._convert_to_recipe(r) for r in results[1:]
+        ]
 
-        # Step 4: Populate plan with recipes (for now, just store in a new field)
-        # We'll need to update DailyMealPlan schema to include recipes
-        # For now, returning the plan as-is
-        return meal_plan
+        logger.info(
+            "Got %d recipes for %s: primary=%s",
+            len(results),
+            slot.slot_name,
+            slot.recipe.title,
+        )
+
+        return slot
 
     def _convert_to_recipe(self, spoon_data: dict) -> Recipe:
         """
@@ -161,4 +204,7 @@ class MealPlanService:
             ),
             tags=tags,
             ingredients=ingredients,
+            preparation_time_minutes=spoon_data.get("readyInMinutes"),
+            source_url=spoon_data.get("sourceUrl"),
+            image_url=spoon_data.get("image"),
         )

@@ -26,6 +26,13 @@ class MealAllocator:
         MealSlot.DINNER: (time(18, 0), time(21, 0)),
     }
 
+    # Default meal times when no user schedule is provided
+    DEFAULT_TIMES = {
+        MealSlot.BREAKFAST: time(7, 30),
+        MealSlot.LUNCH: time(12, 30),
+        MealSlot.DINNER: time(19, 0),
+    }
+
     @classmethod
     def allocate_targets(
         cls,
@@ -58,10 +65,12 @@ class MealAllocator:
             # Try to match string to Enum
             slot_enum = MealSlot(slot_name_str)
 
-            # Determine Time
+            # Determine Time — use schedule if available, otherwise defaults
             meal_time = None
             if user_schedule:
                 meal_time = cls._find_time_for_slot(slot_enum, user_schedule, day)
+            if meal_time is None:
+                meal_time = cls.DEFAULT_TIMES.get(slot_enum)
 
             slots_output.append(
                 MealSlotTarget(

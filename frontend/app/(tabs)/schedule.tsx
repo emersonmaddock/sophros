@@ -1,10 +1,24 @@
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
+import { useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
+import type { Day } from '@/api/types.gen';
+import type { WeeklyScheduleItem } from '@/types/schedule';
 import { useRouter } from 'expo-router';
 import { Calendar } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const JS_DAY_TO_API_DAY: Record<number, Day> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+};
 
 type ScheduleItem = {
   time: string;
@@ -13,6 +27,7 @@ type ScheduleItem = {
   duration: string;
   type: 'meal' | 'exercise' | 'sleep';
   status: 'completed' | 'current' | 'upcoming';
+  recipe?: WeeklyScheduleItem['recipe'];
 };
 
 export default function SchedulePage() {
@@ -20,87 +35,58 @@ export default function SchedulePage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
 
+  const { data: weeklyPlan } = useWeeklyMealPlanQuery();
+
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Calculate dates for the current week
   const today = new Date();
-  const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+  const todayDayOfWeek = today.getDay();
+  const currentHour = today.getHours();
 
-  // Get the start of the week (Sunday)
   const startOfWeek = new Date(today);
   startOfWeek.setDate(today.getDate() - todayDayOfWeek);
 
-  // Generate dates for the week
   const weekDates = days.map((_, index) => {
     const date = new Date(startOfWeek);
     date.setDate(startOfWeek.getDate() + index);
     return date.getDate();
   });
 
-  const scheduleItems: ScheduleItem[] = [
-    {
-      time: '7:00 AM',
-      title: 'Wake Up & Stretch',
-      duration: '30 min',
-      type: 'exercise',
-      status: 'completed',
-    },
-    {
-      time: '7:30 AM',
-      title: 'Breakfast',
-      subtitle: 'Greek Yogurt Bowl (380 cal)',
-      duration: '20 min',
-      type: 'meal',
-      status: 'completed',
-    },
-    {
-      time: '9:00 AM',
-      title: 'Morning Workout',
-      subtitle: 'HIIT Training',
-      duration: '45 min',
-      type: 'exercise',
-      status: 'completed',
-    },
-    {
-      time: '12:30 PM',
-      title: 'Lunch',
-      subtitle: 'Grilled Chicken Salad (520 cal)',
-      duration: '30 min',
-      type: 'meal',
-      status: 'current',
-    },
-    {
-      time: '3:00 PM',
-      title: 'Snack',
-      subtitle: 'Protein Shake (180 cal)',
-      duration: '10 min',
-      type: 'meal',
-      status: 'upcoming',
-    },
-    {
-      time: '6:30 PM',
-      title: 'Evening Walk',
-      duration: '30 min',
-      type: 'exercise',
-      status: 'upcoming',
-    },
-    {
-      time: '7:30 PM',
-      title: 'Dinner',
-      subtitle: 'Salmon & Vegetables (640 cal)',
-      duration: '40 min',
-      type: 'meal',
-      status: 'upcoming',
-    },
-    {
-      time: '10:30 PM',
-      title: 'Sleep',
-      subtitle: 'Target: 8 hours',
-      duration: '8 hrs',
-      type: 'sleep',
-      status: 'upcoming',
-    },
-  ];
+  // Convert today's API plan to schedule items
+  const scheduleItems: ScheduleItem[] = useMemo(() => {
+    const todayApiDay = JS_DAY_TO_API_DAY[todayDayOfWeek];
+    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+
+    if (!todayPlan) {
+      // Fallback to empty state if no plan cached
+      return [];
+    }
+
+    const mapped = mapDailyPlanToScheduleItems(todayPlan);
+
+    return mapped.map((item) => {
+      // Parse time to determine status
+      const [timePart, period] = item.time.split(' ');
+      const [hours] = timePart.split(':').map(Number);
+      let itemHour = hours;
+      if (period === 'PM' && hours !== 12) itemHour += 12;
+      if (period === 'AM' && hours === 12) itemHour = 0;
+
+      let status: 'completed' | 'current' | 'upcoming' = 'upcoming';
+      if (itemHour < currentHour) status = 'completed';
+      else if (itemHour === currentHour) status = 'current';
+
+      return {
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle,
+        duration: item.duration,
+        type: 'meal' as const,
+        status,
+        recipe: item.recipe,
+      };
+    });
+  }, [weeklyPlan, todayDayOfWeek, currentHour]);
 
   const handleItemPress = (item: ScheduleItem) => {
     if (item.type === 'meal') {
@@ -147,57 +133,66 @@ export default function SchedulePage() {
         </View>
 
         {/* Timeline */}
-        <View style={styles.timeline}>
-          {scheduleItems.map((item, i) => (
-            <View key={i} style={styles.timelineItem}>
-              <View style={styles.timeColumn}>
-                <Text style={styles.itemTime}>{item.time}</Text>
-              </View>
+        {scheduleItems.length > 0 ? (
+          <View style={styles.timeline}>
+            {scheduleItems.map((item, i) => (
+              <View key={i} style={styles.timelineItem}>
+                <View style={styles.timeColumn}>
+                  <Text style={styles.itemTime}>{item.time}</Text>
+                </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.eventCard,
-                  { borderLeftColor: getBorderColor(item.type) },
-                  item.status === 'completed' && { opacity: 0.6 },
-                ]}
-                onPress={() => handleItemPress(item)}
-                disabled={item.type !== 'meal'}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: 4,
-                  }}
+                <TouchableOpacity
+                  style={[
+                    styles.eventCard,
+                    { borderLeftColor: getBorderColor(item.type) },
+                    item.status === 'completed' && { opacity: 0.6 },
+                  ]}
+                  onPress={() => handleItemPress(item)}
                 >
                   <View
                     style={{
                       flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 4,
                     }}
                   >
-                    <Text style={styles.eventTitle}>
-                      {item.title}
-                      {item.status === 'completed' && ' ✓'}
-                    </Text>
-                    {item.status === 'current' && (
-                      <View style={styles.nowBadge}>
-                        <Text style={styles.nowText}>NOW</Text>
-                      </View>
-                    )}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        flex: 1,
+                      }}
+                    >
+                      <Text style={styles.eventTitle} numberOfLines={1}>
+                        {item.title}
+                        {item.status === 'completed' && ' ✓'}
+                      </Text>
+                      {item.status === 'current' && (
+                        <View style={styles.nowBadge}>
+                          <Text style={styles.nowText}>NOW</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.durationBadge}>
+                      <Text style={styles.durationText}>{item.duration}</Text>
+                    </View>
                   </View>
-                  <View style={styles.durationBadge}>
-                    <Text style={styles.durationText}>{item.duration}</Text>
-                  </View>
-                </View>
 
-                {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+                  {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No meals planned yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Generate a week plan to see your daily meals here
+            </Text>
+          </View>
+        )}
 
         {/* Plan Next Week Button */}
         <TouchableOpacity style={styles.planButton} onPress={() => router.push('/week-planning')}>
@@ -276,26 +271,6 @@ const styles = StyleSheet.create({
   activeDateText: {
     color: '#FFFFFF',
   },
-  timeIndicator: {
-    backgroundColor: `${Colors.light.primary}10`,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.light.primary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  currentTimeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  timeSubText: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
-  },
   timeline: {
     marginTop: 8,
   },
@@ -356,16 +331,20 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
     marginTop: 2,
   },
-  tapHint: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 8,
+  emptyState: {
     alignItems: 'center',
+    paddingVertical: 48,
+    gap: 8,
   },
-  tapHintText: {
-    fontSize: 11,
-    color: Colors.light.primary,
-    fontWeight: '500',
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
   },
   planButton: {
     backgroundColor: Colors.light.primary,

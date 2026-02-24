@@ -15,6 +15,8 @@ import type {
   GenerateMealPlanApiV1MealPlansGeneratePostData,
   GenerateMealPlanApiV1MealPlansGeneratePostErrors,
   GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
   GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponses,
@@ -237,6 +239,29 @@ export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends 
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/generate',
+    ...options,
+  });
+
+/**
+ * Generate Week Plan
+ *
+ * Generate a complete weekly meal plan for the current user.
+ *
+ * Runs all 7 days in parallel via asyncio.gather.
+ * Returns a WeeklyMealPlan with recipes for every slot of every day.
+ */
+export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/generate-week',
     ...options,
   });
 

@@ -2,7 +2,8 @@ from datetime import time as timeofday
 
 from pydantic import BaseModel, Field
 
-from app.domain.enums import MealSlot
+from app.domain.enums import Day, MealSlot
+from app.schemas.recipe import Recipe
 
 
 class MealSlotTarget(BaseModel):
@@ -12,6 +13,8 @@ class MealSlotTarget(BaseModel):
     carbohydrates: int
     fat: int
     time: timeofday | None = None
+    recipe: Recipe | None = None
+    alternatives: list[Recipe] = Field(default_factory=list)
 
 
 class MealDistributionConfig(BaseModel):
@@ -28,3 +31,7 @@ class DailyMealPlan(BaseModel):
     total_protein: int
     total_carbs: int
     total_fat: int
+
+
+class WeeklyMealPlan(BaseModel):
+    days: dict[Day, DailyMealPlan]

@@ -151,6 +151,11 @@ export type MealSlotTarget = {
    * Time
    */
   time?: string | null;
+  recipe?: Recipe | null;
+  /**
+   * Alternatives
+   */
+  alternatives?: Array<Recipe>;
 };
 
 /**
@@ -183,6 +188,71 @@ export type PregnancyStatus =
   | 'pregnant'
   | 'exclusively_breastfeeding'
   | 'partially_breastfeeding';
+
+/**
+ * Recipe
+ */
+export type Recipe = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Description
+   */
+  description?: string | null;
+  nutrients: RecipeNutrients;
+  /**
+   * Tags
+   */
+  tags?: Array<string>;
+  /**
+   * Ingredients
+   */
+  ingredients?: Array<string>;
+  /**
+   * Warnings
+   */
+  warnings?: Array<string>;
+  /**
+   * Preparation Time Minutes
+   */
+  preparation_time_minutes?: number | null;
+  /**
+   * Source Url
+   */
+  source_url?: string | null;
+  /**
+   * Image Url
+   */
+  image_url?: string | null;
+};
+
+/**
+ * RecipeNutrients
+ */
+export type RecipeNutrients = {
+  /**
+   * Calories
+   */
+  calories: number;
+  /**
+   * Protein
+   */
+  protein: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates: number;
+  /**
+   * Fat
+   */
+  fat: number;
+};
 
 /**
  * ScheduleItemCreate
@@ -469,6 +539,18 @@ export type ValidationError = {
   };
 };
 
+/**
+ * WeeklyMealPlan
+ */
+export type WeeklyMealPlan = {
+  /**
+   * Days
+   */
+  days: {
+    [key in Day]?: DailyMealPlan;
+  };
+};
+
 export type CreateUserApiV1UsersPostData = {
   body: UserCreate;
   path?: never;
@@ -729,6 +811,23 @@ export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
 
 export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
   GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/meal-plans/generate-week';
+};
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: WeeklyMealPlan;
+};
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponse =
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses[keyof GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;

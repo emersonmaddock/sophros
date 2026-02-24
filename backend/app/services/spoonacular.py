@@ -50,6 +50,8 @@ class SpoonacularClient:
         cuisine: str | None = None,
         exclude_cuisine: str | None = None,
         number: int = 1,
+        offset: int = 0,
+        sort: str | None = None,
         add_recipe_information: bool = True,
         add_recipe_nutrition: bool = True,
         add_recipe_instructions: bool = True,
@@ -78,12 +80,16 @@ class SpoonacularClient:
         endpoint = "/recipes/complexSearch"
         params: dict[str, Any] = {
             "number": number,
+            "offset": offset,
             "addRecipeInformation": add_recipe_information,
             "addRecipeNutrition": add_recipe_nutrition,
             "addRecipeInstructions": add_recipe_instructions,
             "instructionsRequired": True,  # displays the instructions
             "fillIngredients": True,
         }
+
+        if sort:
+            params["sort"] = sort
 
         if query:
             params["query"] = query

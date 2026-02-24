@@ -1,66 +1,120 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
+import type { Day } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
-import React from 'react';
+import { Calendar, ChevronRight, Plus, TrendingUp, Utensils } from 'lucide-react-native';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const JS_DAY_TO_API_DAY: Record<number, Day> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+};
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Get user for name
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
 
-  // Get date for subtitle
-  // e.g., 'Wednesday, Dec 23'
   const today = new Date();
   const day = today.getDate();
   const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
   const monthName = today.toLocaleString('en-US', { month: 'short' });
+  const currentHour = today.getHours();
 
-  const upcomingItems = [
-    {
-      time: '12:30 PM',
-      title: 'Lunch',
-      subtitle: 'Chicken & Quinoa',
-      icon: Utensils,
-      color: Colors.light.secondary,
-      status: 'upcoming',
-    },
-    {
-      time: '3:00 PM',
-      title: 'Afternoon Snack',
-      subtitle: 'Protein Shake',
-      icon: Utensils,
-      color: Colors.light.secondary,
-      status: 'upcoming',
-    },
-    {
-      time: '6:00 PM',
-      title: 'Evening Workout',
-      subtitle: '45 min Strength',
-      icon: Dumbbell,
-      color: Colors.light.primary,
-      status: 'scheduled',
-    },
-  ];
+  const { data: weeklyPlan } = useWeeklyMealPlanQuery();
 
-  const macroData = {
-    calories: { value: '1,840', percentage: 84 },
-    protein: { value: '78g', percentage: 65 },
-    carbs: { value: '185g', percentage: 74 },
-    fats: { value: '52g', percentage: 80 },
-  };
+  // Derive upcoming meals from cached weekly plan
+  const upcomingItems = useMemo(() => {
+    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
+    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+
+    if (!todayPlan) {
+      return [];
+    }
+
+    const mapped = mapDailyPlanToScheduleItems(todayPlan);
+
+    // Filter to upcoming meals only
+    return mapped
+      .filter((item) => {
+        const [timePart, period] = item.time.split(' ');
+        const [hours] = timePart.split(':').map(Number);
+        let itemHour = hours;
+        if (period === 'PM' && hours !== 12) itemHour += 12;
+        if (period === 'AM' && hours === 12) itemHour = 0;
+        return itemHour >= currentHour;
+      })
+      .slice(0, 3)
+      .map((item) => ({
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle || '',
+        icon: Utensils,
+        color: Colors.light.secondary,
+      }));
+  }, [weeklyPlan, currentHour]);
+
+  // Derive macro data from today's plan totals
+  const macroData = useMemo(() => {
+    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
+    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+
+    if (!todayPlan) {
+      return {
+        calories: { value: '--', percentage: 0 },
+        protein: { value: '--', percentage: 0 },
+        carbs: { value: '--', percentage: 0 },
+        fats: { value: '--', percentage: 0 },
+      };
+    }
+
+    return {
+      calories: {
+        value: `${todayPlan.total_calories}`,
+        percentage: 100,
+        label: 'Calories',
+      },
+      protein: {
+        value: `${todayPlan.total_protein}g`,
+        percentage: 100,
+        label: 'Protein',
+      },
+      carbs: {
+        value: `${todayPlan.total_carbs}g`,
+        percentage: 100,
+        label: 'Carbs',
+      },
+      fats: {
+        value: `${todayPlan.total_fat}g`,
+        percentage: 100,
+        label: 'Fats',
+      },
+    };
+  }, [weeklyPlan]);
+
+  // Determine greeting based on time of day
+  const greeting =
+    currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Good Morning, {userName}</Text>
+          <Text style={styles.headerTitle}>
+            {greeting}, {userName}
+          </Text>
           <Text style={styles.headerSubtitle}>
             Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
           </Text>
@@ -112,25 +166,39 @@ export default function DashboardPage() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.listContainer}>
-            {upcomingItems.map((item, i) => (
-              <TouchableOpacity key={i} style={[styles.listItem, i === 0 && styles.activeListItem]}>
-                <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                  <item.icon size={24} color={item.color} />
-                </View>
-                <View style={styles.itemContent}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
-                </View>
-                <View style={styles.timeBox}>
-                  <View style={styles.timeBadge}>
-                    <Text style={styles.timeText}>{item.time}</Text>
+          {upcomingItems.length > 0 ? (
+            <View style={styles.listContainer}>
+              {upcomingItems.map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.listItem, i === 0 && styles.activeListItem]}
+                >
+                  <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
+                    <item.icon size={24} color={item.color} />
                   </View>
-                  {i === 0 && <Text style={styles.nowText}>• Now</Text>}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <View style={styles.itemContent}>
+                    <Text style={styles.itemTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.itemSubtitle} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  </View>
+                  <View style={styles.timeBox}>
+                    <View style={styles.timeBadge}>
+                      <Text style={styles.timeText}>{item.time}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyUpcoming}>
+              <Text style={styles.emptyText}>
+                No meals planned yet. Tap &quot;Plan Week&quot; to get started!
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Macros Progress */}
@@ -158,7 +226,7 @@ export default function DashboardPage() {
           <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/schedule')}
+              onPress={() => router.push('/week-planning')}
             >
               <Calendar size={24} color={Colors.light.primary} />
               <Text style={styles.actionText}>Plan Week</Text>
@@ -285,10 +353,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     ...Shadows.card,
   },
-  macrosContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
   listContainer: {
     gap: 12,
   },
@@ -340,11 +404,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
   },
-  nowText: {
-    display: 'none', // Hide for now
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.light.primary,
+  emptyUpcoming: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    padding: 24,
+    alignItems: 'center',
+    ...Shadows.card,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
   },
   actionsGrid: {
     flexDirection: 'row',

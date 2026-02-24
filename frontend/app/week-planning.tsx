@@ -2,13 +2,54 @@ import { AlternativesModal } from '@/components/AlternativesModal';
 import { EditItemModal } from '@/components/EditItemModal';
 import { ScheduleItemCard } from '@/components/ScheduleItemCard';
 import { Colors, Layout } from '@/constants/theme';
-import type { DaySchedule, ItemType, UserPreferences, WeeklyScheduleItem } from '@/types/schedule';
-import { generateAlternatives, generateWeekPlan } from '@/utils/scheduleGenerator';
+import { useGenerateWeekPlanMutation, useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import type { DaySchedule, ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
+import type { Day, WeeklyMealPlan } from '@/api/types.gen';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const DAY_ORDER: Day[] = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+function weeklyPlanToDaySchedules(plan: WeeklyMealPlan): DaySchedule[] {
+  const today = new Date();
+  // Start from next Monday
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
+
+  return DAY_ORDER.map((dayName, index) => {
+    const date = new Date(nextMonday);
+    date.setDate(nextMonday.getDate() + index);
+
+    const dailyPlan = plan.days[dayName];
+    const items = dailyPlan ? mapDailyPlanToScheduleItems(dailyPlan) : [];
+
+    return {
+      dayOfWeek: date.getDay(),
+      date,
+      items,
+    };
+  });
+}
 
 export default function WeekPlanningScreen() {
   const router = useRouter();
@@ -21,26 +62,41 @@ export default function WeekPlanningScreen() {
   const [editMode, setEditMode] = useState<'edit' | 'add'>('edit');
   const [addItemType, setAddItemType] = useState<ItemType>('meal');
 
-  useEffect(() => {
-    // Generate initial week plan
-    const mockPreferences: UserPreferences = {
-      wakeUpTime: '7:00 AM',
-      sleepTime: '10:30 PM',
-      mealsPerDay: 4,
-      workoutsPerWeek: 3,
-      calorieTarget: 2000,
-      dietaryRestrictions: [],
-      preferredWorkoutTypes: ['HIIT', 'Strength Training', 'Yoga'],
-    };
+  const generateWeekMutation = useGenerateWeekPlanMutation();
+  const { data: cachedPlan } = useWeeklyMealPlanQuery();
 
-    const plan = generateWeekPlan(mockPreferences);
-    setWeekPlan(plan.days);
-  }, []);
+  useEffect(() => {
+    // If we have a cached plan, use it
+    if (cachedPlan) {
+      setWeekPlan(weeklyPlanToDaySchedules(cachedPlan));
+      return;
+    }
+    // Otherwise, generate a new plan
+    generateWeekMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        setWeekPlan(weeklyPlanToDaySchedules(data));
+      },
+      onError: (error) => {
+        Alert.alert('Error', 'Failed to generate meal plan. Please try again.');
+        console.error('[WeekPlanning] Generation error:', error);
+      },
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRegenerate = () => {
+    generateWeekMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        setWeekPlan(weeklyPlanToDaySchedules(data));
+      },
+      onError: () => {
+        Alert.alert('Error', 'Failed to regenerate meal plan.');
+      },
+    });
+  };
 
   const handleSwap = (item: WeeklyScheduleItem) => {
     setSelectedItem(item);
-    const alts = generateAlternatives(item);
-    setAlternatives(alts);
+    setAlternatives(item.alternatives || []);
     setSwapModalVisible(true);
   };
 
@@ -73,7 +129,6 @@ export default function WeekPlanningScreen() {
       prevPlan.map((day, dayIdx) => {
         if (dayIdx === selectedDayIndex) {
           if (editMode === 'add') {
-            // Add new item and sort by time
             return {
               ...day,
               items: [...day.items, updatedItem].sort((a, b) => {
@@ -83,7 +138,6 @@ export default function WeekPlanningScreen() {
               }),
             };
           } else {
-            // Edit existing item
             return {
               ...day,
               items: day.items.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
@@ -148,8 +202,26 @@ export default function WeekPlanningScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
-          <Sparkles size={48} color={Colors.light.primary} />
-          <Text style={styles.loadingText}>Generating your week plan...</Text>
+          {generateWeekMutation.isPending ? (
+            <>
+              <ActivityIndicator size="large" color={Colors.light.primary} />
+              <Text style={styles.loadingText}>Generating your personalized week plan...</Text>
+              <Text style={styles.loadingSubtext}>Finding recipes that match your goals</Text>
+            </>
+          ) : generateWeekMutation.isError ? (
+            <>
+              <Text style={styles.loadingText}>Something went wrong</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={handleRegenerate}>
+                <RefreshCw size={20} color="#FFF" />
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <Sparkles size={48} color={Colors.light.primary} />
+              <Text style={styles.loadingText}>Preparing your week plan...</Text>
+            </>
+          )}
         </View>
       </SafeAreaView>
     );
@@ -166,9 +238,19 @@ export default function WeekPlanningScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Week Planning</Text>
-          <Text style={styles.headerSubtitle}>Customize your schedule</Text>
+          <Text style={styles.headerSubtitle}>Personalized meal plan</Text>
         </View>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          onPress={handleRegenerate}
+          style={styles.backButton}
+          disabled={generateWeekMutation.isPending}
+        >
+          {generateWeekMutation.isPending ? (
+            <ActivityIndicator size="small" color={Colors.light.primary} />
+          ) : (
+            <RefreshCw size={20} color={Colors.light.primary} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Day Selector */}
@@ -277,6 +359,24 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: Colors.light.textMuted,
+  },
+  loadingSubtext: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
+  },
+  retryButton: {
+    backgroundColor: Colors.light.primary,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
