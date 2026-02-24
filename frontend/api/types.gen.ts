@@ -12,7 +12,7 @@ export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'ver
 /**
  * ActivityType
  */
-export type ActivityType = 'meal' | 'sleep' | 'work' | 'exercise' | 'leisure' | 'other';
+export type ActivityType = 'meal' | 'sleep' | 'exercise' | 'other';
 
 /**
  * Allergy
@@ -253,6 +253,28 @@ export type ScheduleItemUpdate = {
  * Sex
  */
 export type Sex = 'male' | 'female';
+
+/**
+ * SyncResult
+ */
+export type SyncResult = {
+  /**
+   * Items Synced
+   */
+  items_synced: number;
+  /**
+   * Items Updated
+   */
+  items_updated: number;
+  /**
+   * Items Deleted
+   */
+  items_deleted: number;
+  /**
+   * Errors
+   */
+  errors?: Array<string>;
+};
 
 /**
  * UserCreate
@@ -567,6 +589,23 @@ export type ReadUserTargetsApiV1UsersMeTargetsGetResponses = {
 
 export type ReadUserTargetsApiV1UsersMeTargetsGetResponse =
   ReadUserTargetsApiV1UsersMeTargetsGetResponses[keyof ReadUserTargetsApiV1UsersMeTargetsGetResponses];
+
+export type SyncGoogleCalendarApiV1SchedulesSyncGooglePostData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/schedules/sync/google';
+};
+
+export type SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: SyncResult;
+};
+
+export type SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponse =
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses[keyof SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses];
 
 export type GetScheduleItemsApiV1SchedulesGetData = {
   body?: never;

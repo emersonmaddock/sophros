@@ -27,6 +27,8 @@ import type {
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
   RootGetData,
   RootGetResponses,
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostData,
+  SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
@@ -132,6 +134,26 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me/targets',
+    ...options,
+  });
+
+/**
+ * Sync Google Calendar
+ *
+ * Sync the current user's Google Calendar events to their Sophros schedule.
+ */
+export const syncGoogleCalendarApiV1SchedulesSyncGooglePost = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SyncGoogleCalendarApiV1SchedulesSyncGooglePostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    SyncGoogleCalendarApiV1SchedulesSyncGooglePostResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules/sync/google',
     ...options,
   });
 
