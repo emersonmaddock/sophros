@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.domain.enums import ActivityLevel
 from app.schemas.nutrient import DRIOutput, NutrientRange
 
@@ -104,15 +106,42 @@ class NutrientCalculator:
         weight_kg: float,
         height_cm: float,
         activity_level: ActivityLevel,
+        target_weight: float | None = None,
+        target_date: str | None = None,
     ) -> DRIOutput:
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
 
-        macros = cls.calculate_macronutrient_ranges(tdee)
+        # Calorie Offset for Goals
+        daily_offset = 0
+        if target_weight is not None and target_date:
+            try:
+                target_dt = datetime.fromisoformat(target_date)
+                days_to_target = (target_dt - datetime.now()).days
 
-        # Calories Range: TDEE +/- 250
+                if days_to_target > 0:
+                    weight_diff = target_weight - weight_kg
+                    total_kcal_diff = weight_diff * 7700  # 1kg ~ 7700kcal
+                    daily_offset = int(total_kcal_diff / days_to_target)
+
+                    # Safety rails: max +/- 1000 kcal offset
+                    daily_offset = max(-1000, min(1000, daily_offset))
+            except (ValueError, TypeError):
+                # Fallback if date is invalid
+                pass
+
+        adjusted_tdee = tdee + daily_offset
+        # Ensure floor of 1200 calories for safety
+        adjusted_tdee = max(1200, adjusted_tdee)
+
+        macros = cls.calculate_macronutrient_ranges(adjusted_tdee)
+
+        # Calories Range: Adjusted TDEE +/- 250
         calories_range = NutrientRange(
-            min=tdee - 250, target=tdee, max=tdee + 250, unit="kcal"
+            min=adjusted_tdee - 250,
+            target=adjusted_tdee,
+            max=adjusted_tdee + 250,
+            unit="kcal",
         )
 
         return DRIOutput(

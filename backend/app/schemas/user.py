@@ -31,6 +31,14 @@ class UserBase(BaseModel):
     activity_level: ActivityLevel
     pregnancy_status: PregnancyStatus = PregnancyStatus.NOT_PREGNANT
 
+    # Goals
+    target_weight: float | None = None
+    target_date: str | None = None  # ISO format date
+
+    # Scheduling Anchors
+    wake_up_time: time = time(7, 0)
+    sleep_time: time = time(23, 0)
+
     # Dietary Preferences: Allergies & Intolerances
     allergies: list[Allergy] = []
 
@@ -60,6 +68,11 @@ class UserUpdate(BaseModel):
     gender: Sex | None = None
     activity_level: ActivityLevel | None = None
     pregnancy_status: PregnancyStatus | None = None
+
+    target_weight: float | None = None
+    target_date: str | None = None
+    wake_up_time: time | None = None
+    sleep_time: time | None = None
 
     # Dietary Preferences
     allergies: list[Allergy] | None = None
@@ -109,6 +122,10 @@ class UserRead(UserBase):
             "is_vegetarian": data.is_vegetarian,
             "is_vegan": data.is_vegan,
             "is_pescatarian": data.is_pescatarian,
+            "target_weight": data.target_weight,
+            "target_date": data.target_date.isoformat() if data.target_date else None,
+            "wake_up_time": data.wake_up_time or time(7, 0),
+            "sleep_time": data.sleep_time or time(23, 0),
         }
 
 
