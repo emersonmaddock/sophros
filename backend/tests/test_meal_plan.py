@@ -99,20 +99,14 @@ async def test_generate_daily_plan_integration():
     ]
 
     # Configure mock to return different responses based on meal type
+    # Now that we group Lunch/Dinner, there's 1 call for Breakfast, 1 for Main Course
     def search_recipes_side_effect(**kwargs):
         meal_type = kwargs.get("type")
         if meal_type and "breakfast" in str(meal_type).lower():
             return breakfast_response
         else:
-            # Return lunch first, then dinner
-            if not hasattr(search_recipes_side_effect, "call_count"):
-                search_recipes_side_effect.call_count = 0
-            search_recipes_side_effect.call_count += 1
-            return (
-                lunch_response
-                if search_recipes_side_effect.call_count == 1
-                else dinner_response
-            )
+            # Main Course call (for both Lunch and Dinner)
+            return lunch_response + dinner_response
 
     mock_client.search_recipes = AsyncMock(side_effect=search_recipes_side_effect)
 
@@ -132,16 +126,18 @@ async def test_generate_daily_plan_integration():
     assert MealSlot.LUNCH in slot_names
     assert MealSlot.DINNER in slot_names
 
-    # Verify API was called 3 times (once per meal)
-    assert mock_client.search_recipes.await_count == 3
+    # Verify API was called 2 times (once for Breakfast, once for Main Course)
+    assert mock_client.search_recipes.await_count == 2
 
-    # Verify each call had proper parameters
+    # Verify each call had proper parameters (optimized for pools)
     calls = mock_client.search_recipes.await_args_list
+
+    # Breakfast call (15 recipes)
+    assert calls[0].kwargs["number"] == 15
+    # Main Course call (30 recipes for Lunch + Dinner)
+    assert calls[1].kwargs["number"] == 30
 
     for call in calls:
         kwargs = call.kwargs
-        assert kwargs["number"] == 1
-        assert "min_calories" in kwargs
-        assert "max_calories" in kwargs
-        assert "min_protein" in kwargs
-        assert "constraints" != None
+        assert "constraints" in kwargs
+        assert kwargs["constraints"] is not None

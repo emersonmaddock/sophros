@@ -33,6 +33,11 @@ class ActivityType(StrEnum):
     OTHER = "other"
 
 
+class ExerciseCategory(StrEnum):
+    CARDIO = "Cardio"
+    WEIGHT_LIFTING = "Weight Lifting"
+
+
 class Cuisine(StrEnum):
     AFRICAN = "African"
     ASIAN = "Asian"

@@ -1,4 +1,5 @@
 from datetime import time
+from typing import Any
 
 from app.domain.enums import Day, MealSlot
 from app.schemas.meal_plan import (
@@ -75,6 +76,7 @@ class MealAllocator:
             )
 
         return DailyMealPlan(
+            day=day,
             slots=slots_output,
             total_calories=daily_cal,
             total_protein=daily_prot,
@@ -126,3 +128,49 @@ class MealAllocator:
                 return _mins_to_time(current_time)
 
         return None  # No slot found
+
+    @classmethod
+    def allocate_exercise_time(
+        cls,
+        recommendation: Any,  # ExerciseRecommendation
+        user_schedule: UserSchedule,
+        day: Day,
+        meal_times: list[time],
+    ) -> time | None:
+        """
+        Finds an available window for exercise, avoiding proximity to meals.
+        """
+        # Standard exercise window (e.g. 6am to 9pm)
+        start_bound = _time_to_mins(time(6, 0))
+        end_bound = _time_to_mins(time(21, 0))
+
+        busy_intervals = []
+        for busy in user_schedule.busy_times:
+            if busy.day.lower() == day.lower() or busy.day.lower() == "everyday":
+                busy_intervals.append(
+                    (_time_to_mins(busy.start), _time_to_mins(busy.end))
+                )
+
+        # Add meal times as busy (plus 1 hour buffer)
+        for m_time in meal_times:
+            if m_time:
+                m_mins = _time_to_mins(m_time)
+                busy_intervals.append((m_mins - 60, m_mins + 60))
+
+        current_time = start_bound
+        duration = recommendation.duration_minutes
+
+        while current_time + duration <= end_bound:
+            conflict = False
+            slot_end = current_time + duration
+            for b_start, b_end in busy_intervals:
+                if current_time < b_end and slot_end > b_start:
+                    conflict = True
+                    current_time = max(current_time, b_end)
+                    break
+
+            if not conflict:
+                return _mins_to_time(current_time)
+            current_time += 15  # Check every 15 mins
+
+        return None

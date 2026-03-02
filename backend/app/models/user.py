@@ -1,4 +1,6 @@
-from sqlalchemy import Boolean, Float, Integer, String
+from datetime import time
+
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Time
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +22,16 @@ class User(Base):
     weight: Mapped[float] = mapped_column(Float)  # kg
     height: Mapped[float] = mapped_column(Float)  # cm
     show_imperial: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Goals
+    target_weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
+    target_body_fat: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
+    target_date: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
+
+    # Scheduling Anchors
+    wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    sleep_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+
     gender: Mapped[Sex] = mapped_column(SAEnum(Sex, name="sex_enum"))
     activity_level: Mapped[ActivityLevel] = mapped_column(
         SAEnum(ActivityLevel, name="activity_level_enum")
