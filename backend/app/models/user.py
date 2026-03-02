@@ -25,6 +25,7 @@ class User(Base):
 
     # Goals
     target_weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
+    target_body_fat: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
     target_date: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
 
     # Scheduling Anchors

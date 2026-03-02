@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import date, time
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -33,7 +33,8 @@ class UserBase(BaseModel):
 
     # Goals
     target_weight: float | None = None
-    target_date: str | None = None  # ISO format date
+    target_body_fat: float | None = None  # Percentage
+    target_date: date | None = None  # Enrollment date or goal deadline
 
     # Scheduling Anchors
     wake_up_time: time = time(7, 0)
@@ -70,7 +71,8 @@ class UserUpdate(BaseModel):
     pregnancy_status: PregnancyStatus | None = None
 
     target_weight: float | None = None
-    target_date: str | None = None
+    target_body_fat: float | None = None
+    target_date: date | None = None
     wake_up_time: time | None = None
     sleep_time: time | None = None
 
@@ -88,6 +90,7 @@ class UserUpdate(BaseModel):
 # User model for reading from DB - "UserRead" avoids name collision with "User" model
 class UserRead(UserBase):
     id: str
+    schedules: list[Any] = []
     model_config = ConfigDict(from_attributes=True)
 
     @model_validator(mode="before")
@@ -123,7 +126,8 @@ class UserRead(UserBase):
             "is_vegan": data.is_vegan,
             "is_pescatarian": data.is_pescatarian,
             "target_weight": data.target_weight,
-            "target_date": data.target_date.isoformat() if data.target_date else None,
+            "target_body_fat": data.target_body_fat,
+            "target_date": data.target_date,
             "wake_up_time": data.wake_up_time or time(7, 0),
             "sleep_time": data.sleep_time or time(23, 0),
         }

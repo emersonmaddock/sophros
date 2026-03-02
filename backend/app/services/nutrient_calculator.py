@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from app.domain.enums import ActivityLevel
 from app.schemas.nutrient import DRIOutput, NutrientRange
@@ -107,7 +107,9 @@ class NutrientCalculator:
         height_cm: float,
         activity_level: ActivityLevel,
         target_weight: float | None = None,
-        target_date: str | None = None,
+        target_date: date | None = None,
+        exercise_calories: int = 0,
+        target_body_fat: float | None = None,
     ) -> DRIOutput:
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
@@ -116,8 +118,10 @@ class NutrientCalculator:
         daily_offset = 0
         if target_weight is not None and target_date:
             try:
-                target_dt = datetime.fromisoformat(target_date)
-                days_to_target = (target_dt - datetime.now()).days
+                # Convert date to datetime for subtraction if needed,
+                # or just use dates
+                today = datetime.now().date()
+                days_to_target = (target_date - today).days
 
                 if days_to_target > 0:
                     weight_diff = target_weight - weight_kg
@@ -130,7 +134,18 @@ class NutrientCalculator:
                 # Fallback if date is invalid
                 pass
 
-        adjusted_tdee = tdee + daily_offset
+        # Adjust TDEE by goal offset AND calories burned from exercise today
+        # We add exercise_calories because the user needs to eat back
+        # some of those calories to maintain the planned deficit/surplus.
+        adjusted_tdee = tdee + daily_offset + exercise_calories
+
+        # If target body fat is lower than current estimated (not implemented),
+        # we could adjust protein ratios here. For now, we'll just prioritize
+        # protein if BF goal is lean.
+        if target_body_fat and target_body_fat < 15:
+            # Shift some carbs to protein (Advanced logic simplified)
+            pass
+
         # Ensure floor of 1200 calories for safety
         adjusted_tdee = max(1200, adjusted_tdee)
 

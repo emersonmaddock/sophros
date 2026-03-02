@@ -1,6 +1,13 @@
+from typing import Any
+
 from app.domain.enums import Day, MealSlot
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import DailyMealPlan, MealOption, WeeklyMealPlan
+from app.schemas.meal_plan import (
+    DailyMealPlan,
+    MealOption,
+    MealSlotTarget,
+    WeeklyMealPlan,
+)
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import BusyTime, User, UserSchedule
 from app.services.exercise_service import ExercisePlanService
@@ -63,15 +70,25 @@ class MealPlanService:
     async def generate_weekly_plan(self, user: User) -> WeeklyMealPlan:
         """
         Generates a 7-day meal plan.
-        1. Calculates daily targets (factoring in goals).
-        2. Allocates slots for each day.
-        3. Implements "Cook Once, Eat Twice" leftover logic.
-        4. Batches Spoonacular requests to save tokens.
+        1. Generates a weekly exercise plan once.
+        2. Calculates daily nutrient targets factoring in exercise calories.
+        3. Allocates slots and applies adaptive leftover logic.
         """
         daily_plans = []
 
-        # Step 1 & 2: Initial allocation for 7 days
+        # Pre-calculate schedules for the whole week
+        weekly_schedules = {day: self._get_user_schedule(user, day) for day in Day}
+
+        # Step 1: Generate Weekly Exercise Plan (One-time call)
+        exercise_plan = ExercisePlanService.generate_weekly_plan(user, weekly_schedules)
+
+        # Step 2: Initial allocation for 7 days
         for day in Day:
+            # Get exercise for this specific day
+            exercise_rec = exercise_plan.get(day)
+            exercise_cals = exercise_rec.calories_burned if exercise_rec else 0
+
+            # Calculate targets factoring in exercise burn & goals
             daily_targets = NutrientCalculator.calculate_targets(
                 age=user.age,
                 gender=user.gender,
@@ -80,46 +97,34 @@ class MealPlanService:
                 activity_level=user.activity_level,
                 target_weight=user.target_weight,
                 target_date=user.target_date,
+                exercise_calories=exercise_cals,
+                target_body_fat=user.target_body_fat,
             )
 
-            user_schedule = self._get_user_schedule(user, day)
+            user_schedule = weekly_schedules[day]
 
             plan = MealAllocator.allocate_targets(
                 daily_targets=daily_targets,
                 user_schedule=user_schedule,
                 day=day,
             )
-            # Add Exercise Recommendation
-            rec = ExercisePlanService.get_recommendation(
-                current_weight=user.weight, target_weight=user.target_weight
-            )
-            # Find optimal time for exercise
-            meal_times = [s.time for s in plan.slots if s.time]
-            rec.time = MealAllocator.allocate_exercise_time(
-                recommendation=rec,
-                user_schedule=user_schedule,
-                day=day,
-                meal_times=meal_times,
-            )
-            plan.exercise = rec
+
+            # Step 2b: Schedule the Exercise time if it exists
+            if exercise_rec:
+                meal_times = [s.time for s in plan.slots if s.time]
+                exercise_rec.time = MealAllocator.allocate_exercise_time(
+                    recommendation=exercise_rec,
+                    user_schedule=user_schedule,
+                    day=day,
+                    meal_times=meal_times,
+                )
+                if exercise_rec.time:
+                    plan.exercise = exercise_rec
+
             daily_plans.append(plan)
 
-        # Step 3: Leftover Logic
-        # Monday Dinner -> Tuesday Lunch
-        # Wednesday Dinner -> Thursday Lunch
-        # Friday Dinner -> Saturday Lunch
-        leftover_map = {
-            Day.MONDAY: Day.TUESDAY,
-            Day.WEDNESDAY: Day.THURSDAY,
-            Day.FRIDAY: Day.SATURDAY,
-        }
-
-        for leftover_day in leftover_map.values():
-            leftover_plan = next(p for p in daily_plans if p.day == leftover_day)
-            lunch_slot = next(
-                s for s in leftover_plan.slots if s.slot_name == MealSlot.LUNCH
-            )
-            lunch_slot.is_leftover = True
+        # Step 3: Adaptive Leftover Logic
+        self._apply_adaptive_leftovers(daily_plans, user)
 
         # Step 4: Batch Fetch Recipes
         # Fetch a pool of recipes for the whole week to save tokens
@@ -133,21 +138,115 @@ class MealPlanService:
             daily_plans=daily_plans, total_weekly_calories=total_weekly_cals
         )
 
+    def _apply_adaptive_leftovers(self, daily_plans: list[DailyMealPlan], user: User):
+        """
+        Refined Leftover Logic:
+        1. Categories: Breakfasts stay separate. Lunch/Dinner are interchangeable.
+        2. Maximized Efficiency: Every 'Cook' event creates exactly 2 portions.
+        3. Priority: Pairs 'Free' cook windows with 'Busy' (time is None) slots first.
+        """
+        # Linear list of all slots for the week
+        all_slots: list[dict[str, Any]] = []
+        for plan in daily_plans:
+            for slot in plan.slots:
+                # Add metadata to help pairing
+                all_slots.append(
+                    {
+                        "day": plan.day,
+                        "slot": slot,
+                        "is_breakfast": slot.slot_name == MealSlot.BREAKFAST,
+                        "is_assigned": False,
+                    }
+                )
+
+        for i, item in enumerate(all_slots):
+            if item["is_assigned"]:
+                continue
+
+            current_slot: MealSlotTarget = item["slot"]
+            # If this slot is already BUSY, we have a problem (nothing to cook).
+            # We'll treat the first available slot as a "Cook" slot,
+            # unless a prior loop already claimed it as a leftover.
+            if current_slot.time is None:
+                # Fallback: If we couldn't find a prior meal to leftover from,
+                # we have to "Cook" even if busy (perhaps a quick 5 min meal)
+                # but better logic is to avoid this. For now, mark it assigned.
+                item["is_assigned"] = True
+                continue
+
+            # This is a "COOK" slot. Now find a "LEFTOVER" partner.
+            # 1. Search for a BUSY slot of the same category in the future.
+            found_partner = False
+            for j in range(i + 1, len(all_slots)):
+                partner = all_slots[j]
+                if partner["is_assigned"]:
+                    continue
+                if partner["is_breakfast"] != item["is_breakfast"]:
+                    continue
+
+                # Priority 1: Busy slots
+                if partner["slot"].time is None:
+                    self._pair_slots(item, partner)
+                    found_partner = True
+                    break
+
+            # 2. If no busy slot found, just take the next available of same category
+            if not found_partner:
+                for j in range(i + 1, len(all_slots)):
+                    partner = all_slots[j]
+                    if partner["is_assigned"]:
+                        continue
+                    if partner["is_breakfast"] != item["is_breakfast"]:
+                        continue
+
+                    self._pair_slots(item, partner)
+                    found_partner = True
+                    break
+
+            # Mark the current cook slot as assigned
+            item["is_assigned"] = True
+
+    def _pair_slots(self, cook_item, leftover_item):
+        """Helper to link two portions."""
+        leftover_slot = leftover_item["slot"]
+        cook_slot = cook_item["slot"]
+
+        leftover_slot.is_leftover = True
+        leftover_slot.leftover_from_day = cook_item["day"]
+        leftover_slot.leftover_from_slot = cook_slot.slot_name
+        leftover_item["is_assigned"] = True
+
     async def _fetch_recipe_pool(self, user: User) -> dict[MealSlot, list[Recipe]]:
         """
-        Fetches a pool of recipes for each slot type to satisfy the week's needs.
+        Fetches recipes from Spoonacular efficiently by grouping by type.
         """
-        pool = {slot: [] for slot in MealSlot}
+        pool: dict[MealSlot, list[Recipe]] = {slot: [] for slot in MealSlot}
         dietary_constraints = self._get_dietary_constraints(user)
 
-        for slot in MealSlot:
-            meal_type = self.MEAL_TYPE_MAP.get(slot)
+        # 1. Identity unique MealTypes needed
+        # Breakfast separated from main course (lunch/dinner)
+        type_to_slots: dict[MealType, list[MealSlot]] = {}
+        for slot, m_type in self.MEAL_TYPE_MAP.items():
+            if m_type not in type_to_slots:
+                type_to_slots[m_type] = []
+            type_to_slots[m_type].append(slot)
+
+        # 2. Call Spoonacular once per unique type
+        for m_type, slots in type_to_slots.items():
+            # If multiple slots share a type (like Lunch/Dinner), fetch more recipes
+            num_to_fetch = 15 * len(slots)
+
             results = await self.spoonacular_client.search_recipes(
-                type=meal_type,
-                number=15,  # Fetch 15 to have plenty of variety/alternatives
+                type=m_type,
+                number=num_to_fetch,
                 constraints=dietary_constraints,
             )
-            pool[slot] = [self._convert_to_recipe(r) for r in results]
+            recipes = [self._convert_to_recipe(r) for r in results]
+
+            # Distribute recipes among the requesting slots
+            # (Note: In _assign_recipes_from_pool we handle variety by using a set)
+            for slot in slots:
+                pool[slot] = recipes
 
         return pool
 
@@ -158,21 +257,21 @@ class MealPlanService:
         Assigns recipes from the pool to the plans, handling leftovers and variety.
         """
         used_recipe_ids = set()
-
-        # Map to track planned leftovers
-        leftover_recipes: dict[Day, Recipe] = {}
+        # Map to track planned leftovers: (Day, MealSlot) -> Recipe
+        recipe_manifest: dict[tuple[Day, MealSlot], Recipe] = {}
 
         for plan in daily_plans:
             for slot in plan.slots:
                 if slot.is_leftover:
-                    # Find which day this leftover comes from
-                    # Simple heuristic: Dinner from previous day
-                    # (In a real app, this would be more explicit)
-                    prev_day_recipe = leftover_recipes.get(plan.day)
-                    if prev_day_recipe:
-                        slot.plan = MealOption(main_recipe=prev_day_recipe)
-                        slot.prep_time_minutes = 5  # Just reheating
-                        continue
+                    # Look up the source recipe using the manifest
+                    source_day = slot.leftover_from_day
+                    source_slot = slot.leftover_from_slot
+                    if source_day and source_slot:
+                        source_recipe = recipe_manifest.get((source_day, source_slot))
+                        if source_recipe:
+                            slot.plan = MealOption(main_recipe=source_recipe)
+                            slot.prep_time_minutes = 5  # Just reheating
+                            continue
 
                 # Normal assignment
                 available = [
@@ -188,10 +287,8 @@ class MealPlanService:
                     slot.prep_time_minutes = main.preparation_time_minutes or 30
                     used_recipe_ids.add(main.id)
 
-                    # If this is a dinner that will be a leftover, store it
-                    if slot.slot_name == MealSlot.DINNER:
-                        next_day = self._get_next_day(plan.day)
-                        leftover_recipes[next_day] = main
+                    # Store in manifest just in case it's used as a source later
+                    recipe_manifest[(plan.day, slot.slot_name)] = main
 
     def _get_next_day(self, day: Day) -> Day:
         days = list(Day)

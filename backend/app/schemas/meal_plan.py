@@ -21,6 +21,8 @@ class MealSlotTarget(BaseModel):
     time: timeofday | None = None
     plan: MealOption | None = None
     is_leftover: bool = False
+    leftover_from_day: Day | None = None
+    leftover_from_slot: MealSlot | None = None
     prep_time_minutes: int = 0
 
 

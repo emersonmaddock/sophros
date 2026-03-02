@@ -35,19 +35,7 @@ class ActivityType(StrEnum):
 
 class ExerciseCategory(StrEnum):
     CARDIO = "Cardio"
-    STRENGTH = "Strength"
-    BALANCE = "Balance"
-    FLEXIBILITY = "Flexibility"
-
-
-class ExerciseType(StrEnum):
-    RUNNING = "Running"
-    CYCLING = "Cycling"
-    SWIMMING = "Swimming"
     WEIGHT_LIFTING = "Weight Lifting"
-    BODYWEIGHT = "Bodyweight"
-    YOGA = "Yoga"
-    HIIT = "HIIT"
 
 
 class Cuisine(StrEnum):

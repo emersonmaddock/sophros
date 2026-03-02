@@ -1,5 +1,6 @@
+from typing import Any
+
 from app.domain.enums import Allergy, Cuisine
-from app.models.user import User
 from app.schemas.user import UserRead
 
 
@@ -20,7 +21,10 @@ def create_mock_user(
     is_vegetarian: bool = False,
     is_vegan: bool = False,
     is_pescatarian: bool = False,
-) -> User:
+    target_weight: float | None = None,
+    target_body_fat: float | None = None,
+    target_date: Any | None = None,
+) -> UserRead:
     """
     Creates a mock UserRead instance for testing.
     """
@@ -41,4 +45,7 @@ def create_mock_user(
         is_vegetarian=is_vegetarian,
         is_vegan=is_vegan,
         is_pescatarian=is_pescatarian,
+        target_weight=target_weight,
+        target_body_fat=target_body_fat,
+        target_date=target_date,
     )
