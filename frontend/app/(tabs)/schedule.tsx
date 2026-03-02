@@ -1,24 +1,40 @@
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
-import { useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import { usePlannedWeeksQuery, useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import type { Day } from '@/api/types.gen';
 import type { WeeklyScheduleItem } from '@/types/schedule';
 import { useRouter } from 'expo-router';
-import { Calendar } from 'lucide-react-native';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const JS_DAY_TO_API_DAY: Record<number, Day> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_ORDER: Day[] = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+function getMonday(weekOffset: number): Date {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  // Monday = 1, so offset from today to this week's Monday
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+function formatDateStr(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
 
 type ScheduleItem = {
   time: string;
@@ -34,47 +50,54 @@ export default function SchedulePage() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
-
-  const { data: weeklyPlan } = useWeeklyMealPlanQuery();
-
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const today = new Date();
   const todayDayOfWeek = today.getDay();
   const currentHour = today.getHours();
 
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - todayDayOfWeek);
+  // Compute which day index to default to
+  // For current week, default to today; for other weeks, default to Monday (index 0)
+  const todayMondayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // Mon=0..Sun=6
+  const [selectedDayIndex, setSelectedDayIndex] = useState(weekOffset === 0 ? todayMondayIndex : 0);
 
-  const weekDates = days.map((_, index) => {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + index);
-    return date.getDate();
-  });
+  const mondayDate = getMonday(weekOffset);
+  const weekStartStr = formatDateStr(mondayDate);
 
-  // Convert today's API plan to schedule items
+  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: plannedWeeks } = usePlannedWeeksQuery();
+
+  // Build week dates (Mon-Sun)
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mondayDate);
+      d.setDate(mondayDate.getDate() + i);
+      return d;
+    });
+  }, [mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Convert saved plan to schedule items for selected day
   const scheduleItems: ScheduleItem[] = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[todayDayOfWeek];
-    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
+    const dayName = DAY_ORDER[selectedDayIndex];
+    const dailyPlan = savedPlan?.plan_data?.daily_plans?.find((p) => p.day === dayName);
 
-    if (!todayPlan) {
-      // Fallback to empty state if no plan cached
-      return [];
-    }
+    if (!dailyPlan) return [];
 
-    const mapped = mapDailyPlanToScheduleItems(todayPlan);
+    const mapped = mapDailyPlanToScheduleItems(dailyPlan);
 
     return mapped.map((item) => {
-      // Parse time to determine status
       const [timePart, period] = item.time.split(' ');
       const [hours] = timePart.split(':').map(Number);
       let itemHour = hours;
       if (period === 'PM' && hours !== 12) itemHour += 12;
       if (period === 'AM' && hours === 12) itemHour = 0;
 
+      const isToday = weekOffset === 0 && selectedDayIndex === todayMondayIndex;
       let status: 'completed' | 'current' | 'upcoming' = 'upcoming';
-      if (itemHour < currentHour) status = 'completed';
-      else if (itemHour === currentHour) status = 'current';
+      if (isToday) {
+        if (itemHour < currentHour) status = 'completed';
+        else if (itemHour === currentHour) status = 'current';
+      }
 
       return {
         time: item.time,
@@ -86,13 +109,38 @@ export default function SchedulePage() {
         recipe: item.recipe,
       };
     });
-  }, [weeklyPlan, todayDayOfWeek, currentHour]);
+  }, [savedPlan, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
 
   const handleItemPress = (item: ScheduleItem) => {
     if (item.type === 'meal') {
       setSelectedMeal(item);
       setModalVisible(true);
     }
+  };
+
+  const handleWeekChange = (direction: number) => {
+    setWeekOffset((prev) => prev + direction);
+    setSelectedDayIndex(0); // Reset to Monday when changing weeks
+  };
+
+  const handlePlanWeek = () => {
+    // Find the next unplanned Monday
+    const plannedSet = new Set(plannedWeeks ?? []);
+    let candidate = getMonday(0); // Start from this week's Monday
+
+    // Check up to 52 weeks ahead
+    for (let i = 0; i < 52; i++) {
+      const candidateStr = formatDateStr(candidate);
+      if (!plannedSet.has(candidateStr)) {
+        router.push(`/week-planning?weekStart=${candidateStr}`);
+        return;
+      }
+      candidate.setDate(candidate.getDate() + 7);
+    }
+
+    // Fallback: next week
+    const nextMonday = getMonday(1);
+    router.push(`/week-planning?weekStart=${formatDateStr(nextMonday)}`);
   };
 
   const getBorderColor = (type: string) => {
@@ -106,6 +154,22 @@ export default function SchedulePage() {
     }
   };
 
+  const isCurrentWeek = weekOffset === 0;
+
+  const weekLabel = isCurrentWeek
+    ? 'This Week'
+    : weekOffset === 1
+      ? 'Next Week'
+      : weekOffset === -1
+        ? 'Last Week'
+        : (() => {
+            const mon = weekDates[0];
+            const sun = weekDates[6];
+            const fmt = (d: Date) =>
+              d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `${fmt(mon)} - ${fmt(sun)}`;
+          })();
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -115,25 +179,47 @@ export default function SchedulePage() {
           <Text style={styles.headerSubtitle}>AI-optimized</Text>
         </View>
 
-        {/* Day Selector */}
+        {/* Week Navigation */}
+        <View style={styles.weekNav}>
+          <TouchableOpacity onPress={() => handleWeekChange(-1)} style={styles.weekNavButton}>
+            <ChevronLeft size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+          <Text style={styles.weekNavLabel}>{weekLabel}</Text>
+          <TouchableOpacity onPress={() => handleWeekChange(1)} style={styles.weekNavButton}>
+            <ChevronRight size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Day Selector (Mon-Sun) */}
         <View style={styles.daySelector}>
-          {days.map((day, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[styles.dayCard, i === todayDayOfWeek && styles.activeDayCard]}
-            >
-              <Text style={[styles.dayText, i === todayDayOfWeek && styles.activeDayText]}>
-                {day}
-              </Text>
-              <Text style={[styles.dateText, i === todayDayOfWeek && styles.activeDateText]}>
-                {weekDates[i]}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {weekDates.map((date, i) => {
+            const isSelected = selectedDayIndex === i;
+            const isTodayDot = isCurrentWeek && i === todayMondayIndex && !isSelected;
+
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[styles.dayCard, isSelected && styles.activeDayCard]}
+                onPress={() => setSelectedDayIndex(i)}
+              >
+                <Text style={[styles.dayText, isSelected && styles.activeDayText]}>
+                  {DAY_NAMES_SHORT[date.getDay()]}
+                </Text>
+                <Text style={[styles.dateText, isSelected && styles.activeDateText]}>
+                  {date.getDate()}
+                </Text>
+                {isTodayDot && <View style={styles.todayDot} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Timeline */}
-        {scheduleItems.length > 0 ? (
+        {isLoadingPlan ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptySubtitle}>Loading...</Text>
+          </View>
+        ) : scheduleItems.length > 0 ? (
           <View style={styles.timeline}>
             {scheduleItems.map((item, i) => (
               <View key={i} style={styles.timelineItem}>
@@ -187,15 +273,24 @@ export default function SchedulePage() {
           </View>
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No meals planned yet</Text>
+            <Text style={styles.emptyTitle}>No meals planned</Text>
             <Text style={styles.emptySubtitle}>
-              Generate a week plan to see your daily meals here
+              {savedPlan ? 'No meals scheduled for this day' : 'No plan saved for this week yet'}
             </Text>
+            {!savedPlan && (
+              <TouchableOpacity
+                style={styles.planThisWeekButton}
+                onPress={() => router.push(`/week-planning?weekStart=${weekStartStr}`)}
+              >
+                <Calendar size={18} color="#FFF" />
+                <Text style={styles.planThisWeekText}>Plan This Week</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
-        {/* Plan Next Week Button */}
-        <TouchableOpacity style={styles.planButton} onPress={() => router.push('/week-planning')}>
+        {/* Plan Button */}
+        <TouchableOpacity style={styles.planButton} onPress={handlePlanWeek}>
           <Calendar size={20} color="#FFF" />
           <Text style={styles.planButtonText}>Plan Next Week</Text>
         </TouchableOpacity>
@@ -220,7 +315,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 28,
@@ -232,14 +327,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
   },
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 16,
+  },
+  weekNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.light.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekNavLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    minWidth: 120,
+    textAlign: 'center',
+  },
   daySelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
   dayCard: {
-    minWidth: 48,
-    height: 64,
+    minWidth: 44,
+    height: 68,
     borderRadius: 16,
     backgroundColor: Colors.light.surface,
     alignItems: 'center',
@@ -270,6 +387,14 @@ const styles = StyleSheet.create({
   },
   activeDateText: {
     color: '#FFFFFF',
+  },
+  todayDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.light.primary,
+    position: 'absolute',
+    bottom: 4,
   },
   timeline: {
     marginTop: 8,
@@ -345,6 +470,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
     textAlign: 'center',
+  },
+  planThisWeekButton: {
+    backgroundColor: Colors.light.secondary,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  planThisWeekText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   planButton: {
     backgroundColor: Colors.light.primary,

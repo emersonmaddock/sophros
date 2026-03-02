@@ -1,10 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db
 from app.domain.enums import Day
+from app.models.saved_meal_plan import SavedMealPlan
 from app.models.user import User as DBUser
-from app.schemas.meal_plan import DailyMealPlan, WeeklyMealPlan
+from app.schemas.meal_plan import (
+    DailyMealPlan,
+    SavedMealPlanResponse,
+    SaveMealPlanRequest,
+    WeeklyMealPlan,
+)
 from app.schemas.user import UserRead
 from app.services.meal_plan import MealPlanService
 
@@ -65,3 +74,69 @@ async def generate_week_plan(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate weekly meal plan: {str(e)}",
         ) from e
+
+
+@router.post("/save", response_model=SavedMealPlanResponse)
+async def save_meal_plan(
+    body: SaveMealPlanRequest,
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upsert a confirmed weekly meal plan. week_start_date must be a Monday."""
+    if body.week_start_date.weekday() != 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="week_start_date must be a Monday",
+        )
+
+    stmt = select(SavedMealPlan).where(
+        SavedMealPlan.user_id == current_user.id,
+        SavedMealPlan.week_start_date == body.week_start_date,
+    )
+    result = await db.execute(stmt)
+    existing = result.scalar_one_or_none()
+
+    if existing:
+        existing.plan_data = body.plan_data.model_dump(mode="json")
+        db.add(existing)
+    else:
+        existing = SavedMealPlan(
+            user_id=current_user.id,
+            week_start_date=body.week_start_date,
+            plan_data=body.plan_data.model_dump(mode="json"),
+        )
+        db.add(existing)
+
+    await db.commit()
+    await db.refresh(existing)
+    return existing
+
+
+@router.get("/week", response_model=SavedMealPlanResponse | None)
+async def get_week_plan(
+    week_start_date: date = Query(..., description="Monday of the week to fetch"),
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get a saved meal plan for a specific week, or null if none exists."""
+    stmt = select(SavedMealPlan).where(
+        SavedMealPlan.user_id == current_user.id,
+        SavedMealPlan.week_start_date == week_start_date,
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+@router.get("/planned-weeks", response_model=list[date])
+async def get_planned_weeks(
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all week_start_dates the user has planned."""
+    stmt = (
+        select(SavedMealPlan.week_start_date)
+        .where(SavedMealPlan.user_id == current_user.id)
+        .order_by(SavedMealPlan.week_start_date)
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()

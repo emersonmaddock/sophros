@@ -2,12 +2,16 @@ import { AlternativesModal } from '@/components/AlternativesModal';
 import { EditItemModal } from '@/components/EditItemModal';
 import { ScheduleItemCard } from '@/components/ScheduleItemCard';
 import { Colors, Layout } from '@/constants/theme';
-import { useGenerateWeekPlanMutation, useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import {
+  useGenerateWeekPlanMutation,
+  useSaveMealPlanMutation,
+  useWeeklyMealPlanQuery,
+} from '@/lib/queries/mealPlan';
 import type { DaySchedule, ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import type { Day, WeeklyMealPlan } from '@/api/types.gen';
-import { useRouter } from 'expo-router';
-import { ArrowLeft, RefreshCw, Sparkles } from 'lucide-react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ArrowLeft, Check, RefreshCw, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -30,15 +34,12 @@ const DAY_ORDER: Day[] = [
   'Sunday',
 ];
 
-function weeklyPlanToDaySchedules(plan: WeeklyMealPlan): DaySchedule[] {
-  const today = new Date();
-  // Start from next Monday
-  const nextMonday = new Date(today);
-  nextMonday.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
+function weeklyPlanToDaySchedules(plan: WeeklyMealPlan, weekStart: string): DaySchedule[] {
+  const monday = new Date(weekStart + 'T00:00:00');
 
   return DAY_ORDER.map((dayName, index) => {
-    const date = new Date(nextMonday);
-    date.setDate(nextMonday.getDate() + index);
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
 
     const dailyPlan = plan.daily_plans?.find((p) => p.day === dayName);
     const items = dailyPlan ? mapDailyPlanToScheduleItems(dailyPlan) : [];
@@ -51,9 +52,20 @@ function weeklyPlanToDaySchedules(plan: WeeklyMealPlan): DaySchedule[] {
   });
 }
 
+function getNextMonday(): string {
+  const today = new Date();
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
+  return nextMonday.toISOString().split('T')[0];
+}
+
 export default function WeekPlanningScreen() {
   const router = useRouter();
+  const { weekStart: weekStartParam } = useLocalSearchParams<{ weekStart?: string }>();
+  const weekStart = weekStartParam || getNextMonday();
+
   const [weekPlan, setWeekPlan] = useState<DaySchedule[]>([]);
+  const [rawPlan, setRawPlan] = useState<WeeklyMealPlan | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [swapModalVisible, setSwapModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -63,18 +75,21 @@ export default function WeekPlanningScreen() {
   const [addItemType, setAddItemType] = useState<ItemType>('meal');
 
   const generateWeekMutation = useGenerateWeekPlanMutation();
+  const saveMutation = useSaveMealPlanMutation();
   const { data: cachedPlan } = useWeeklyMealPlanQuery();
 
   useEffect(() => {
     // If we have a cached plan, use it
     if (cachedPlan) {
-      setWeekPlan(weeklyPlanToDaySchedules(cachedPlan));
+      setRawPlan(cachedPlan);
+      setWeekPlan(weeklyPlanToDaySchedules(cachedPlan, weekStart));
       return;
     }
     // Otherwise, generate a new plan
     generateWeekMutation.mutate(undefined, {
       onSuccess: (data) => {
-        setWeekPlan(weeklyPlanToDaySchedules(data));
+        setRawPlan(data);
+        setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
       },
       onError: (error) => {
         Alert.alert('Error', 'Failed to generate meal plan. Please try again.');
@@ -86,12 +101,39 @@ export default function WeekPlanningScreen() {
   const handleRegenerate = () => {
     generateWeekMutation.mutate(undefined, {
       onSuccess: (data) => {
-        setWeekPlan(weeklyPlanToDaySchedules(data));
+        setRawPlan(data);
+        setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
       },
       onError: () => {
         Alert.alert('Error', 'Failed to regenerate meal plan.');
       },
     });
+  };
+
+  const handleConfirmSave = () => {
+    if (!rawPlan) return;
+
+    Alert.alert('Confirm Plan', 'Save this meal plan for the week?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Save',
+        onPress: () => {
+          saveMutation.mutate(
+            { week_start_date: weekStart, plan_data: rawPlan },
+            {
+              onSuccess: () => {
+                Alert.alert('Saved', 'Your meal plan has been saved.', [
+                  { text: 'OK', onPress: () => router.back() },
+                ]);
+              },
+              onError: () => {
+                Alert.alert('Error', 'Failed to save meal plan. Please try again.');
+              },
+            }
+          );
+        },
+      },
+    ]);
   };
 
   const handleSwap = (item: WeeklyScheduleItem) => {
@@ -102,6 +144,8 @@ export default function WeekPlanningScreen() {
 
   const handleSelectAlternative = (alternative: WeeklyScheduleItem) => {
     if (!selectedItem) return;
+
+    const dayName = DAY_ORDER[selectedDayIndex];
 
     setWeekPlan((prevPlan) =>
       prevPlan.map((day, dayIdx) => {
@@ -116,6 +160,34 @@ export default function WeekPlanningScreen() {
         return day;
       })
     );
+
+    // Update raw plan to keep in sync for saving
+    if (rawPlan && alternative.recipe) {
+      setRawPlan((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          daily_plans: prev.daily_plans.map((dp) => {
+            if (dp.day !== dayName) return dp;
+            return {
+              ...dp,
+              slots: dp.slots.map((slot) => {
+                const currentRecipeId = slot.plan?.main_recipe?.id;
+                if (currentRecipeId !== selectedItem.id) return slot;
+                return {
+                  ...slot,
+                  plan: {
+                    ...slot.plan,
+                    main_recipe: alternative.recipe ?? null,
+                    alternatives: [],
+                  },
+                };
+              }),
+            };
+          }),
+        };
+      });
+    }
   };
 
   const handleEdit = (item: WeeklyScheduleItem) => {
@@ -238,7 +310,7 @@ export default function WeekPlanningScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>Week Planning</Text>
-          <Text style={styles.headerSubtitle}>Personalized meal plan</Text>
+          <Text style={styles.headerSubtitle}>Draft - Review & Save</Text>
         </View>
         <TouchableOpacity
           onPress={handleRegenerate}
@@ -322,6 +394,22 @@ export default function WeekPlanningScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Confirm & Save Button */}
+        <TouchableOpacity
+          style={[styles.confirmButton, saveMutation.isPending && { opacity: 0.6 }]}
+          onPress={handleConfirmSave}
+          disabled={saveMutation.isPending || !rawPlan}
+        >
+          {saveMutation.isPending ? (
+            <ActivityIndicator size="small" color="#FFF" />
+          ) : (
+            <Check size={20} color="#FFF" />
+          )}
+          <Text style={styles.confirmButtonText}>
+            {saveMutation.isPending ? 'Saving...' : 'Confirm & Save'}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Modals */}
@@ -406,7 +494,8 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    color: Colors.light.textMuted,
+    color: Colors.light.secondary,
+    fontWeight: '500',
   },
   daySelector: {
     maxHeight: 90,
@@ -498,5 +587,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.light.text,
+  },
+  confirmButton: {
+    backgroundColor: Colors.light.secondary,
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

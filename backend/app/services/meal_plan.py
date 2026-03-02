@@ -355,6 +355,8 @@ class MealPlanService:
                 partner = all_slots[j]
                 if partner["is_assigned"]:
                     continue
+                if partner["day"] == item["day"]:
+                    continue
                 if partner["is_breakfast"] != item["is_breakfast"]:
                     continue
                 if partner["slot"].time is None:
@@ -367,6 +369,8 @@ class MealPlanService:
                 for j in range(i + 1, len(all_slots)):
                     partner = all_slots[j]
                     if partner["is_assigned"]:
+                        continue
+                    if partner["day"] == item["day"]:
                         continue
                     if partner["is_breakfast"] != item["is_breakfast"]:
                         continue
