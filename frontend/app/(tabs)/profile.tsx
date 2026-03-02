@@ -54,6 +54,21 @@ export default function ProfilePage() {
     router.push('/profile/edit');
   };
 
+  const allergyCount = backendUser?.allergies?.length ?? 0;
+  const dietLabels = [
+    backendUser?.is_vegetarian && 'Vegetarian',
+    backendUser?.is_vegan && 'Vegan',
+    backendUser?.is_ketogenic && 'Keto',
+    backendUser?.is_gluten_free && 'Gluten-Free',
+    backendUser?.is_pescatarian && 'Pescatarian',
+  ].filter(Boolean);
+  const dietarySummary = [
+    allergyCount > 0 ? `${allergyCount} ${allergyCount === 1 ? 'allergy' : 'allergies'}` : null,
+    ...dietLabels,
+  ]
+    .filter(Boolean)
+    .join(', ') || 'Not set';
+
   const menuItems: MenuItem[] = [
     {
       label: 'Edit Profile',
@@ -64,6 +79,8 @@ export default function ProfilePage() {
     {
       label: 'Allergies & Preferences',
       icon: Utensils,
+      value: dietarySummary,
+      onPress: () => router.push('/profile/dietary-preferences'),
     },
     {
       label: 'Sync Health Data',

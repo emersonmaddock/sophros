@@ -41,7 +41,7 @@ type ScheduleItem = {
   title: string;
   subtitle?: string;
   duration: string;
-  type: 'meal' | 'exercise' | 'sleep';
+  type: 'meal' | 'workout' | 'sleep';
   status: 'completed' | 'current' | 'upcoming';
   recipe?: WeeklyScheduleItem['recipe'];
 };
@@ -104,7 +104,7 @@ export default function SchedulePage() {
         title: item.title,
         subtitle: item.subtitle,
         duration: item.duration,
-        type: 'meal' as const,
+        type: item.type,
         status,
         recipe: item.recipe,
       };
@@ -112,7 +112,7 @@ export default function SchedulePage() {
   }, [savedPlan, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
 
   const handleItemPress = (item: ScheduleItem) => {
-    if (item.type === 'meal') {
+    if (item.type === 'meal' && item.recipe) {
       setSelectedMeal(item);
       setModalVisible(true);
     }
@@ -147,7 +147,7 @@ export default function SchedulePage() {
     switch (type) {
       case 'meal':
         return Colors.light.secondary;
-      case 'exercise':
+      case 'workout':
         return Colors.light.primary;
       default:
         return Colors.light.charts.carbs;

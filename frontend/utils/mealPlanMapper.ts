@@ -1,4 +1,9 @@
-import type { DailyMealPlan, MealSlotTarget, Recipe } from '@/api/types.gen';
+import type {
+  DailyMealPlanOutput,
+  ExerciseRecommendation,
+  MealSlotTargetOutput,
+  Recipe,
+} from '@/api/types.gen';
 import type { WeeklyScheduleItem } from '@/types/schedule';
 
 /**
@@ -20,9 +25,48 @@ function formatTime(pythonTime: string | null | undefined): string {
 }
 
 /**
+ * Converts an ExerciseRecommendation to a WeeklyScheduleItem.
+ */
+function exerciseToScheduleItem(exercise: ExerciseRecommendation): WeeklyScheduleItem {
+  const time = exercise.time ? formatTime(exercise.time) : '6:00 AM';
+  const subtitle =
+    [
+      exercise.calories_burned ? `${exercise.calories_burned} cal burn` : null,
+      exercise.muscle_gain_estimate_kg
+        ? `~${(exercise.muscle_gain_estimate_kg * 1000).toFixed(0)}g muscle gain`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' · ') || `${exercise.duration_minutes} min session`;
+
+  return {
+    id: `exercise-${exercise.category}`,
+    time,
+    title: exercise.category,
+    subtitle,
+    duration: `${exercise.duration_minutes} min`,
+    type: 'workout',
+    calories: exercise.calories_burned,
+    workoutType: exercise.category,
+  };
+}
+
+/**
+ * Parses a display time string (e.g. "7:30 AM") into minutes since midnight for sorting.
+ */
+function parseTimeToMinutes(displayTime: string): number {
+  const [timePart, period] = displayTime.split(' ');
+  const [hours, minutes] = timePart.split(':').map(Number);
+  let h = hours;
+  if (period === 'PM' && h !== 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return h * 60 + (minutes || 0);
+}
+
+/**
  * Estimates meal prep/eating duration based on slot type.
  */
-function estimateDuration(slot: MealSlotTarget): string {
+function estimateDuration(slot: MealSlotTargetOutput): string {
   if (slot.prep_time_minutes) {
     return `${slot.prep_time_minutes} min`;
   }
@@ -61,8 +105,8 @@ function recipeToScheduleItem(recipe: Recipe, time: string, slotName: string): W
 /**
  * Converts a DailyMealPlan (API) to WeeklyScheduleItem[] for the UI.
  */
-export function mapDailyPlanToScheduleItems(plan: DailyMealPlan): WeeklyScheduleItem[] {
-  return plan.slots.map((slot) => {
+export function mapDailyPlanToScheduleItems(plan: DailyMealPlanOutput): WeeklyScheduleItem[] {
+  const mealItems: WeeklyScheduleItem[] = plan.slots.map((slot) => {
     const time = formatTime(slot.time);
     const recipe = slot.plan?.main_recipe;
 
@@ -84,4 +128,15 @@ export function mapDailyPlanToScheduleItems(plan: DailyMealPlan): WeeklySchedule
       alternatives,
     };
   });
+
+  const items: WeeklyScheduleItem[] = [...mealItems];
+
+  if (plan.exercise) {
+    items.push(exerciseToScheduleItem(plan.exercise));
+  }
+
+  // Sort all items by time for correct timeline ordering
+  items.sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
+
+  return items;
 }

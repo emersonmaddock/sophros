@@ -27,6 +27,11 @@ interface ProfileEditForm {
   heightInches: string;
   showImperial: boolean;
   activityLevel: ActivityLevel;
+  targetWeight: string;
+  targetBodyFat: string;
+  targetDate: string;
+  wakeUpTime: string;
+  sleepTime: string;
 }
 
 function parseFloatOrNull(value: string): number | null {
@@ -54,6 +59,14 @@ export default function EditProfileScreen() {
     const { feet, inches } =
       metricHeight === null ? { feet: 0, inches: 0 } : cmToFeetAndInches(metricHeight);
 
+    const targetWeightKg = backendUser.target_weight ?? null;
+    const displayTargetWeight =
+      targetWeightKg === null
+        ? ''
+        : backendUser.show_imperial
+          ? kgToLbs(targetWeightKg).toString()
+          : targetWeightKg.toString();
+
     setForm({
       age: backendUser.age?.toString() ?? '',
       weight:
@@ -67,6 +80,11 @@ export default function EditProfileScreen() {
       heightInches: metricHeight === null ? '' : inches.toString(),
       showImperial: backendUser.show_imperial,
       activityLevel: backendUser.activity_level,
+      targetWeight: displayTargetWeight,
+      targetBodyFat: backendUser.target_body_fat?.toString() ?? '',
+      targetDate: backendUser.target_date ?? '',
+      wakeUpTime: backendUser.wake_up_time ? backendUser.wake_up_time.substring(0, 5) : '',
+      sleepTime: backendUser.sleep_time ? backendUser.sleep_time.substring(0, 5) : '',
     });
   }, [backendUser]);
 
@@ -83,13 +101,17 @@ export default function EditProfileScreen() {
       if (nextImperial) {
         const metricWeight = parseFloatOrNull(prev.weight);
         const metricHeight = parseFloatOrNull(prev.heightCm);
+        const metricTargetWeight = parseFloatOrNull(prev.targetWeight);
         const convertedWeight = metricWeight === null ? '' : kgToLbs(metricWeight).toString();
+        const convertedTargetWeight =
+          metricTargetWeight === null ? '' : kgToLbs(metricTargetWeight).toString();
 
         if (metricHeight === null) {
           return {
             ...prev,
             showImperial: true,
             weight: convertedWeight,
+            targetWeight: convertedTargetWeight,
             heightFeet: '',
             heightInches: '',
           };
@@ -100,13 +122,17 @@ export default function EditProfileScreen() {
           ...prev,
           showImperial: true,
           weight: convertedWeight,
+          targetWeight: convertedTargetWeight,
           heightFeet: feet.toString(),
           heightInches: inches.toString(),
         };
       }
 
       const imperialWeight = parseFloatOrNull(prev.weight);
+      const imperialTargetWeight = parseFloatOrNull(prev.targetWeight);
       const convertedWeight = imperialWeight === null ? '' : lbsToKg(imperialWeight).toString();
+      const convertedTargetWeight =
+        imperialTargetWeight === null ? '' : lbsToKg(imperialTargetWeight).toString();
 
       const hasImperialHeight =
         prev.heightFeet.trim().length > 0 || prev.heightInches.trim().length > 0;
@@ -123,6 +149,7 @@ export default function EditProfileScreen() {
         ...prev,
         showImperial: false,
         weight: convertedWeight,
+        targetWeight: convertedTargetWeight,
         heightCm: convertedHeightCm,
       };
     });
@@ -215,6 +242,96 @@ export default function EditProfileScreen() {
 
     if (form.showImperial !== backendUser.show_imperial) {
       updates.show_imperial = form.showImperial;
+    }
+
+    // Target weight
+    const targetWeightText = form.targetWeight.trim();
+    if (targetWeightText) {
+      const enteredTargetWeight = parseFloatOrNull(targetWeightText);
+      if (enteredTargetWeight === null || enteredTargetWeight <= 0) {
+        errors.push('Target weight must be a positive number.');
+      } else {
+        const targetWeightKg = form.showImperial
+          ? lbsToKg(enteredTargetWeight)
+          : enteredTargetWeight;
+        if (
+          targetWeightKg < VALIDATION_RULES.weight.min ||
+          targetWeightKg > VALIDATION_RULES.weight.max
+        ) {
+          errors.push(
+            `Target weight must be between ${VALIDATION_RULES.weight.min}kg and ${VALIDATION_RULES.weight.max}kg.`
+          );
+        } else {
+          const backendTargetWeight = backendUser.target_weight ?? 0;
+          if (Math.abs(targetWeightKg - backendTargetWeight) > 0.0001) {
+            updates.target_weight = targetWeightKg;
+          }
+        }
+      }
+    } else if (backendUser.target_weight != null) {
+      updates.target_weight = null;
+    }
+
+    // Target body fat
+    const targetBodyFatText = form.targetBodyFat.trim();
+    if (targetBodyFatText) {
+      const bodyFat = parseFloatOrNull(targetBodyFatText);
+      if (bodyFat === null || bodyFat < 3 || bodyFat > 60) {
+        errors.push('Target body fat must be between 3% and 60%.');
+      } else {
+        const backendBodyFat = backendUser.target_body_fat ?? 0;
+        if (Math.abs(bodyFat - backendBodyFat) > 0.0001) {
+          updates.target_body_fat = bodyFat;
+        }
+      }
+    } else if (backendUser.target_body_fat != null) {
+      updates.target_body_fat = null;
+    }
+
+    // Target date
+    const targetDateText = form.targetDate.trim();
+    if (targetDateText) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDateText)) {
+        errors.push('Target date must be in YYYY-MM-DD format.');
+      } else if (targetDateText !== (backendUser.target_date ?? '')) {
+        updates.target_date = targetDateText;
+      }
+    } else if (backendUser.target_date != null) {
+      updates.target_date = null;
+    }
+
+    // Wake up time
+    const wakeUpText = form.wakeUpTime.trim();
+    if (wakeUpText) {
+      if (!/^\d{2}:\d{2}$/.test(wakeUpText)) {
+        errors.push('Wake up time must be in HH:MM format.');
+      } else {
+        const backendWake = backendUser.wake_up_time
+          ? backendUser.wake_up_time.substring(0, 5)
+          : '';
+        if (wakeUpText !== backendWake) {
+          updates.wake_up_time = `${wakeUpText}:00`;
+        }
+      }
+    } else if (backendUser.wake_up_time) {
+      updates.wake_up_time = null;
+    }
+
+    // Sleep time
+    const sleepText = form.sleepTime.trim();
+    if (sleepText) {
+      if (!/^\d{2}:\d{2}$/.test(sleepText)) {
+        errors.push('Sleep time must be in HH:MM format.');
+      } else {
+        const backendSleep = backendUser.sleep_time
+          ? backendUser.sleep_time.substring(0, 5)
+          : '';
+        if (sleepText !== backendSleep) {
+          updates.sleep_time = `${sleepText}:00`;
+        }
+      }
+    } else if (backendUser.sleep_time) {
+      updates.sleep_time = null;
     }
 
     if (errors.length > 0) {
@@ -380,6 +497,73 @@ export default function EditProfileScreen() {
                 onPress={() => updateForm('activityLevel', option.value)}
               />
             ))}
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Goals</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              Target Weight ({form.showImperial ? 'lbs' : 'kg'})
+            </Text>
+            <TextInput
+              style={styles.input}
+              value={form.targetWeight}
+              onChangeText={(text) => updateForm('targetWeight', text)}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={Colors.light.textMuted}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Target Body Fat %</Text>
+            <TextInput
+              style={styles.input}
+              value={form.targetBodyFat}
+              onChangeText={(text) => updateForm('targetBodyFat', text)}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={Colors.light.textMuted}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Target Date</Text>
+            <TextInput
+              style={styles.input}
+              value={form.targetDate}
+              onChangeText={(text) => updateForm('targetDate', text)}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.light.textMuted}
+            />
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Schedule</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Wake Up Time</Text>
+            <TextInput
+              style={styles.input}
+              value={form.wakeUpTime}
+              onChangeText={(text) => updateForm('wakeUpTime', text)}
+              placeholder="07:00"
+              placeholderTextColor={Colors.light.textMuted}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Sleep Time</Text>
+            <TextInput
+              style={styles.input}
+              value={form.sleepTime}
+              onChangeText={(text) => updateForm('sleepTime', text)}
+              placeholder="23:00"
+              placeholderTextColor={Colors.light.textMuted}
+            />
           </View>
         </View>
 
