@@ -5,11 +5,16 @@ import { Colors, Layout } from '@/constants/theme';
 import {
   useGenerateWeekPlanMutation,
   useSaveMealPlanMutation,
-  useWeeklyMealPlanQuery,
+  useWeeklyMealPlanOutputQuery,
 } from '@/lib/queries/mealPlan';
 import type { DaySchedule, ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
-import type { Day, WeeklyMealPlan } from '@/api/types.gen';
+import type {
+  DailyMealPlanOutput,
+  Day,
+  MealSlotTargetOutput,
+  WeeklyMealPlanOutput,
+} from '@/api/types.gen';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, RefreshCw, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -34,14 +39,16 @@ const DAY_ORDER: Day[] = [
   'Sunday',
 ];
 
-function weeklyPlanToDaySchedules(plan: WeeklyMealPlan, weekStart: string): DaySchedule[] {
+function weeklyPlanToDaySchedules(plan: WeeklyMealPlanOutput, weekStart: string): DaySchedule[] {
   const monday = new Date(weekStart + 'T00:00:00');
 
   return DAY_ORDER.map((dayName, index) => {
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
 
-    const dailyPlan = plan.daily_plans?.find((p) => p.day === dayName);
+    const dailyPlan = plan.daily_plans?.find(
+      (p: { day: Day }) => p.day === dayName
+    );
     const items = dailyPlan ? mapDailyPlanToScheduleItems(dailyPlan) : [];
 
     return {
@@ -65,7 +72,7 @@ export default function WeekPlanningScreen() {
   const weekStart = weekStartParam || getNextMonday();
 
   const [weekPlan, setWeekPlan] = useState<DaySchedule[]>([]);
-  const [rawPlan, setRawPlan] = useState<WeeklyMealPlan | null>(null);
+  const [rawPlan, setRawPlan] = useState<WeeklyMealPlanOutput | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [swapModalVisible, setSwapModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -76,7 +83,7 @@ export default function WeekPlanningScreen() {
 
   const generateWeekMutation = useGenerateWeekPlanMutation();
   const saveMutation = useSaveMealPlanMutation();
-  const { data: cachedPlan } = useWeeklyMealPlanQuery();
+  const { data: cachedPlan } = useWeeklyMealPlanOutputQuery();
 
   useEffect(() => {
     // If we have a cached plan, use it
@@ -163,15 +170,15 @@ export default function WeekPlanningScreen() {
 
     // Update raw plan to keep in sync for saving
     if (rawPlan && alternative.recipe) {
-      setRawPlan((prev) => {
+      setRawPlan((prev: WeeklyMealPlanOutput | null) => {
         if (!prev) return prev;
         return {
           ...prev,
-          daily_plans: prev.daily_plans.map((dp) => {
+          daily_plans: prev.daily_plans.map((dp: DailyMealPlanOutput) => {
             if (dp.day !== dayName) return dp;
             return {
               ...dp,
-              slots: dp.slots.map((slot) => {
+              slots: dp.slots.map((slot: MealSlotTargetOutput) => {
                 const currentRecipeId = slot.plan?.main_recipe?.id;
                 if (currentRecipeId !== selectedItem.id) return slot;
                 return {

@@ -83,16 +83,8 @@ export default function SchedulePage() {
 
   const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
 
-  const {
-    isDirty,
-    saveStatus,
-    statusText,
-    save,
-    removeItem,
-    addItem,
-    editItem,
-    getScheduleItems,
-  } = useScheduleEditing(savedPlan, weekStartStr);
+  const { isDirty, saveStatus, statusText, save, removeItem, addItem, editItem, getScheduleItems } =
+    useScheduleEditing(savedPlan, weekStartStr);
 
   // Build week dates (Mon-Sun)
   const weekDates = useMemo(() => {
@@ -158,36 +150,44 @@ export default function SchedulePage() {
     }
   }, []);
 
-  const handleMealModify = useCallback((meal: { time: string; title?: string; subtitle?: string; type: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
-    setEditModalItem({
-      id: meal.recipe?.id?.toString() || `${Date.now()}`,
-      time: meal.time,
-      title: meal.title || 'Meal',
-      subtitle: meal.subtitle,
-      duration: '30 min',
-      type: 'meal',
-      recipe: meal.recipe,
-    });
-    setEditModalMode('edit');
-    setEditModalItemType('meal');
-    setEditModalVisible(true);
-  }, []);
+  const handleMealModify = useCallback(
+    (meal: {
+      time: string;
+      title?: string;
+      subtitle?: string;
+      type: string;
+      recipe?: WeeklyScheduleItem['recipe'];
+    }) => {
+      setEditModalItem({
+        id: meal.recipe?.id?.toString() || `${Date.now()}`,
+        time: meal.time,
+        title: meal.title || 'Meal',
+        subtitle: meal.subtitle,
+        duration: '30 min',
+        type: 'meal',
+        recipe: meal.recipe,
+      });
+      setEditModalMode('edit');
+      setEditModalItemType('meal');
+      setEditModalVisible(true);
+    },
+    []
+  );
 
-  const handleMealRemove = useCallback((meal: { time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
-    const itemId = meal.recipe?.id?.toString() || '';
-    Alert.alert(
-      'Remove Item',
-      `Remove "${meal.title || 'this item'}" from the schedule?`,
-      [
+  const handleMealRemove = useCallback(
+    (meal: { time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
+      const itemId = meal.recipe?.id?.toString() || '';
+      Alert.alert('Remove Item', `Remove "${meal.title || 'this item'}" from the schedule?`, [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: () => removeItem(selectedDayName, itemId),
         },
-      ]
-    );
-  }, [removeItem, selectedDayName]);
+      ]);
+    },
+    [removeItem, selectedDayName]
+  );
 
   const handleEditSave = useCallback(
     (updatedItem: WeeklyScheduleItem) => {
@@ -245,7 +245,9 @@ export default function SchedulePage() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Weekly Schedule</Text>
-          <Text style={[styles.headerSubtitle, saveStatus === 'error' && { color: Colors.light.error }]}>
+          <Text
+            style={[styles.headerSubtitle, saveStatus === 'error' && { color: Colors.light.error }]}
+          >
             {statusText}
           </Text>
         </View>

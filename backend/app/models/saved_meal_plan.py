@@ -22,14 +22,10 @@ class SavedMealPlan(Base):
     id: Mapped[int] = mapped_column(
         Integer, primary_key=True, index=True, autoincrement=True
     )
-    user_id: Mapped[str] = mapped_column(
-        String, ForeignKey("user.id"), nullable=False
-    )
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id"), nullable=False)
     week_start_date: Mapped[date] = mapped_column(Date, nullable=False)
     plan_data: Mapped[dict] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()
     )

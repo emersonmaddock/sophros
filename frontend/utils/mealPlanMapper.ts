@@ -185,7 +185,13 @@ function recalcDailyTotals(day: DailyMealPlanOutput): DailyMealPlanOutput {
     calories -= day.exercise.calories_burned;
   }
 
-  return { ...day, total_calories: calories, total_protein: protein, total_carbs: carbs, total_fat: fat };
+  return {
+    ...day,
+    total_calories: calories,
+    total_protein: protein,
+    total_carbs: carbs,
+    total_fat: fat,
+  };
 }
 
 /**
@@ -265,9 +271,7 @@ export function addItemToRawPlan(
       carbohydrates: 0,
       fat: 0,
       time: apiTime,
-      plan: item.recipe
-        ? { main_recipe: item.recipe, alternatives: [] }
-        : null,
+      plan: item.recipe ? { main_recipe: item.recipe, alternatives: [] } : null,
     };
 
     return recalcDailyTotals({ ...dp, slots: [...dp.slots, newSlot] });

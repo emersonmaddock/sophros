@@ -323,9 +323,7 @@ export default function EditProfileScreen() {
       if (!/^\d{2}:\d{2}$/.test(sleepText)) {
         errors.push('Sleep time must be in HH:MM format.');
       } else {
-        const backendSleep = backendUser.sleep_time
-          ? backendUser.sleep_time.substring(0, 5)
-          : '';
+        const backendSleep = backendUser.sleep_time ? backendUser.sleep_time.substring(0, 5) : '';
         if (sleepText !== backendSleep) {
           updates.sleep_time = `${sleepText}:00`;
         }

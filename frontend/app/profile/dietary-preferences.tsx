@@ -29,12 +29,7 @@ interface DietaryForm {
   isPescatarian: boolean;
 }
 
-type DietFlagKey =
-  | 'isGlutenFree'
-  | 'isKetogenic'
-  | 'isVegetarian'
-  | 'isVegan'
-  | 'isPescatarian';
+type DietFlagKey = 'isGlutenFree' | 'isKetogenic' | 'isVegetarian' | 'isVegan' | 'isPescatarian';
 
 const DIET_KEY_MAP: Record<string, DietFlagKey> = {
   is_gluten_free: 'isGlutenFree',
@@ -195,11 +190,7 @@ export default function DietaryPreferencesScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Allergies</Text>
-          <ChipSelect
-            options={ALL_ALLERGIES}
-            selected={form.allergies}
-            onToggle={toggleAllergy}
-          />
+          <ChipSelect options={ALL_ALLERGIES} selected={form.allergies} onToggle={toggleAllergy} />
         </View>
 
         <View style={styles.sectionCard}>

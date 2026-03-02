@@ -5,7 +5,7 @@ import {
   getWeekPlanApiV1MealPlansWeekGet,
   saveMealPlanApiV1MealPlansSavePost,
 } from '@/api/sdk.gen';
-import type { Day, SaveMealPlanRequest, WeeklyMealPlan } from '@/api/types.gen';
+import type { DailyMealPlanOutput, Day, SaveMealPlanRequest, WeeklyMealPlanOutput } from '@/api/types.gen';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const mealPlanKeys = {
@@ -20,8 +20,8 @@ export const mealPlanKeys = {
  * Hook to read cached weekly meal plan.
  * Data is populated by useGenerateWeekPlanMutation.
  */
-export function useWeeklyMealPlanQuery() {
-  return useQuery<WeeklyMealPlan | null>({
+export function useWeeklyMealPlanOutputQuery() {
+  return useQuery<WeeklyMealPlanOutput | null>({
     queryKey: mealPlanKeys.weekly(),
     queryFn: () => null,
     // Don't auto-fetch — data is set by the mutation
@@ -74,17 +74,22 @@ export function useGenerateDayPlanMutation() {
     },
     onSuccess: ({ day, plan }) => {
       // Patch the cached weekly plan
-      const current = queryClient.getQueryData<WeeklyMealPlan>(mealPlanKeys.weekly());
+      const current = queryClient.getQueryData<WeeklyMealPlanOutput>(mealPlanKeys.weekly());
       if (current) {
-        const updatedPlans = current.daily_plans.map((p) => (p.day === day ? plan : p));
+        const updatedPlans: DailyMealPlanOutput[] = current.daily_plans.map(
+          (p: DailyMealPlanOutput) => (p.day === day ? plan : p)
+        );
         // If day wasn't in the list, add it
-        if (!current.daily_plans.some((p) => p.day === day)) {
+        if (!current.daily_plans.some((p: DailyMealPlanOutput) => p.day === day)) {
           updatedPlans.push(plan);
         }
         queryClient.setQueryData(mealPlanKeys.weekly(), {
           ...current,
           daily_plans: updatedPlans,
-          total_weekly_calories: updatedPlans.reduce((sum, p) => sum + p.total_calories, 0),
+          total_weekly_calories: updatedPlans.reduce(
+            (sum: number, p: DailyMealPlanOutput) => sum + p.total_calories,
+            0
+          ),
         });
       }
     },

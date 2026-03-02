@@ -110,7 +110,8 @@ export default function HealthScorePage() {
             />
           </View>
           <Text style={styles.heroDescription}>
-            Your overall health score is {overallStatus.toLowerCase()}. Keep building healthy habits!
+            Your overall health score is {overallStatus.toLowerCase()}. Keep building healthy
+            habits!
           </Text>
         </View>
 

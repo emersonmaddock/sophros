@@ -69,9 +69,7 @@ async def test_generate_daily_plan_integration():
 
     # Main course pool: 10 recipes
     main_pool = [
-        _make_spoonacular_response(
-            100 + i, f"Main Course {i}", 700 + i * 5, 40, 50, 25
-        )
+        _make_spoonacular_response(100 + i, f"Main Course {i}", 700 + i * 5, 40, 50, 25)
         for i in range(1, 11)
     ]
 

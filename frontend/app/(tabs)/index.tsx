@@ -99,10 +99,30 @@ export default function DashboardPage() {
 
     if (!todayPlan) {
       return {
-        calories: { value: '--', percentage: 0, label: 'Calories', subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined },
-        protein: { value: '--', percentage: 0, label: 'Protein', subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined },
-        carbs: { value: '--', percentage: 0, label: 'Carbs', subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined },
-        fats: { value: '--', percentage: 0, label: 'Fat', subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined },
+        calories: {
+          value: '--',
+          percentage: 0,
+          label: 'Calories',
+          subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
+        },
+        protein: {
+          value: '--',
+          percentage: 0,
+          label: 'Protein',
+          subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
+        },
+        carbs: {
+          value: '--',
+          percentage: 0,
+          label: 'Carbs',
+          subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
+        },
+        fats: {
+          value: '--',
+          percentage: 0,
+          label: 'Fat',
+          subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
+        },
       };
     }
 
@@ -248,7 +268,6 @@ export default function DashboardPage() {
             <MacroNutrients data={macroData} />
           </View>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );

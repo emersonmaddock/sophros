@@ -41,9 +41,7 @@ export default function Step5Screen() {
 
   const displayTargetWeight = data.showImperial
     ? imperialTargetWeight ||
-      (data.targetWeight
-        ? kgToLbs(parseFloat(data.targetWeight)).toString()
-        : '')
+      (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
   const handleSubmit = async () => {
@@ -74,9 +72,7 @@ export default function Step5Screen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>Goals & Schedule</Text>
-            <Text style={styles.subtitle}>
-              Help us optimize your exercise and meal timing
-            </Text>
+            <Text style={styles.subtitle}>Help us optimize your exercise and meal timing</Text>
           </View>
 
           <View style={styles.content}>

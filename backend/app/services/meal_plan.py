@@ -130,9 +130,7 @@ class MealPlanService:
         used_ids.add(primary["id"])
 
         main_recipe = MealPlanService._convert_to_recipe(primary)
-        alternatives = [
-            MealPlanService._convert_to_recipe(c) for c in candidates[1:]
-        ]
+        alternatives = [MealPlanService._convert_to_recipe(c) for c in candidates[1:]]
 
         slot.plan = MealOption(main_recipe=main_recipe, alternatives=alternatives)
         slot.prep_time_minutes = main_recipe.preparation_time_minutes or 30
@@ -176,7 +174,9 @@ class MealPlanService:
             s for s in meal_plan.slots if s.slot_name == MealSlot.BREAKFAST
         )
         main_slot = next(
-            s for s in meal_plan.slots if s.slot_name in (MealSlot.LUNCH, MealSlot.DINNER)
+            s
+            for s in meal_plan.slots
+            if s.slot_name in (MealSlot.LUNCH, MealSlot.DINNER)
         )
 
         # 2 parallel API calls
@@ -192,11 +192,7 @@ class MealPlanService:
         # Distribute recipes across slots
         used_ids: set[int] = set()
         for slot in meal_plan.slots:
-            pool = (
-                breakfast_pool
-                if slot.slot_name == MealSlot.BREAKFAST
-                else main_pool
-            )
+            pool = breakfast_pool if slot.slot_name == MealSlot.BREAKFAST else main_pool
             self._assign_slot_recipes(slot, pool, used_ids)
 
         return meal_plan
@@ -309,18 +305,14 @@ class MealPlanService:
 
                 # Store in manifest for potential leftover lookups
                 if slot.plan and slot.plan.main_recipe:
-                    recipe_manifest[(plan.day, slot.slot_name)] = (
-                        slot.plan.main_recipe
-                    )
+                    recipe_manifest[(plan.day, slot.slot_name)] = slot.plan.main_recipe
 
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
         return WeeklyMealPlan(
             daily_plans=daily_plans, total_weekly_calories=total_weekly_cals
         )
 
-    def _apply_adaptive_leftovers(
-        self, daily_plans: list[DailyMealPlan], user: User
-    ):
+    def _apply_adaptive_leftovers(self, daily_plans: list[DailyMealPlan], user: User):
         """
         Refined Leftover Logic:
         1. Categories: Breakfasts stay separate. Lunch/Dinner are interchangeable.

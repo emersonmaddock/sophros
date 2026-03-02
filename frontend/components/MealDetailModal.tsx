@@ -21,7 +21,13 @@ interface MealDetailModalProps {
   onRemove?: (meal: MealData) => void;
 }
 
-export const MealDetailModal = ({ visible, onClose, meal, onModify, onRemove }: MealDetailModalProps) => {
+export const MealDetailModal = ({
+  visible,
+  onClose,
+  meal,
+  onModify,
+  onRemove,
+}: MealDetailModalProps) => {
   if (!meal) return null;
 
   const recipe = meal.recipe;

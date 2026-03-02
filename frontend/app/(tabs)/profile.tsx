@@ -62,12 +62,13 @@ export default function ProfilePage() {
     backendUser?.is_gluten_free && 'Gluten-Free',
     backendUser?.is_pescatarian && 'Pescatarian',
   ].filter(Boolean);
-  const dietarySummary = [
-    allergyCount > 0 ? `${allergyCount} ${allergyCount === 1 ? 'allergy' : 'allergies'}` : null,
-    ...dietLabels,
-  ]
-    .filter(Boolean)
-    .join(', ') || 'Not set';
+  const dietarySummary =
+    [
+      allergyCount > 0 ? `${allergyCount} ${allergyCount === 1 ? 'allergy' : 'allergies'}` : null,
+      ...dietLabels,
+    ]
+      .filter(Boolean)
+      .join(', ') || 'Not set';
 
   const menuItems: MenuItem[] = [
     {
