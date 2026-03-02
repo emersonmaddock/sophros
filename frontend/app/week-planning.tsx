@@ -46,9 +46,7 @@ function weeklyPlanToDaySchedules(plan: WeeklyMealPlanOutput, weekStart: string)
     const date = new Date(monday);
     date.setDate(monday.getDate() + index);
 
-    const dailyPlan = plan.daily_plans?.find(
-      (p: { day: Day }) => p.day === dayName
-    );
+    const dailyPlan = plan.daily_plans?.find((p: { day: Day }) => p.day === dayName);
     const items = dailyPlan ? mapDailyPlanToScheduleItems(dailyPlan) : [];
 
     return {

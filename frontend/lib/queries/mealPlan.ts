@@ -5,7 +5,12 @@ import {
   getWeekPlanApiV1MealPlansWeekGet,
   saveMealPlanApiV1MealPlansSavePost,
 } from '@/api/sdk.gen';
-import type { DailyMealPlanOutput, Day, SaveMealPlanRequest, WeeklyMealPlanOutput } from '@/api/types.gen';
+import type {
+  DailyMealPlanOutput,
+  Day,
+  SaveMealPlanRequest,
+  WeeklyMealPlanOutput,
+} from '@/api/types.gen';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const mealPlanKeys = {
