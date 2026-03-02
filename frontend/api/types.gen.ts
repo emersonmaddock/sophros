@@ -77,10 +77,12 @@ export type DriOutput = {
  * DailyMealPlan
  */
 export type DailyMealPlan = {
+  day: Day;
   /**
    * Slots
    */
   slots: Array<MealSlotTarget>;
+  exercise?: ExerciseRecommendation | null;
   /**
    * Total Calories
    */
@@ -112,6 +114,34 @@ export type Day =
   | 'Sunday';
 
 /**
+ * ExerciseCategory
+ */
+export type ExerciseCategory = 'Cardio' | 'Weight Lifting';
+
+/**
+ * ExerciseRecommendation
+ */
+export type ExerciseRecommendation = {
+  category: ExerciseCategory;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes: number;
+  /**
+   * Time
+   */
+  time?: string | null;
+  /**
+   * Calories Burned
+   */
+  calories_burned?: number;
+  /**
+   * Muscle Gain Estimate Kg
+   */
+  muscle_gain_estimate_kg?: number;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -119,6 +149,17 @@ export type HttpValidationError = {
    * Detail
    */
   detail?: Array<ValidationError>;
+};
+
+/**
+ * MealOption
+ */
+export type MealOption = {
+  main_recipe?: Recipe | null;
+  /**
+   * Alternatives
+   */
+  alternatives?: Array<Recipe>;
 };
 
 /**
@@ -151,6 +192,17 @@ export type MealSlotTarget = {
    * Time
    */
   time?: string | null;
+  plan?: MealOption | null;
+  /**
+   * Is Leftover
+   */
+  is_leftover?: boolean;
+  leftover_from_day?: Day | null;
+  leftover_from_slot?: MealSlot | null;
+  /**
+   * Prep Time Minutes
+   */
+  prep_time_minutes?: number;
 };
 
 /**
@@ -183,6 +235,63 @@ export type PregnancyStatus =
   | 'pregnant'
   | 'exclusively_breastfeeding'
   | 'partially_breastfeeding';
+
+/**
+ * Recipe
+ */
+export type Recipe = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Description
+   */
+  description?: string | null;
+  nutrients: RecipeNutrients;
+  /**
+   * Tags
+   */
+  tags?: Array<string>;
+  /**
+   * Ingredients
+   */
+  ingredients?: Array<string>;
+  /**
+   * Warnings
+   */
+  warnings?: Array<string>;
+  /**
+   * Preparation Time Minutes
+   */
+  preparation_time_minutes?: number | null;
+};
+
+/**
+ * RecipeNutrients
+ */
+export type RecipeNutrients = {
+  /**
+   * Calories
+   */
+  calories: number;
+  /**
+   * Protein
+   */
+  protein: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates: number;
+  /**
+   * Fat
+   */
+  fat: number;
+};
 
 /**
  * ScheduleItemCreate
@@ -282,6 +391,26 @@ export type UserCreate = {
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
   /**
+   * Target Weight
+   */
+  target_weight?: number | null;
+  /**
+   * Target Body Fat
+   */
+  target_body_fat?: number | null;
+  /**
+   * Target Date
+   */
+  target_date?: string | null;
+  /**
+   * Wake Up Time
+   */
+  wake_up_time?: string;
+  /**
+   * Sleep Time
+   */
+  sleep_time?: string;
+  /**
    * Allergies
    */
   allergies?: Array<Allergy>;
@@ -343,6 +472,26 @@ export type UserRead = {
   activity_level: ActivityLevel;
   pregnancy_status?: PregnancyStatus;
   /**
+   * Target Weight
+   */
+  target_weight?: number | null;
+  /**
+   * Target Body Fat
+   */
+  target_body_fat?: number | null;
+  /**
+   * Target Date
+   */
+  target_date?: string | null;
+  /**
+   * Wake Up Time
+   */
+  wake_up_time?: string;
+  /**
+   * Sleep Time
+   */
+  sleep_time?: string;
+  /**
    * Allergies
    */
   allergies?: Array<Allergy>;
@@ -378,6 +527,10 @@ export type UserRead = {
    * Id
    */
   id: string;
+  /**
+   * Schedules
+   */
+  schedules?: Array<unknown>;
 };
 
 /**
@@ -407,6 +560,26 @@ export type UserUpdate = {
   gender?: Sex | null;
   activity_level?: ActivityLevel | null;
   pregnancy_status?: PregnancyStatus | null;
+  /**
+   * Target Weight
+   */
+  target_weight?: number | null;
+  /**
+   * Target Body Fat
+   */
+  target_body_fat?: number | null;
+  /**
+   * Target Date
+   */
+  target_date?: string | null;
+  /**
+   * Wake Up Time
+   */
+  wake_up_time?: string | null;
+  /**
+   * Sleep Time
+   */
+  sleep_time?: string | null;
   /**
    * Allergies
    */
