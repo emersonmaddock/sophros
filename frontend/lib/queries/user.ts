@@ -1,4 +1,8 @@
-import { readUserMeApiV1UsersMeGet, updateUserMeApiV1UsersMePut } from '@/api/sdk.gen';
+import {
+  readUserMeApiV1UsersMeGet,
+  readUserTargetsApiV1UsersMeTargetsGet,
+  updateUserMeApiV1UsersMePut,
+} from '@/api/sdk.gen';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UserUpdate } from '../../api/types.gen';
 
@@ -55,6 +59,7 @@ export function getErrorStatus(error: unknown): number | undefined {
 export const userKeys = {
   all: ['user'] as const,
   detail: (userId?: string) => [...userKeys.all, userId] as const,
+  targets: ['userTargets'] as const,
 };
 
 /**
@@ -84,6 +89,29 @@ export function useUserQuery(enabled: boolean = true) {
     enabled,
     // Prevent showing stale data after logout
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to fetch user nutrition targets (DRI).
+ * Targets change rarely — only when user profile changes.
+ */
+export function useUserTargetsQuery() {
+  return useQuery({
+    queryKey: userKeys.targets,
+    queryFn: async () => {
+      const response = await readUserTargetsApiV1UsersMeTargetsGet();
+      if (response.data) {
+        return response.data;
+      }
+
+      throw createApiRequestError(
+        getErrorMessage(response.error, 'Failed to fetch user targets'),
+        response.response?.status,
+        response.error
+      );
+    },
+    staleTime: 30 * 60 * 1000, // 30 minutes
   });
 }
 

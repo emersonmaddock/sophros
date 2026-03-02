@@ -1,11 +1,13 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useWeeklyMealPlanQuery } from '@/lib/queries/mealPlan';
+import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
+import { calculateHealthScore } from '@/utils/healthScore';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import type { Day } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { ChevronRight, TrendingUp, Utensils } from 'lucide-react-native';
+import { ChevronRight, Utensils } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,13 +34,33 @@ export default function DashboardPage() {
   const monthName = today.toLocaleString('en-US', { month: 'short' });
   const currentHour = today.getHours();
 
-  const { data: weeklyPlan } = useWeeklyMealPlanQuery();
+  // Compute this week's Monday to fetch the saved plan
+  const weekStartStr = useMemo(() => {
+    const d = new Date(today);
+    const dow = d.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split('T')[0];
+  }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derive upcoming meals from cached weekly plan
-  const upcomingItems = useMemo(() => {
+  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: targets } = useUserTargetsQuery();
+  const { data: user } = useUserQuery();
+
+  // Derive today's plan
+  const todayPlan = useMemo(() => {
     const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
+    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
+  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Compute health score
+  const healthScore = useMemo(
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
+    [todayPlan, targets, user]
+  );
+
+  // Derive upcoming meals from the saved plan
+  const upcomingItems = useMemo(() => {
     if (!todayPlan) {
       return [];
     }
@@ -63,45 +85,54 @@ export default function DashboardPage() {
         icon: Utensils,
         color: Colors.light.secondary,
       }));
-  }, [weeklyPlan, currentHour]);
+  }, [todayPlan, currentHour]);
 
-  // Derive macro data from today's plan totals
+  // Derive macro data from today's plan totals vs DRI targets
   const macroData = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
+    const pct = (actual: number, target: number | undefined) =>
+      target ? Math.min(100, Math.round((actual / target) * 100)) : 0;
+
+    const calTarget = targets?.calories.target;
+    const proTarget = targets?.protein.target;
+    const carbTarget = targets?.carbohydrates.target;
+    const fatTarget = targets?.fat.target;
 
     if (!todayPlan) {
       return {
-        calories: { value: '--', percentage: 0 },
-        protein: { value: '--', percentage: 0 },
-        carbs: { value: '--', percentage: 0 },
-        fats: { value: '--', percentage: 0 },
+        calories: { value: '--', percentage: 0, label: 'Calories', subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined },
+        protein: { value: '--', percentage: 0, label: 'Protein', subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined },
+        carbs: { value: '--', percentage: 0, label: 'Carbs', subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined },
+        fats: { value: '--', percentage: 0, label: 'Fat', subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined },
       };
     }
 
     return {
       calories: {
         value: `${todayPlan.total_calories}`,
-        percentage: 100,
+        percentage: pct(todayPlan.total_calories, calTarget),
         label: 'Calories',
+        subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
       },
       protein: {
         value: `${todayPlan.total_protein}g`,
-        percentage: 100,
+        percentage: pct(todayPlan.total_protein, proTarget),
         label: 'Protein',
+        subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
       },
       carbs: {
         value: `${todayPlan.total_carbs}g`,
-        percentage: 100,
+        percentage: pct(todayPlan.total_carbs, carbTarget),
         label: 'Carbs',
+        subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
       },
       fats: {
         value: `${todayPlan.total_fat}g`,
-        percentage: 100,
-        label: 'Fats',
+        percentage: pct(todayPlan.total_fat, fatTarget),
+        label: 'Fat',
+        subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
       },
     };
-  }, [weeklyPlan]);
+  }, [todayPlan, targets]);
 
   // Determine greeting based on time of day
   const greeting =
@@ -129,19 +160,26 @@ export default function DashboardPage() {
           <View style={styles.scoreHeader}>
             <View>
               <Text style={styles.scoreLabel}>Health Score</Text>
-              <Text style={styles.scoreValue}>87</Text>
+              <Text style={styles.scoreValue}>{healthScore.overall}</Text>
             </View>
-            <View style={styles.trendBadge}>
-              <TrendingUp size={16} color="#FFFFFF" />
-              <Text style={styles.trendText}>+5</Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>
+                {healthScore.overall >= 90
+                  ? 'Excellent'
+                  : healthScore.overall >= 70
+                    ? 'Good'
+                    : healthScore.overall >= 50
+                      ? 'Fair'
+                      : 'Needs Work'}
+              </Text>
             </View>
           </View>
 
           <View style={styles.scoreDetails}>
             {[
-              { label: 'Nutrition', value: 92 },
-              { label: 'Exercise', value: 85 },
-              { label: 'Sleep', value: 84 },
+              { label: 'Nutrition', value: healthScore.nutrition.score },
+              { label: 'Exercise', value: healthScore.exercise.score },
+              { label: 'Sleep', value: healthScore.sleep.score },
             ].map((item, i) => (
               <View key={i} style={styles.scoreItem}>
                 <View style={styles.progressBarBg}>
@@ -205,13 +243,6 @@ export default function DashboardPage() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/profile')}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>View All</Text>
-              <ChevronRight size={24} color={Colors.light.primary} />
-            </TouchableOpacity>
           </View>
           <View style={styles.card}>
             <MacroNutrients data={macroData} />
@@ -268,16 +299,13 @@ const styles = StyleSheet.create({
     color: Colors.light.surface,
     lineHeight: 48,
   },
-  trendBadge: {
+  statusBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
   },
-  trendText: {
+  statusText: {
     fontSize: 13,
     color: Colors.light.surface,
     fontWeight: '600',

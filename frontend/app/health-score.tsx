@@ -1,40 +1,87 @@
+import type { Day } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
+import { calculateHealthScore } from '@/utils/healthScore';
 import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft, Info } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircularProgress } from '../components/ui/circular-progress';
 
+const JS_DAY_TO_API_DAY: Record<number, Day> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+};
+
 export default function HealthScorePage() {
   const router = useRouter();
+
+  const today = new Date();
+
+  const weekStartStr = useMemo(() => {
+    const d = new Date(today);
+    const dow = d.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split('T')[0];
+  }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: targets } = useUserTargetsQuery();
+  const { data: user } = useUserQuery();
+
+  const todayPlan = useMemo(() => {
+    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
+    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
+  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const healthScore = useMemo(
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
+    [todayPlan, targets, user]
+  );
 
   const scoreComponents = [
     {
       label: 'Nutrition',
-      score: 92,
+      score: healthScore.nutrition.score,
       weight: '40%',
       color: Colors.light.secondary,
       description: 'Based on calorie and macro adherence',
-      status: 'Excellent',
+      status: healthScore.nutrition.status,
     },
     {
       label: 'Exercise',
-      score: 85,
+      score: healthScore.exercise.score,
       weight: '30%',
       color: Colors.light.primary,
       description: 'Workout frequency and intensity',
-      status: 'Good',
+      status: healthScore.exercise.status,
     },
     {
       label: 'Sleep',
-      score: 84,
+      score: healthScore.sleep.score,
       weight: '30%',
       color: Colors.light.charts.carbs,
       description: 'Duration and quality of sleep',
-      status: 'Good',
+      status: healthScore.sleep.status,
     },
   ];
+
+  const overallStatus =
+    healthScore.overall >= 90
+      ? 'Excellent'
+      : healthScore.overall >= 70
+        ? 'Good'
+        : healthScore.overall >= 50
+          ? 'Fair'
+          : 'Needs Work';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -55,16 +102,15 @@ export default function HealthScorePage() {
         <View style={styles.heroCard}>
           <View style={styles.heroContent}>
             <CircularProgress
-              percentage={87}
+              percentage={healthScore.overall}
               size={160}
               color={Colors.light.primary}
               label="Total Score"
-              value="87"
-              // Assuming CircularProgress can take larger size and custom styling
+              value={`${healthScore.overall}`}
             />
           </View>
           <Text style={styles.heroDescription}>
-            You&apos;re in the top 15% of users this week! Keep up the great work.
+            Your overall health score is {overallStatus.toLowerCase()}. Keep building healthy habits!
           </Text>
         </View>
 
