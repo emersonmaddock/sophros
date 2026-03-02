@@ -37,7 +37,7 @@ export default function DashboardPage() {
   // Derive upcoming meals from cached weekly plan
   const upcomingItems = useMemo(() => {
     const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
 
     if (!todayPlan) {
       return [];
@@ -68,7 +68,7 @@ export default function DashboardPage() {
   // Derive macro data from today's plan totals
   const macroData = useMemo(() => {
     const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
 
     if (!todayPlan) {
       return {

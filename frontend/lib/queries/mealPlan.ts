@@ -71,9 +71,17 @@ export function useGenerateDayPlanMutation() {
       // Patch the cached weekly plan
       const current = queryClient.getQueryData<WeeklyMealPlan>(mealPlanKeys.weekly());
       if (current) {
+        const updatedPlans = current.daily_plans.map((p) =>
+          p.day === day ? plan : p
+        );
+        // If day wasn't in the list, add it
+        if (!current.daily_plans.some((p) => p.day === day)) {
+          updatedPlans.push(plan);
+        }
         queryClient.setQueryData(mealPlanKeys.weekly(), {
           ...current,
-          days: { ...current.days, [day]: plan },
+          daily_plans: updatedPlans,
+          total_weekly_calories: updatedPlans.reduce((sum, p) => sum + p.total_calories, 0),
         });
       }
     },

@@ -23,8 +23,12 @@ function formatTime(pythonTime: string | null | undefined): string {
  * Estimates meal prep/eating duration based on slot type.
  */
 function estimateDuration(slot: MealSlotTarget): string {
-  if (slot.recipe?.preparation_time_minutes) {
-    return `${slot.recipe.preparation_time_minutes} min`;
+  if (slot.prep_time_minutes) {
+    return `${slot.prep_time_minutes} min`;
+  }
+  const recipe = slot.plan?.main_recipe;
+  if (recipe?.preparation_time_minutes) {
+    return `${recipe.preparation_time_minutes} min`;
   }
   switch (slot.slot_name) {
     case 'Breakfast':
@@ -60,9 +64,9 @@ function recipeToScheduleItem(recipe: Recipe, time: string, slotName: string): W
 export function mapDailyPlanToScheduleItems(plan: DailyMealPlan): WeeklyScheduleItem[] {
   return plan.slots.map((slot) => {
     const time = formatTime(slot.time);
-    const recipe = slot.recipe;
+    const recipe = slot.plan?.main_recipe;
 
-    const alternatives: WeeklyScheduleItem[] = (slot.alternatives || []).map((alt) =>
+    const alternatives: WeeklyScheduleItem[] = (slot.plan?.alternatives || []).map((alt) =>
       recipeToScheduleItem(alt, time, slot.slot_name)
     );
 

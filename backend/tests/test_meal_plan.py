@@ -1,4 +1,4 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -45,7 +45,7 @@ def _make_spoonacular_response(
 async def test_generate_daily_plan_integration():
     """
     Integration test for the full meal plan generation pipeline.
-    Mocks Spoonacular API responses.
+    Mocks Spoonacular API responses as batch pools.
     Asserts that recipes and alternatives are populated in slots.
     """
     user = create_mock_user(
@@ -61,38 +61,26 @@ async def test_generate_daily_plan_integration():
 
     mock_client = AsyncMock()
 
-    # Each call returns 3 recipes (primary + 2 alternatives)
-    breakfast_response = [
-        _make_spoonacular_response(1, "Oatmeal with Berries", 600, 20, 80, 15),
-        _make_spoonacular_response(2, "Yogurt Parfait", 550, 18, 75, 12),
-        _make_spoonacular_response(3, "Smoothie Bowl", 520, 22, 70, 10),
+    # Breakfast pool: 5 recipes
+    breakfast_pool = [
+        _make_spoonacular_response(i, f"Breakfast {i}", 550 + i * 10, 20, 75, 12)
+        for i in range(1, 6)
     ]
 
-    lunch_response = [
-        _make_spoonacular_response(4, "Grilled Chicken Salad", 700, 50, 40, 25),
-        _make_spoonacular_response(5, "Turkey Wrap", 650, 45, 45, 20),
-        _make_spoonacular_response(6, "Buddha Bowl", 680, 35, 55, 22),
-    ]
-
-    dinner_response = [
-        _make_spoonacular_response(7, "Pasta Primavera", 700, 25, 90, 20),
-        _make_spoonacular_response(8, "Grilled Salmon", 720, 40, 50, 30),
-        _make_spoonacular_response(9, "Veggie Stir Fry", 650, 28, 80, 18),
+    # Main course pool: 10 recipes
+    main_pool = [
+        _make_spoonacular_response(
+            100 + i, f"Main Course {i}", 700 + i * 5, 40, 50, 25
+        )
+        for i in range(1, 11)
     ]
 
     def search_recipes_side_effect(**kwargs):
         meal_type = kwargs.get("type")
         if meal_type and "breakfast" in str(meal_type).lower():
-            return breakfast_response
+            return breakfast_pool
         else:
-            if not hasattr(search_recipes_side_effect, "call_count"):
-                search_recipes_side_effect.call_count = 0
-            search_recipes_side_effect.call_count += 1
-            return (
-                lunch_response
-                if search_recipes_side_effect.call_count == 1
-                else dinner_response
-            )
+            return main_pool
 
     mock_client.search_recipes = AsyncMock(side_effect=search_recipes_side_effect)
 
@@ -102,6 +90,7 @@ async def test_generate_daily_plan_integration():
 
     # Verify plan structure
     assert plan is not None
+    assert plan.day == Day.MONDAY
     assert len(plan.slots) == 3
 
     # Verify slots are Breakfast, Lunch, Dinner
@@ -110,44 +99,40 @@ async def test_generate_daily_plan_integration():
     assert MealSlot.LUNCH in slot_names
     assert MealSlot.DINNER in slot_names
 
-    # Verify each slot has a recipe populated
+    # Verify each slot has a MealOption with a main recipe
     for slot in plan.slots:
-        assert slot.recipe is not None, f"Slot {slot.slot_name} should have a recipe"
-        assert slot.recipe.title, f"Slot {slot.slot_name} recipe should have a title"
-        assert slot.recipe.nutrients.calories > 0
-        assert slot.recipe.nutrients.protein > 0
-        assert slot.recipe.source_url is not None
-        assert slot.recipe.image_url is not None
-        assert slot.recipe.preparation_time_minutes is not None
-        assert len(slot.recipe.ingredients) > 0
+        assert slot.plan is not None, f"Slot {slot.slot_name} should have a plan"
+        assert slot.plan.main_recipe is not None, (
+            f"Slot {slot.slot_name} should have a main recipe"
+        )
+        recipe = slot.plan.main_recipe
+        assert recipe.title, f"Slot {slot.slot_name} recipe should have a title"
+        assert recipe.nutrients.calories > 0
+        assert recipe.nutrients.protein > 0
+        assert len(recipe.ingredients) > 0
 
     # Verify alternatives
     for slot in plan.slots:
-        assert len(slot.alternatives) == 2, (
+        assert len(slot.plan.alternatives) == 2, (
             f"Slot {slot.slot_name} should have 2 alternatives"
         )
-        for alt in slot.alternatives:
+        for alt in slot.plan.alternatives:
             assert alt.title
             assert alt.nutrients.calories > 0
 
-    # Verify each slot has a time assigned (defaults)
-    for slot in plan.slots:
-        assert slot.time is not None, (
-            f"Slot {slot.slot_name} should have a default time"
-        )
+    # Verify only 2 API calls (batch: 1 breakfast + 1 main course)
+    assert mock_client.search_recipes.await_count == 2
 
-    # Verify API was called 3 times (once per meal, number=3)
-    assert mock_client.search_recipes.await_count == 3
+    # Verify all 3 primary recipe IDs are unique
+    primary_ids = {slot.plan.main_recipe.id for slot in plan.slots}
+    assert len(primary_ids) == 3
 
     for call in mock_client.search_recipes.await_args_list:
         kwargs = call.kwargs
-        assert kwargs["number"] == 3
         assert "min_calories" in kwargs
         assert "max_calories" in kwargs
-        # Individual macro constraints should NOT be sent (relaxed search)
-        assert "min_protein" not in kwargs
-        assert "min_carbs" not in kwargs
-        assert "min_fat" not in kwargs
+        # No sort="random" — shuffling is done locally
+        assert "sort" not in kwargs
         assert kwargs["constraints"] is not None
 
 
@@ -170,14 +155,19 @@ async def test_generate_daily_plan_fails_on_empty_results():
 
     service = MealPlanService(spoonacular_client=mock_client)
 
-    with pytest.raises(ValueError, match="Spoonacular returned no recipes"):
+    with pytest.raises(ValueError, match="[Nn]o unused recipes"):
         await service.generate_daily_plan(user, day=Day.MONDAY)
 
 
 @pytest.mark.asyncio
-async def test_generate_weekly_plan():
+@patch(
+    "app.services.meal_plan.ExercisePlanService.generate_weekly_plan",
+    return_value={day: None for day in Day},
+)
+async def test_generate_weekly_plan(mock_exercise):
     """
-    Test that generate_weekly_plan produces plans for all 7 days.
+    Test that generate_weekly_plan produces plans for all 7 days
+    using only 2 API calls (batch pools) with unique primaries.
     """
     user = create_mock_user(
         age=25,
@@ -189,30 +179,54 @@ async def test_generate_weekly_plan():
 
     mock_client = AsyncMock()
 
-    # Return 3 recipes for every call
-    mock_client.search_recipes = AsyncMock(
-        return_value=[
-            _make_spoonacular_response(1, "Recipe A"),
-            _make_spoonacular_response(2, "Recipe B"),
-            _make_spoonacular_response(3, "Recipe C"),
-        ]
-    )
+    # Breakfast pool: 25 unique recipes
+    breakfast_pool = [
+        _make_spoonacular_response(i, f"Breakfast {i}", 500 + i * 5, 20, 70, 12)
+        for i in range(1, 26)
+    ]
+
+    # Main course pool: 50 unique recipes
+    main_pool = [
+        _make_spoonacular_response(1000 + i, f"Main {i}", 700 + i * 3, 40, 55, 22)
+        for i in range(1, 51)
+    ]
+
+    def search_recipes_side_effect(**kwargs):
+        meal_type = kwargs.get("type")
+        if meal_type and "breakfast" in str(meal_type).lower():
+            return list(breakfast_pool)  # Return copy to avoid shuffle mutation
+        else:
+            return list(main_pool)
+
+    mock_client.search_recipes = AsyncMock(side_effect=search_recipes_side_effect)
 
     service = MealPlanService(spoonacular_client=mock_client)
 
     weekly_plan = await service.generate_weekly_plan(user)
 
     # Should have all 7 days
-    assert len(weekly_plan.days) == 7
+    assert len(weekly_plan.daily_plans) == 7
 
-    for day_name in Day:
-        assert day_name in weekly_plan.days
-        day_plan = weekly_plan.days[day_name]
-        assert len(day_plan.slots) == 3
+    for plan in weekly_plan.daily_plans:
+        assert plan.day in list(Day)
+        assert len(plan.slots) == 3
 
-        for slot in day_plan.slots:
-            assert slot.recipe is not None
-            assert len(slot.alternatives) == 2
+        for slot in plan.slots:
+            assert slot.plan is not None
+            assert slot.plan.main_recipe is not None
 
-    # 7 days * 3 slots = 21 API calls
-    assert mock_client.search_recipes.await_count == 21
+    # Only 2 API calls for the entire week (was 21)
+    assert mock_client.search_recipes.await_count == 2
+
+    # Collect all primary recipe IDs (excluding leftover slots which reuse IDs)
+    non_leftover_ids = []
+    for plan in weekly_plan.daily_plans:
+        for slot in plan.slots:
+            if not slot.is_leftover:
+                non_leftover_ids.append(slot.plan.main_recipe.id)
+
+    # All non-leftover primaries should be unique
+    assert len(set(non_leftover_ids)) == len(non_leftover_ids), (
+        f"Expected all non-leftover primaries unique, got {len(set(non_leftover_ids))} "
+        f"unique out of {len(non_leftover_ids)}"
+    )

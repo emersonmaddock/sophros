@@ -55,7 +55,7 @@ export default function SchedulePage() {
   // Convert today's API plan to schedule items
   const scheduleItems: ScheduleItem[] = useMemo(() => {
     const todayApiDay = JS_DAY_TO_API_DAY[todayDayOfWeek];
-    const todayPlan = weeklyPlan?.days?.[todayApiDay];
+    const todayPlan = weeklyPlan?.daily_plans?.find((p) => p.day === todayApiDay);
 
     if (!todayPlan) {
       // Fallback to empty state if no plan cached

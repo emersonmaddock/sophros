@@ -40,7 +40,7 @@ function weeklyPlanToDaySchedules(plan: WeeklyMealPlan): DaySchedule[] {
     const date = new Date(nextMonday);
     date.setDate(nextMonday.getDate() + index);
 
-    const dailyPlan = plan.days[dayName];
+    const dailyPlan = plan.daily_plans?.find((p) => p.day === dayName);
     const items = dailyPlan ? mapDailyPlanToScheduleItems(dailyPlan) : [];
 
     return {

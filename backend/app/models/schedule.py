@@ -18,7 +18,11 @@ class ScheduleItem(Base):
         SAEnum(ActivityType, name="activity_type_enum"), nullable=False
     )
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    prep_time_minutes: Mapped[int] = mapped_column(Integer, default=0)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    recipe_id: Mapped[str | None] = mapped_column(
+        String, nullable=True
+    )  # Linked recipe if it's a meal
 
     # Relationships
     # Use string of class name

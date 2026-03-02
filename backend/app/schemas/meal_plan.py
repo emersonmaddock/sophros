@@ -4,6 +4,12 @@ from pydantic import BaseModel, Field
 
 from app.domain.enums import Day, MealSlot
 from app.schemas.recipe import Recipe
+from app.services.exercise_service import ExerciseRecommendation
+
+
+class MealOption(BaseModel):
+    main_recipe: Recipe | None = None
+    alternatives: list[Recipe] = Field(default_factory=list)
 
 
 class MealSlotTarget(BaseModel):
@@ -13,8 +19,11 @@ class MealSlotTarget(BaseModel):
     carbohydrates: int
     fat: int
     time: timeofday | None = None
-    recipe: Recipe | None = None
-    alternatives: list[Recipe] = Field(default_factory=list)
+    plan: MealOption | None = None
+    is_leftover: bool = False
+    leftover_from_day: Day | None = None
+    leftover_from_slot: MealSlot | None = None
+    prep_time_minutes: int = 0
 
 
 class MealDistributionConfig(BaseModel):
@@ -26,7 +35,9 @@ class MealDistributionConfig(BaseModel):
 
 
 class DailyMealPlan(BaseModel):
+    day: Day
     slots: list[MealSlotTarget]
+    exercise: ExerciseRecommendation | None = None
     total_calories: int
     total_protein: int
     total_carbs: int
@@ -34,4 +45,5 @@ class DailyMealPlan(BaseModel):
 
 
 class WeeklyMealPlan(BaseModel):
-    days: dict[Day, DailyMealPlan]
+    daily_plans: list[DailyMealPlan]
+    total_weekly_calories: int
