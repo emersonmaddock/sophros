@@ -1,6 +1,6 @@
 import type { Recipe } from '@/api/types.gen';
 import { Colors } from '@/constants/theme';
-import { ArrowRight, Check, Edit, X } from 'lucide-react-native';
+import { ArrowRight, Edit, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -17,9 +17,11 @@ interface MealDetailModalProps {
   visible: boolean;
   onClose: () => void;
   meal: MealData | null;
+  onModify?: (meal: MealData) => void;
+  onRemove?: (meal: MealData) => void;
 }
 
-export const MealDetailModal = ({ visible, onClose, meal }: MealDetailModalProps) => {
+export const MealDetailModal = ({ visible, onClose, meal, onModify, onRemove }: MealDetailModalProps) => {
   if (!meal) return null;
 
   const recipe = meal.recipe;
@@ -105,22 +107,24 @@ export const MealDetailModal = ({ visible, onClose, meal }: MealDetailModalProps
             {/* Actions */}
             <View style={styles.actionsRow}>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: Colors.light.success, flex: 1 }]}
-              >
-                <Check size={20} color="#FFF" />
-                <Text style={[styles.actionButtonText, { color: '#FFF' }]}>Completed</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: Colors.light.background }]}
+                style={[styles.actionButton, { backgroundColor: Colors.light.background, flex: 1 }]}
+                onPress={() => {
+                  onModify?.(meal);
+                  onClose();
+                }}
               >
                 <Edit size={20} color={Colors.light.text} />
                 <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>Modify</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: Colors.light.background }]}
-                onPress={onClose}
+                style={[styles.actionButton, { backgroundColor: `${Colors.light.error}15` }]}
+                onPress={() => {
+                  onRemove?.(meal);
+                  onClose();
+                }}
               >
-                <X size={20} color={Colors.light.error} />
+                <Trash2 size={20} color={Colors.light.error} />
+                <Text style={[styles.actionButtonText, { color: Colors.light.error }]}>Remove</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

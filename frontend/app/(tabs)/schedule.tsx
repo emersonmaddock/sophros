@@ -1,13 +1,22 @@
+import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
-import { usePlannedWeeksQuery, useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
-import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
+import { useScheduleEditing } from '@/hooks/useScheduleEditing';
+import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import type { Day } from '@/api/types.gen';
-import type { WeeklyScheduleItem } from '@/types/schedule';
+import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Plus, Utensils } from 'lucide-react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -37,6 +46,7 @@ function formatDateStr(d: Date): string {
 }
 
 type ScheduleItem = {
+  id: string;
   time: string;
   title: string;
   subtitle?: string;
@@ -44,6 +54,7 @@ type ScheduleItem = {
   type: 'meal' | 'workout' | 'sleep';
   status: 'completed' | 'current' | 'upcoming';
   recipe?: WeeklyScheduleItem['recipe'];
+  workoutType?: string;
 };
 
 export default function SchedulePage() {
@@ -51,6 +62,12 @@ export default function SchedulePage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
+
+  // EditItemModal state
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editModalItem, setEditModalItem] = useState<WeeklyScheduleItem | null>(null);
+  const [editModalMode, setEditModalMode] = useState<'edit' | 'add'>('edit');
+  const [editModalItemType, setEditModalItemType] = useState<ItemType>('meal');
 
   const today = new Date();
   const todayDayOfWeek = today.getDay();
@@ -65,7 +82,17 @@ export default function SchedulePage() {
   const weekStartStr = formatDateStr(mondayDate);
 
   const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
-  const { data: plannedWeeks } = usePlannedWeeksQuery();
+
+  const {
+    isDirty,
+    saveStatus,
+    statusText,
+    save,
+    removeItem,
+    addItem,
+    editItem,
+    getScheduleItems,
+  } = useScheduleEditing(savedPlan, weekStartStr);
 
   // Build week dates (Mon-Sun)
   const weekDates = useMemo(() => {
@@ -76,14 +103,11 @@ export default function SchedulePage() {
     });
   }, [mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Convert saved plan to schedule items for selected day
+  const selectedDayName = DAY_ORDER[selectedDayIndex];
+
+  // Derive schedule items from the editing hook
   const scheduleItems: ScheduleItem[] = useMemo(() => {
-    const dayName = DAY_ORDER[selectedDayIndex];
-    const dailyPlan = savedPlan?.plan_data?.daily_plans?.find((p) => p.day === dayName);
-
-    if (!dailyPlan) return [];
-
-    const mapped = mapDailyPlanToScheduleItems(dailyPlan);
+    const mapped = getScheduleItems(selectedDayIndex);
 
     return mapped.map((item) => {
       const [timePart, period] = item.time.split(' ');
@@ -100,6 +124,7 @@ export default function SchedulePage() {
       }
 
       return {
+        id: item.id,
         time: item.time,
         title: item.title,
         subtitle: item.subtitle,
@@ -107,40 +132,84 @@ export default function SchedulePage() {
         type: item.type,
         status,
         recipe: item.recipe,
+        workoutType: item.workoutType,
       };
     });
-  }, [savedPlan, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
+  }, [getScheduleItems, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
 
-  const handleItemPress = (item: ScheduleItem) => {
+  const handleItemPress = useCallback((item: ScheduleItem) => {
     if (item.type === 'meal' && item.recipe) {
       setSelectedMeal(item);
       setModalVisible(true);
+    } else {
+      // Non-meal items open EditItemModal directly
+      setEditModalItem({
+        id: item.id,
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle,
+        duration: item.duration,
+        type: item.type,
+        workoutType: item.workoutType,
+      });
+      setEditModalMode('edit');
+      setEditModalItemType(item.type);
+      setEditModalVisible(true);
     }
-  };
+  }, []);
+
+  const handleMealModify = useCallback((meal: { time: string; title?: string; subtitle?: string; type: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
+    setEditModalItem({
+      id: meal.recipe?.id?.toString() || `${Date.now()}`,
+      time: meal.time,
+      title: meal.title || 'Meal',
+      subtitle: meal.subtitle,
+      duration: '30 min',
+      type: 'meal',
+      recipe: meal.recipe,
+    });
+    setEditModalMode('edit');
+    setEditModalItemType('meal');
+    setEditModalVisible(true);
+  }, []);
+
+  const handleMealRemove = useCallback((meal: { time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
+    const itemId = meal.recipe?.id?.toString() || '';
+    Alert.alert(
+      'Remove Item',
+      `Remove "${meal.title || 'this item'}" from the schedule?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeItem(selectedDayName, itemId),
+        },
+      ]
+    );
+  }, [removeItem, selectedDayName]);
+
+  const handleEditSave = useCallback(
+    (updatedItem: WeeklyScheduleItem) => {
+      if (editModalMode === 'add') {
+        addItem(selectedDayName, updatedItem);
+      } else if (editModalItem) {
+        editItem(selectedDayName, editModalItem.id, updatedItem);
+      }
+    },
+    [editModalMode, editModalItem, addItem, editItem, selectedDayName]
+  );
+
+  const handleAddItem = useCallback((type: ItemType) => {
+    setEditModalItem(null);
+    setEditModalMode('add');
+    setEditModalItemType(type);
+    setEditModalVisible(true);
+  }, []);
 
   const handleWeekChange = (direction: number) => {
     setWeekOffset((prev) => prev + direction);
     setSelectedDayIndex(0); // Reset to Monday when changing weeks
-  };
-
-  const handlePlanWeek = () => {
-    // Find the next unplanned Monday
-    const plannedSet = new Set(plannedWeeks ?? []);
-    let candidate = getMonday(0); // Start from this week's Monday
-
-    // Check up to 52 weeks ahead
-    for (let i = 0; i < 52; i++) {
-      const candidateStr = formatDateStr(candidate);
-      if (!plannedSet.has(candidateStr)) {
-        router.push(`/week-planning?weekStart=${candidateStr}`);
-        return;
-      }
-      candidate.setDate(candidate.getDate() + 7);
-    }
-
-    // Fallback: next week
-    const nextMonday = getMonday(1);
-    router.push(`/week-planning?weekStart=${formatDateStr(nextMonday)}`);
   };
 
   const getBorderColor = (type: string) => {
@@ -176,7 +245,9 @@ export default function SchedulePage() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Weekly Schedule</Text>
-          <Text style={styles.headerSubtitle}>AI-optimized</Text>
+          <Text style={[styles.headerSubtitle, saveStatus === 'error' && { color: Colors.light.error }]}>
+            {statusText}
+          </Text>
         </View>
 
         {/* Week Navigation */}
@@ -222,7 +293,7 @@ export default function SchedulePage() {
         ) : scheduleItems.length > 0 ? (
           <View style={styles.timeline}>
             {scheduleItems.map((item, i) => (
-              <View key={i} style={styles.timelineItem}>
+              <View key={item.id || i} style={styles.timelineItem}>
                 <View style={styles.timeColumn}>
                   <Text style={styles.itemTime}>{item.time}</Text>
                 </View>
@@ -289,17 +360,57 @@ export default function SchedulePage() {
           </View>
         )}
 
-        {/* Plan Button */}
-        <TouchableOpacity style={styles.planButton} onPress={handlePlanWeek}>
-          <Calendar size={20} color="#FFF" />
-          <Text style={styles.planButtonText}>Plan Next Week</Text>
-        </TouchableOpacity>
+        {/* Add Item Section */}
+        {savedPlan && (
+          <View style={styles.addItemSection}>
+            <Text style={styles.addItemLabel}>Add Item</Text>
+            <View style={styles.addItemRow}>
+              <TouchableOpacity style={styles.addItemCard} onPress={() => handleAddItem('meal')}>
+                <Utensils size={20} color={Colors.light.secondary} />
+                <Text style={styles.addItemText}>Meal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addItemCard} onPress={() => handleAddItem('workout')}>
+                <Dumbbell size={20} color={Colors.light.primary} />
+                <Text style={styles.addItemText}>Workout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Save Changes Button */}
+        {isDirty && (
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={save}
+            disabled={saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Plus size={20} color="#FFF" />
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <MealDetailModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         meal={selectedMeal}
+        onModify={handleMealModify}
+        onRemove={handleMealRemove}
+      />
+
+      <EditItemModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        item={editModalItem}
+        onSave={handleEditSave}
+        mode={editModalMode}
+        itemType={editModalItemType}
       />
     </SafeAreaView>
   );
@@ -486,8 +597,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  planButton: {
-    backgroundColor: Colors.light.primary,
+  addItemSection: {
+    marginTop: 24,
+  },
+  addItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+    marginBottom: 12,
+  },
+  addItemRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addItemCard: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.light.textMuted,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flexDirection: 'row',
+  },
+  addItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  saveButton: {
+    backgroundColor: Colors.light.secondary,
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',
@@ -496,7 +637,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 24,
   },
-  planButtonText: {
+  saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

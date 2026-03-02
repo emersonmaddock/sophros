@@ -5,7 +5,7 @@ import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import type { Day } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Plus, TrendingUp, Utensils } from 'lucide-react-native';
+import { ChevronRight, TrendingUp, Utensils } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -195,7 +195,7 @@ export default function DashboardPage() {
           ) : (
             <View style={styles.emptyUpcoming}>
               <Text style={styles.emptyText}>
-                No meals planned yet. Tap &quot;Plan Week&quot; to get started!
+                No meals planned yet. Head to the Schedule tab to plan your week!
               </Text>
             </View>
           )}
@@ -218,26 +218,6 @@ export default function DashboardPage() {
           </View>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-          </View>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/week-planning')}
-            >
-              <Calendar size={24} color={Colors.light.primary} />
-              <Text style={styles.actionText}>Plan Week</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard}>
-              <Plus size={24} color={Colors.light.primary} />
-              <Text style={styles.actionText}>Log Activity</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -415,22 +395,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
     textAlign: 'center',
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
-    backgroundColor: Colors.light.surface,
-    borderRadius: Layout.cardRadius,
-    padding: 20,
-    gap: 8,
-    ...Shadows.card,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
   },
 });
