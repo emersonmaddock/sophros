@@ -50,9 +50,11 @@ async def create_user(
 
     # Create the User row (excludes dietary list fields — those go in relational tables)
     user_data = user_in.model_dump(
-        exclude={"allergies", "include_cuisine", "exclude_cuisine"}
+        exclude={"allergies", "include_cuisine", "exclude_cuisine", "busy_times"}
     )
     user = User(**user_data, id=user_id)
+    if user_in.busy_times:
+        user.busy_times = [bt.model_dump(mode="json") for bt in user_in.busy_times]
     db.add(user)
 
     # Insert dietary relationship rows
@@ -96,6 +98,13 @@ async def update_user_me(
     replaced wholesale — existing rows are deleted and new ones inserted.
     """
     update_data = user_in.model_dump(exclude_unset=True)
+
+    # Handle busy_times (JSON column, needs serialization from Pydantic models)
+    if "busy_times" in update_data:
+        bt_list = update_data.pop("busy_times")
+        current_user.busy_times = (
+            [bt.model_dump(mode="json") for bt in user_in.busy_times] if bt_list else []
+        )
 
     # Handle dietary relationship fields (delete + re-insert pattern)
     if "allergies" in update_data:

@@ -22,6 +22,7 @@ export type {
   ActivityLevel,
   ActivityType,
   Allergy,
+  BusyTime,
   ClientOptions,
   CreateScheduleItemApiV1SchedulesPostData,
   CreateScheduleItemApiV1SchedulesPostError,

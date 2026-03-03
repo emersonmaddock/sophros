@@ -32,6 +32,24 @@ export type Allergy =
   | 'Wheat';
 
 /**
+ * BusyTime
+ */
+export type BusyTime = {
+  /**
+   * Day
+   */
+  day?: string;
+  /**
+   * Start
+   */
+  start?: string;
+  /**
+   * End
+   */
+  end?: string;
+};
+
+/**
  * Cuisine
  */
 export type Cuisine =
@@ -530,6 +548,10 @@ export type UserCreate = {
    */
   sleep_time?: string;
   /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime>;
+  /**
    * Allergies
    */
   allergies?: Array<Allergy>;
@@ -610,6 +632,10 @@ export type UserRead = {
    * Sleep Time
    */
   sleep_time?: string;
+  /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime>;
   /**
    * Allergies
    */
@@ -699,6 +725,10 @@ export type UserUpdate = {
    * Sleep Time
    */
   sleep_time?: string | null;
+  /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime> | null;
   /**
    * Allergies
    */

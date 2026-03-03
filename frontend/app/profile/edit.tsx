@@ -1,4 +1,4 @@
-import type { ActivityLevel, UserUpdate } from '@/api/types.gen';
+import type { ActivityLevel, BusyTime, UserUpdate } from '@/api/types.gen';
 import { SelectionCard } from '@/components/SelectionCard';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
@@ -19,6 +19,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+interface BusyTimeEntry {
+  day: string;
+  start: string;
+  end: string;
+}
+
 interface ProfileEditForm {
   age: string;
   weight: string;
@@ -32,6 +38,7 @@ interface ProfileEditForm {
   targetDate: string;
   wakeUpTime: string;
   sleepTime: string;
+  busyTimes: BusyTimeEntry[];
 }
 
 function parseFloatOrNull(value: string): number | null {
@@ -85,6 +92,11 @@ export default function EditProfileScreen() {
       targetDate: backendUser.target_date ?? '',
       wakeUpTime: backendUser.wake_up_time ? backendUser.wake_up_time.substring(0, 5) : '',
       sleepTime: backendUser.sleep_time ? backendUser.sleep_time.substring(0, 5) : '',
+      busyTimes: (backendUser.busy_times ?? []).map((bt: BusyTime) => ({
+        day: bt.day ?? 'Monday',
+        start: bt.start ? bt.start.substring(0, 5) : '09:00',
+        end: bt.end ? bt.end.substring(0, 5) : '17:00',
+      })),
     });
   }, [backendUser]);
 
@@ -152,6 +164,38 @@ export default function EditProfileScreen() {
         targetWeight: convertedTargetWeight,
         heightCm: convertedHeightCm,
       };
+    });
+  };
+
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const addBusyTime = () => {
+    setForm((prev) =>
+      prev
+        ? {
+            ...prev,
+            busyTimes: [...prev.busyTimes, { day: 'Monday', start: '09:00', end: '17:00' }],
+          }
+        : prev
+    );
+  };
+
+  const removeBusyTime = (index: number) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const next = [...prev.busyTimes];
+      next.splice(index, 1);
+      return { ...prev, busyTimes: next };
+    });
+  };
+
+  const updateBusyTime = (index: number, field: keyof BusyTimeEntry, value: string) => {
+    setForm((prev) => {
+      if (!prev) return prev;
+      const next = [...prev.busyTimes];
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, busyTimes: next };
     });
   };
 
@@ -330,6 +374,43 @@ export default function EditProfileScreen() {
       }
     } else if (backendUser.sleep_time) {
       updates.sleep_time = null;
+    }
+
+    // Busy times
+    const timeRegex = /^\d{2}:\d{2}$/;
+    const validDays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    for (let i = 0; i < form.busyTimes.length; i++) {
+      const bt = form.busyTimes[i];
+      if (!validDays.includes(bt.day)) {
+        errors.push(`Busy time #${i + 1}: invalid day.`);
+      }
+      if (!timeRegex.test(bt.start) || !timeRegex.test(bt.end)) {
+        errors.push(`Busy time #${i + 1}: start and end must be HH:MM.`);
+      } else if (bt.start >= bt.end) {
+        errors.push(`Busy time #${i + 1}: start must be before end.`);
+      }
+    }
+
+    const apiBusyTimes = form.busyTimes.map((bt) => ({
+      day: bt.day,
+      start: `${bt.start}:00`,
+      end: `${bt.end}:00`,
+    }));
+    const backendBusyTimes = (backendUser.busy_times ?? []).map((bt: BusyTime) => ({
+      day: bt.day ?? 'Monday',
+      start: bt.start ?? '09:00:00',
+      end: bt.end ?? '17:00:00',
+    }));
+    if (JSON.stringify(apiBusyTimes) !== JSON.stringify(backendBusyTimes)) {
+      updates.busy_times = apiBusyTimes;
     }
 
     if (errors.length > 0) {
@@ -563,6 +644,64 @@ export default function EditProfileScreen() {
               placeholderTextColor={Colors.light.textMuted}
             />
           </View>
+
+          <View style={styles.busyTimesHeader}>
+            <Text style={styles.inputLabel}>Busy Times</Text>
+            <TouchableOpacity onPress={addBusyTime} activeOpacity={0.8}>
+              <Text style={styles.addButtonText}>+ Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          {form.busyTimes.length === 0 ? (
+            <Text style={styles.emptyStateText}>
+              No busy times set. Add recurring weekly blocks to optimize meal scheduling.
+            </Text>
+          ) : (
+            form.busyTimes.map((bt, index) => (
+              <View key={index} style={styles.busyTimeBlock}>
+                <View style={styles.dayChipsRow}>
+                  {DAYS.map((day, dayIndex) => (
+                    <TouchableOpacity
+                      key={day}
+                      style={[styles.dayChip, bt.day === day && styles.dayChipActive]}
+                      onPress={() => updateBusyTime(index, 'day', day)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[styles.dayChipText, bt.day === day && styles.dayChipTextActive]}
+                      >
+                        {DAY_LABELS[dayIndex]}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.busyTimeRow}>
+                  <TextInput
+                    style={[styles.input, styles.timeInput]}
+                    value={bt.start}
+                    onChangeText={(text) => updateBusyTime(index, 'start', text)}
+                    placeholder="09:00"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <Text style={styles.timeSeparator}>to</Text>
+                  <TextInput
+                    style={[styles.input, styles.timeInput]}
+                    value={bt.end}
+                    onChangeText={(text) => updateBusyTime(index, 'end', text)}
+                    placeholder="17:00"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={() => removeBusyTime(index)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.removeButtonText}>Remove</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         <TouchableOpacity
@@ -692,6 +831,74 @@ const styles = StyleSheet.create({
   },
   activityList: {
     gap: 10,
+  },
+  busyTimesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  addButtonText: {
+    color: Colors.light.primary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  emptyStateText: {
+    color: Colors.light.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  busyTimeBlock: {
+    gap: 8,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  dayChipsRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  dayChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Colors.light.background,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  dayChipActive: {
+    backgroundColor: `${Colors.light.primary}20`,
+    borderColor: Colors.light.primary,
+  },
+  dayChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+  },
+  dayChipTextActive: {
+    color: Colors.light.primaryDark,
+  },
+  busyTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeInput: {
+    flex: 1,
+  },
+  timeSeparator: {
+    color: Colors.light.textMuted,
+    fontSize: 14,
+  },
+  removeButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+  },
+  removeButtonText: {
+    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: 13,
   },
   saveButton: {
     backgroundColor: Colors.light.primary,

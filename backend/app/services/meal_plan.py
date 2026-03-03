@@ -384,18 +384,35 @@ class MealPlanService:
 
     def _get_user_schedule(self, user: User, day: Day) -> UserSchedule:
         """
-        Converts DB ScheduleItems into a UserSchedule for the allocator.
+        Converts busy times into a UserSchedule for the allocator.
+        Prefers explicit user.busy_times (recurring weekly) over
+        ScheduleItem-derived times.
         """
         busy_times = []
-        for item in user.schedules or []:
-            if item.date.strftime("%A") == day:
-                from datetime import timedelta
 
-                start_time = item.date.time()
-                end_dt = item.date + timedelta(minutes=item.duration_minutes)
-                end_time = end_dt.time()
+        if user.busy_times:
+            from datetime import time as dt_time
 
-                busy_times.append(BusyTime(day=day, start=start_time, end=end_time))
+            for entry in user.busy_times:
+                if entry.get("day") == day:
+                    busy_times.append(
+                        BusyTime(
+                            day=day,
+                            start=dt_time.fromisoformat(entry["start"]),
+                            end=dt_time.fromisoformat(entry["end"]),
+                        )
+                    )
+        else:
+            # Fallback: derive from ScheduleItem records
+            for item in user.schedules or []:
+                if item.date.strftime("%A") == day:
+                    from datetime import timedelta
+
+                    start_time = item.date.time()
+                    end_dt = item.date + timedelta(minutes=item.duration_minutes)
+                    end_time = end_dt.time()
+
+                    busy_times.append(BusyTime(day=day, start=start_time, end=end_time))
 
         return UserSchedule(
             busy_times=busy_times,
