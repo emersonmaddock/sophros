@@ -103,7 +103,9 @@ async def update_user_me(
     if "busy_times" in update_data:
         bt_list = update_data.pop("busy_times")
         current_user.busy_times = (
-            [bt.model_dump(mode="json") for bt in user_in.busy_times] if bt_list else []
+            [bt.model_dump(mode="json") for bt in user_in.busy_times]
+            if bt_list and user_in.busy_times
+            else []
         )
 
     # Handle dietary relationship fields (delete + re-insert pattern)

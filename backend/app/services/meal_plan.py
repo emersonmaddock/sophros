@@ -394,12 +394,13 @@ class MealPlanService:
             from datetime import time as dt_time
 
             for entry in user.busy_times:
-                if entry.get("day") == day:
+                raw: dict = entry  # type: ignore[assignment]
+                if raw.get("day") == day:
                     busy_times.append(
                         BusyTime(
                             day=day,
-                            start=dt_time.fromisoformat(entry["start"]),
-                            end=dt_time.fromisoformat(entry["end"]),
+                            start=dt_time.fromisoformat(raw["start"]),
+                            end=dt_time.fromisoformat(raw["end"]),
                         )
                     )
         else:
