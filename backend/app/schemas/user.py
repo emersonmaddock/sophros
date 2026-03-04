@@ -3,13 +3,13 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
+from app.domain.enums import ActivityLevel, Day, PregnancyStatus, Sex
 from app.schemas.dietary import Allergy, Cuisine
 
 
 # Kept for use by MealAllocator (schedule-based meal timing logic)
 class BusyTime(BaseModel):
-    day: str = "Monday"
+    day: Day = Day.MONDAY
     start: time = time(9, 0)
     end: time = time(17, 0)
 
@@ -138,7 +138,10 @@ class UserRead(UserBase):
             "target_date": data.target_date,
             "wake_up_time": data.wake_up_time or time(7, 0),
             "sleep_time": data.sleep_time or time(23, 0),
-            "busy_times": data.busy_times or [],
+            "busy_times": [
+                {"day": bt.day, "start": bt.start_time, "end": bt.end_time}
+                for bt in (data.user_busy_times or [])
+            ],
         }
 
 

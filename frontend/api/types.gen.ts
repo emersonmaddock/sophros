@@ -35,10 +35,7 @@ export type Allergy =
  * BusyTime
  */
 export type BusyTime = {
-  /**
-   * Day
-   */
-  day?: string;
+  day?: Day;
   /**
    * Start
    */

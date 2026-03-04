@@ -50,6 +50,7 @@ async def get_current_user(
             selectinload(User.user_allergies),
             selectinload(User.user_include_cuisines),
             selectinload(User.user_exclude_cuisines),
+            selectinload(User.user_busy_times),
         )
     )
     result = await db.execute(stmt)

@@ -1,4 +1,4 @@
-import type { ActivityLevel, BusyTime, UserUpdate } from '@/api/types.gen';
+import type { ActivityLevel, BusyTime, Day, UserUpdate } from '@/api/types.gen';
 import { SelectionCard } from '@/components/SelectionCard';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
@@ -20,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface BusyTimeEntry {
-  day: string;
+  day: Day;
   start: string;
   end: string;
 }
@@ -167,7 +167,7 @@ export default function EditProfileScreen() {
     });
   };
 
-  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const DAYS: Day[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const addBusyTime = () => {
@@ -175,7 +175,10 @@ export default function EditProfileScreen() {
       prev
         ? {
             ...prev,
-            busyTimes: [...prev.busyTimes, { day: 'Monday', start: '09:00', end: '17:00' }],
+            busyTimes: [
+              ...prev.busyTimes,
+              { day: 'Monday' as Day, start: '09:00', end: '17:00' },
+            ],
           }
         : prev
     );
@@ -190,7 +193,11 @@ export default function EditProfileScreen() {
     });
   };
 
-  const updateBusyTime = (index: number, field: keyof BusyTimeEntry, value: string) => {
+  const updateBusyTime = (
+    index: number,
+    field: keyof BusyTimeEntry,
+    value: BusyTimeEntry[keyof BusyTimeEntry]
+  ) => {
     setForm((prev) => {
       if (!prev) return prev;
       const next = [...prev.busyTimes];

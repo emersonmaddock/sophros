@@ -1,6 +1,6 @@
 from datetime import time
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, Integer, String, Time
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Time
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,7 +31,6 @@ class User(Base):
     # Scheduling Anchors
     wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     sleep_time: Mapped[time | None] = mapped_column(Time, nullable=True)
-    busy_times: Mapped[list | None] = mapped_column(JSON, nullable=True, default=list)
 
     gender: Mapped[Sex] = mapped_column(SAEnum(Sex, name="sex_enum"))
     activity_level: Mapped[ActivityLevel] = mapped_column(
@@ -63,6 +62,9 @@ class User(Base):
     )
     user_exclude_cuisines: Mapped[list["UserExcludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "UserExcludeCuisine", back_populates="user"
+    )
+    user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "UserBusyTime", back_populates="user"
     )
     saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "SavedMealPlan", back_populates="user"
