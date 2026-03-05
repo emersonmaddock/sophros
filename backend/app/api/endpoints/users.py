@@ -4,7 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models.dietary import UserAllergy, UserBusyTime, UserExcludeCuisine, UserIncludeCuisine
+from app.models.dietary import (
+    UserAllergy,
+    UserBusyTime,
+    UserExcludeCuisine,
+    UserIncludeCuisine,
+)
 from app.models.user import User
 from app.schemas.nutrient import DRIOutput
 from app.schemas.user import UserCreate, UserRead, UserUpdate
@@ -64,7 +69,11 @@ async def create_user(
     for cuisine in user_in.exclude_cuisine:
         db.add(UserExcludeCuisine(user_id=user_id, value=cuisine))
     for bt in user_in.busy_times:
-        db.add(UserBusyTime(user_id=user_id, day=bt.day, start_time=bt.start, end_time=bt.end))
+        db.add(
+            UserBusyTime(
+                user_id=user_id, day=bt.day, start_time=bt.start, end_time=bt.end
+            )
+        )
 
     await db.commit()
 
@@ -108,9 +117,14 @@ async def update_user_me(
         )
         if busy_times and user_in.busy_times:
             for bt in user_in.busy_times:
-                db.add(UserBusyTime(
-                    user_id=current_user.id, day=bt.day, start_time=bt.start, end_time=bt.end
-                ))
+                db.add(
+                    UserBusyTime(
+                        user_id=current_user.id,
+                        day=bt.day,
+                        start_time=bt.start,
+                        end_time=bt.end,
+                    )
+                )
 
     # Handle dietary relationship fields (delete + re-insert pattern)
     if "allergies" in update_data:

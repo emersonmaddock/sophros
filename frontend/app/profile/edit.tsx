@@ -167,7 +167,15 @@ export default function EditProfileScreen() {
     });
   };
 
-  const DAYS: Day[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const DAYS: Day[] = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
   const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const addBusyTime = () => {
@@ -175,10 +183,7 @@ export default function EditProfileScreen() {
       prev
         ? {
             ...prev,
-            busyTimes: [
-              ...prev.busyTimes,
-              { day: 'Monday' as Day, start: '09:00', end: '17:00' },
-            ],
+            busyTimes: [...prev.busyTimes, { day: 'Monday' as Day, start: '09:00', end: '17:00' }],
           }
         : prev
     );
