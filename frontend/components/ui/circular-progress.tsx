@@ -10,6 +10,8 @@ interface CircularProgressProps {
   color?: string;
   label?: string;
   value?: string;
+  subtitle?: string;
+  showValueInRing?: boolean;
 }
 
 export const CircularProgress = ({
@@ -19,6 +21,8 @@ export const CircularProgress = ({
   color = Colors.light.primary,
   label,
   value,
+  subtitle,
+  showValueInRing = false,
 }: CircularProgressProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -56,13 +60,27 @@ export const CircularProgress = ({
           />
         </Svg>
         <View style={styles.percentageContainer}>
-          <Text style={styles.percentageText}>{Math.round(percentage)}%</Text>
+          {showValueInRing && value ? (
+            <Text
+              style={[styles.ringValueText, { fontSize: size * 0.2 }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
+              {value}
+            </Text>
+          ) : (
+            <Text style={styles.percentageText}>{Math.round(percentage)}%</Text>
+          )}
         </View>
       </View>
       {label && (
         <View style={styles.labelContainer}>
           <Text style={styles.labelText}>{label}</Text>
-          <Text style={styles.valueText}>{value}</Text>
+          {subtitle ? (
+            <Text style={styles.subtitleText}>{subtitle}</Text>
+          ) : (
+            value && !showValueInRing && <Text style={styles.valueText}>{value}</Text>
+          )}
         </View>
       )}
     </View>
@@ -84,13 +102,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.light.text,
   },
+  ringValueText: {
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
   labelContainer: {
     alignItems: 'center',
   },
   labelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 1,
+  },
+  subtitleText: {
     fontSize: 11,
     color: Colors.light.textMuted,
-    marginBottom: 2,
   },
   valueText: {
     fontSize: 13,

@@ -3,15 +3,21 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
+from app.domain.enums import ActivityLevel, Day, PregnancyStatus, Sex
 from app.schemas.dietary import Allergy, Cuisine
 
 
 # Kept for use by MealAllocator (schedule-based meal timing logic)
 class BusyTime(BaseModel):
-    day: str = "Monday"
+    day: Day = Day.MONDAY
     start: time = time(9, 0)
     end: time = time(17, 0)
+
+    @model_validator(mode="after")
+    def check_start_before_end(self) -> "BusyTime":
+        if self.start >= self.end:
+            raise ValueError("start must be before end")
+        return self
 
 
 class UserSchedule(BaseModel):
@@ -39,6 +45,7 @@ class UserBase(BaseModel):
     # Scheduling Anchors
     wake_up_time: time = time(7, 0)
     sleep_time: time = time(23, 0)
+    busy_times: list[BusyTime] = []
 
     # Dietary Preferences: Allergies & Intolerances
     allergies: list[Allergy] = []
@@ -75,6 +82,7 @@ class UserUpdate(BaseModel):
     target_date: date | None = None
     wake_up_time: time | None = None
     sleep_time: time | None = None
+    busy_times: list[BusyTime] | None = None
 
     # Dietary Preferences
     allergies: list[Allergy] | None = None
@@ -130,6 +138,10 @@ class UserRead(UserBase):
             "target_date": data.target_date,
             "wake_up_time": data.wake_up_time or time(7, 0),
             "sleep_time": data.sleep_time or time(23, 0),
+            "busy_times": [
+                {"day": bt.day, "start": bt.start_time, "end": bt.end_time}
+                for bt in (data.user_busy_times or [])
+            ],
         }
 
 

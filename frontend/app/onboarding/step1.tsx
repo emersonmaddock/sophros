@@ -33,9 +33,9 @@ export default function Step1Screen() {
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '25%' }]} />
+              <View style={[styles.progressFill, { width: '20%' }]} />
             </View>
-            <Text style={styles.progressText}>Step 1 of 4</Text>
+            <Text style={styles.progressText}>Step 1 of 5</Text>
           </View>
 
           <View style={styles.header}>

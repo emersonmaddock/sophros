@@ -1,124 +1,243 @@
+import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
+import { useScheduleEditing } from '@/hooks/useScheduleEditing';
+import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import type { Day } from '@/api/types.gen';
+import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { useRouter } from 'expo-router';
-import { Calendar } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Plus, Utensils } from 'lucide-react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_ORDER: Day[] = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+function getMonday(weekOffset: number): Date {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  // Monday = 1, so offset from today to this week's Monday
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+function formatDateStr(d: Date): string {
+  return d.toISOString().split('T')[0];
+}
+
 type ScheduleItem = {
+  id: string;
   time: string;
   title: string;
   subtitle?: string;
   duration: string;
-  type: 'meal' | 'exercise' | 'sleep';
+  type: 'meal' | 'workout' | 'sleep';
   status: 'completed' | 'current' | 'upcoming';
+  recipe?: WeeklyScheduleItem['recipe'];
+  workoutType?: string;
 };
 
 export default function SchedulePage() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<ScheduleItem | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // EditItemModal state
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editModalItem, setEditModalItem] = useState<WeeklyScheduleItem | null>(null);
+  const [editModalMode, setEditModalMode] = useState<'edit' | 'add'>('edit');
+  const [editModalItemType, setEditModalItemType] = useState<ItemType>('meal');
 
-  // Calculate dates for the current week
   const today = new Date();
-  const todayDayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+  const todayDayOfWeek = today.getDay();
+  const currentHour = today.getHours();
 
-  // Get the start of the week (Sunday)
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - todayDayOfWeek);
+  // Compute which day index to default to
+  // For current week, default to today; for other weeks, default to Monday (index 0)
+  const todayMondayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // Mon=0..Sun=6
+  const [selectedDayIndex, setSelectedDayIndex] = useState(weekOffset === 0 ? todayMondayIndex : 0);
 
-  // Generate dates for the week
-  const weekDates = days.map((_, index) => {
-    const date = new Date(startOfWeek);
-    date.setDate(startOfWeek.getDate() + index);
-    return date.getDate();
-  });
+  const mondayDate = getMonday(weekOffset);
+  const weekStartStr = formatDateStr(mondayDate);
 
-  const scheduleItems: ScheduleItem[] = [
-    {
-      time: '7:00 AM',
-      title: 'Wake Up & Stretch',
-      duration: '30 min',
-      type: 'exercise',
-      status: 'completed',
-    },
-    {
-      time: '7:30 AM',
-      title: 'Breakfast',
-      subtitle: 'Greek Yogurt Bowl (380 cal)',
-      duration: '20 min',
-      type: 'meal',
-      status: 'completed',
-    },
-    {
-      time: '9:00 AM',
-      title: 'Morning Workout',
-      subtitle: 'HIIT Training',
-      duration: '45 min',
-      type: 'exercise',
-      status: 'completed',
-    },
-    {
-      time: '12:30 PM',
-      title: 'Lunch',
-      subtitle: 'Grilled Chicken Salad (520 cal)',
-      duration: '30 min',
-      type: 'meal',
-      status: 'current',
-    },
-    {
-      time: '3:00 PM',
-      title: 'Snack',
-      subtitle: 'Protein Shake (180 cal)',
-      duration: '10 min',
-      type: 'meal',
-      status: 'upcoming',
-    },
-    {
-      time: '6:30 PM',
-      title: 'Evening Walk',
-      duration: '30 min',
-      type: 'exercise',
-      status: 'upcoming',
-    },
-    {
-      time: '7:30 PM',
-      title: 'Dinner',
-      subtitle: 'Salmon & Vegetables (640 cal)',
-      duration: '40 min',
-      type: 'meal',
-      status: 'upcoming',
-    },
-    {
-      time: '10:30 PM',
-      title: 'Sleep',
-      subtitle: 'Target: 8 hours',
-      duration: '8 hrs',
-      type: 'sleep',
-      status: 'upcoming',
-    },
-  ];
+  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
 
-  const handleItemPress = (item: ScheduleItem) => {
-    if (item.type === 'meal') {
+  const { isDirty, saveStatus, statusText, save, removeItem, addItem, editItem, getScheduleItems } =
+    useScheduleEditing(savedPlan, weekStartStr);
+
+  // Build week dates (Mon-Sun)
+  const weekDates = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(mondayDate);
+      d.setDate(mondayDate.getDate() + i);
+      return d;
+    });
+  }, [mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const selectedDayName = DAY_ORDER[selectedDayIndex];
+
+  // Derive schedule items from the editing hook
+  const scheduleItems: ScheduleItem[] = useMemo(() => {
+    const mapped = getScheduleItems(selectedDayIndex);
+
+    return mapped.map((item) => {
+      const [timePart, period] = item.time.split(' ');
+      const [hours] = timePart.split(':').map(Number);
+      let itemHour = hours;
+      if (period === 'PM' && hours !== 12) itemHour += 12;
+      if (period === 'AM' && hours === 12) itemHour = 0;
+
+      const isToday = weekOffset === 0 && selectedDayIndex === todayMondayIndex;
+      let status: 'completed' | 'current' | 'upcoming' = 'upcoming';
+      if (isToday) {
+        if (itemHour < currentHour) status = 'completed';
+        else if (itemHour === currentHour) status = 'current';
+      }
+
+      return {
+        id: item.id,
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle,
+        duration: item.duration,
+        type: item.type,
+        status,
+        recipe: item.recipe,
+        workoutType: item.workoutType,
+      };
+    });
+  }, [getScheduleItems, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
+
+  const handleItemPress = useCallback((item: ScheduleItem) => {
+    if (item.type === 'meal' && item.recipe) {
       setSelectedMeal(item);
       setModalVisible(true);
+    } else {
+      // Non-meal items open EditItemModal directly
+      setEditModalItem({
+        id: item.id,
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle,
+        duration: item.duration,
+        type: item.type,
+        workoutType: item.workoutType,
+      });
+      setEditModalMode('edit');
+      setEditModalItemType(item.type);
+      setEditModalVisible(true);
     }
+  }, []);
+
+  const handleMealModify = useCallback(
+    (meal: {
+      time: string;
+      title?: string;
+      subtitle?: string;
+      type: string;
+      recipe?: WeeklyScheduleItem['recipe'];
+    }) => {
+      setEditModalItem({
+        id: meal.recipe?.id?.toString() || `${Date.now()}`,
+        time: meal.time,
+        title: meal.title || 'Meal',
+        subtitle: meal.subtitle,
+        duration: '30 min',
+        type: 'meal',
+        recipe: meal.recipe,
+      });
+      setEditModalMode('edit');
+      setEditModalItemType('meal');
+      setEditModalVisible(true);
+    },
+    []
+  );
+
+  const handleMealRemove = useCallback(
+    (meal: { time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
+      const itemId = meal.recipe?.id?.toString() || '';
+      Alert.alert('Remove Item', `Remove "${meal.title || 'this item'}" from the schedule?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => removeItem(selectedDayName, itemId),
+        },
+      ]);
+    },
+    [removeItem, selectedDayName]
+  );
+
+  const handleEditSave = useCallback(
+    (updatedItem: WeeklyScheduleItem) => {
+      if (editModalMode === 'add') {
+        addItem(selectedDayName, updatedItem);
+      } else if (editModalItem) {
+        editItem(selectedDayName, editModalItem.id, updatedItem);
+      }
+    },
+    [editModalMode, editModalItem, addItem, editItem, selectedDayName]
+  );
+
+  const handleAddItem = useCallback((type: ItemType) => {
+    setEditModalItem(null);
+    setEditModalMode('add');
+    setEditModalItemType(type);
+    setEditModalVisible(true);
+  }, []);
+
+  const handleWeekChange = (direction: number) => {
+    setWeekOffset((prev) => prev + direction);
+    setSelectedDayIndex(0); // Reset to Monday when changing weeks
   };
 
   const getBorderColor = (type: string) => {
     switch (type) {
       case 'meal':
         return Colors.light.secondary;
-      case 'exercise':
+      case 'workout':
         return Colors.light.primary;
       default:
         return Colors.light.charts.carbs;
     }
   };
+
+  const isCurrentWeek = weekOffset === 0;
+
+  const weekLabel = isCurrentWeek
+    ? 'This Week'
+    : weekOffset === 1
+      ? 'Next Week'
+      : weekOffset === -1
+        ? 'Last Week'
+        : (() => {
+            const mon = weekDates[0];
+            const sun = weekDates[6];
+            const fmt = (d: Date) =>
+              d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return `${fmt(mon)} - ${fmt(sun)}`;
+          })();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -126,90 +245,174 @@ export default function SchedulePage() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Weekly Schedule</Text>
-          <Text style={styles.headerSubtitle}>AI-optimized</Text>
+          <Text
+            style={[styles.headerSubtitle, saveStatus === 'error' && { color: Colors.light.error }]}
+          >
+            {statusText}
+          </Text>
         </View>
 
-        {/* Day Selector */}
+        {/* Week Navigation */}
+        <View style={styles.weekNav}>
+          <TouchableOpacity onPress={() => handleWeekChange(-1)} style={styles.weekNavButton}>
+            <ChevronLeft size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+          <Text style={styles.weekNavLabel}>{weekLabel}</Text>
+          <TouchableOpacity onPress={() => handleWeekChange(1)} style={styles.weekNavButton}>
+            <ChevronRight size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Day Selector (Mon-Sun) */}
         <View style={styles.daySelector}>
-          {days.map((day, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[styles.dayCard, i === todayDayOfWeek && styles.activeDayCard]}
-            >
-              <Text style={[styles.dayText, i === todayDayOfWeek && styles.activeDayText]}>
-                {day}
-              </Text>
-              <Text style={[styles.dateText, i === todayDayOfWeek && styles.activeDateText]}>
-                {weekDates[i]}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {weekDates.map((date, i) => {
+            const isSelected = selectedDayIndex === i;
+            const isTodayDot = isCurrentWeek && i === todayMondayIndex && !isSelected;
+
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[styles.dayCard, isSelected && styles.activeDayCard]}
+                onPress={() => setSelectedDayIndex(i)}
+              >
+                <Text style={[styles.dayText, isSelected && styles.activeDayText]}>
+                  {DAY_NAMES_SHORT[date.getDay()]}
+                </Text>
+                <Text style={[styles.dateText, isSelected && styles.activeDateText]}>
+                  {date.getDate()}
+                </Text>
+                {isTodayDot && <View style={styles.todayDot} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* Timeline */}
-        <View style={styles.timeline}>
-          {scheduleItems.map((item, i) => (
-            <View key={i} style={styles.timelineItem}>
-              <View style={styles.timeColumn}>
-                <Text style={styles.itemTime}>{item.time}</Text>
-              </View>
+        {isLoadingPlan ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptySubtitle}>Loading...</Text>
+          </View>
+        ) : scheduleItems.length > 0 ? (
+          <View style={styles.timeline}>
+            {scheduleItems.map((item, i) => (
+              <View key={item.id || i} style={styles.timelineItem}>
+                <View style={styles.timeColumn}>
+                  <Text style={styles.itemTime}>{item.time}</Text>
+                </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.eventCard,
-                  { borderLeftColor: getBorderColor(item.type) },
-                  item.status === 'completed' && { opacity: 0.6 },
-                ]}
-                onPress={() => handleItemPress(item)}
-                disabled={item.type !== 'meal'}
-              >
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    marginBottom: 4,
-                  }}
+                <TouchableOpacity
+                  style={[
+                    styles.eventCard,
+                    { borderLeftColor: getBorderColor(item.type) },
+                    item.status === 'completed' && { opacity: 0.6 },
+                  ]}
+                  onPress={() => handleItemPress(item)}
                 >
                   <View
                     style={{
                       flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 8,
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 4,
                     }}
                   >
-                    <Text style={styles.eventTitle}>
-                      {item.title}
-                      {item.status === 'completed' && ' ✓'}
-                    </Text>
-                    {item.status === 'current' && (
-                      <View style={styles.nowBadge}>
-                        <Text style={styles.nowText}>NOW</Text>
-                      </View>
-                    )}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        flex: 1,
+                      }}
+                    >
+                      <Text style={styles.eventTitle} numberOfLines={1}>
+                        {item.title}
+                        {item.status === 'completed' && ' ✓'}
+                      </Text>
+                      {item.status === 'current' && (
+                        <View style={styles.nowBadge}>
+                          <Text style={styles.nowText}>NOW</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.durationBadge}>
+                      <Text style={styles.durationText}>{item.duration}</Text>
+                    </View>
                   </View>
-                  <View style={styles.durationBadge}>
-                    <Text style={styles.durationText}>{item.duration}</Text>
-                  </View>
-                </View>
 
-                {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
+                  {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No meals planned</Text>
+            <Text style={styles.emptySubtitle}>
+              {savedPlan ? 'No meals scheduled for this day' : 'No plan saved for this week yet'}
+            </Text>
+            {!savedPlan && (
+              <TouchableOpacity
+                style={styles.planThisWeekButton}
+                onPress={() => router.push(`/week-planning?weekStart=${weekStartStr}`)}
+              >
+                <Calendar size={18} color="#FFF" />
+                <Text style={styles.planThisWeekText}>Plan This Week</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Add Item Section */}
+        {savedPlan && (
+          <View style={styles.addItemSection}>
+            <Text style={styles.addItemLabel}>Add Item</Text>
+            <View style={styles.addItemRow}>
+              <TouchableOpacity style={styles.addItemCard} onPress={() => handleAddItem('meal')}>
+                <Utensils size={20} color={Colors.light.secondary} />
+                <Text style={styles.addItemText}>Meal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.addItemCard} onPress={() => handleAddItem('workout')}>
+                <Dumbbell size={20} color={Colors.light.primary} />
+                <Text style={styles.addItemText}>Workout</Text>
               </TouchableOpacity>
             </View>
-          ))}
-        </View>
+          </View>
+        )}
 
-        {/* Plan Next Week Button */}
-        <TouchableOpacity style={styles.planButton} onPress={() => router.push('/week-planning')}>
-          <Calendar size={20} color="#FFF" />
-          <Text style={styles.planButtonText}>Plan Next Week</Text>
-        </TouchableOpacity>
+        {/* Save Changes Button */}
+        {isDirty && (
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={save}
+            disabled={saveStatus === 'saving'}
+          >
+            {saveStatus === 'saving' ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Plus size={20} color="#FFF" />
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <MealDetailModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         meal={selectedMeal}
+        onModify={handleMealModify}
+        onRemove={handleMealRemove}
+      />
+
+      <EditItemModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        item={editModalItem}
+        onSave={handleEditSave}
+        mode={editModalMode}
+        itemType={editModalItemType}
       />
     </SafeAreaView>
   );
@@ -225,7 +428,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 28,
@@ -237,14 +440,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
   },
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 16,
+  },
+  weekNavButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.light.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekNavLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    minWidth: 120,
+    textAlign: 'center',
+  },
   daySelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
   },
   dayCard: {
-    minWidth: 48,
-    height: 64,
+    minWidth: 44,
+    height: 68,
     borderRadius: 16,
     backgroundColor: Colors.light.surface,
     alignItems: 'center',
@@ -276,25 +501,13 @@ const styles = StyleSheet.create({
   activeDateText: {
     color: '#FFFFFF',
   },
-  timeIndicator: {
-    backgroundColor: `${Colors.light.primary}10`,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.light.primary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  currentTimeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  timeSubText: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
+  todayDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.light.primary,
+    position: 'absolute',
+    bottom: 4,
   },
   timeline: {
     marginTop: 8,
@@ -356,19 +569,68 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
     marginTop: 2,
   },
-  tapHint: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 8,
+  emptyState: {
     alignItems: 'center',
+    paddingVertical: 48,
+    gap: 8,
   },
-  tapHintText: {
-    fontSize: 11,
-    color: Colors.light.primary,
-    fontWeight: '500',
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
   },
-  planButton: {
-    backgroundColor: Colors.light.primary,
+  emptySubtitle: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
+  },
+  planThisWeekButton: {
+    backgroundColor: Colors.light.secondary,
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  planThisWeekText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addItemSection: {
+    marginTop: 24,
+  },
+  addItemLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+    marginBottom: 12,
+  },
+  addItemRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  addItemCard: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.light.textMuted,
+    borderStyle: 'dashed',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flexDirection: 'row',
+  },
+  addItemText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  saveButton: {
+    backgroundColor: Colors.light.secondary,
     borderRadius: 16,
     padding: 18,
     flexDirection: 'row',
@@ -377,7 +639,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 24,
   },
-  planButtonText: {
+  saveButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

@@ -4,7 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models.dietary import UserAllergy, UserExcludeCuisine, UserIncludeCuisine
+from app.models.dietary import (
+    UserAllergy,
+    UserBusyTime,
+    UserExcludeCuisine,
+    UserIncludeCuisine,
+)
 from app.models.user import User
 from app.schemas.nutrient import DRIOutput
 from app.schemas.user import UserCreate, UserRead, UserUpdate
@@ -22,6 +27,7 @@ async def _load_user_with_dietary(db: AsyncSession, user_id: str) -> User:
             selectinload(User.user_allergies),
             selectinload(User.user_include_cuisines),
             selectinload(User.user_exclude_cuisines),
+            selectinload(User.user_busy_times),
         )
     )
     result = await db.execute(stmt)
@@ -48,9 +54,9 @@ async def create_user(
     if existing:
         raise HTTPException(status_code=400, detail="User already exists")
 
-    # Create the User row (excludes dietary list fields — those go in relational tables)
+    # Create the User row (excludes relational fields — those go in separate tables)
     user_data = user_in.model_dump(
-        exclude={"allergies", "include_cuisine", "exclude_cuisine"}
+        exclude={"allergies", "include_cuisine", "exclude_cuisine", "busy_times"}
     )
     user = User(**user_data, id=user_id)
     db.add(user)
@@ -62,6 +68,12 @@ async def create_user(
         db.add(UserIncludeCuisine(user_id=user_id, value=cuisine))
     for cuisine in user_in.exclude_cuisine:
         db.add(UserExcludeCuisine(user_id=user_id, value=cuisine))
+    for bt in user_in.busy_times:
+        db.add(
+            UserBusyTime(
+                user_id=user_id, day=bt.day, start_time=bt.start, end_time=bt.end
+            )
+        )
 
     await db.commit()
 
@@ -96,6 +108,23 @@ async def update_user_me(
     replaced wholesale — existing rows are deleted and new ones inserted.
     """
     update_data = user_in.model_dump(exclude_unset=True)
+
+    # Handle busy_times (relational table, delete + re-insert pattern)
+    if "busy_times" in update_data:
+        busy_times = update_data.pop("busy_times")
+        await db.execute(
+            delete(UserBusyTime).where(UserBusyTime.user_id == current_user.id)
+        )
+        if busy_times and user_in.busy_times:
+            for bt in user_in.busy_times:
+                db.add(
+                    UserBusyTime(
+                        user_id=current_user.id,
+                        day=bt.day,
+                        start_time=bt.start,
+                        end_time=bt.end,
+                    )
+                )
 
     # Handle dietary relationship fields (delete + re-insert pattern)
     if "allergies" in update_data:

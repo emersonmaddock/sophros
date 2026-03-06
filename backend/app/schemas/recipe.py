@@ -21,3 +21,5 @@ class Recipe(BaseModel):
 
     # Metadata for classification
     preparation_time_minutes: int | None = None
+    source_url: str | None = None
+    image_url: str | None = None

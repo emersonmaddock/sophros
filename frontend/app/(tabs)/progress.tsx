@@ -1,4 +1,3 @@
-import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { Award, Users } from 'lucide-react-native';
 import React from 'react';
@@ -22,13 +21,6 @@ export default function ProgressPage() {
     { rank: 4, name: 'Emma Davis', streak: 9, you: false },
     { rank: 5, name: 'Ryan Smith', streak: 7, you: false },
   ];
-
-  const weeklyMacros = {
-    calories: { value: 'Avg 1,950', percentage: 88, label: 'Calories' },
-    protein: { value: 'Avg 86g', percentage: 72, label: 'Protein' },
-    carbs: { value: 'Avg 203g', percentage: 81, label: 'Carbs' },
-    fats: { value: 'Avg 65g', percentage: 75, label: 'Fats' }, // Estimated fat based on previous data
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -58,37 +50,6 @@ export default function ProgressPage() {
             </View>
           </View>
           <Text style={styles.streakFooter}>Keep it up! You&apos;re on fire 🔥</Text>
-        </View>
-
-        {/* Weekly Nutrition */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Week&apos;s Nutrition</Text>
-          <View style={styles.card}>
-            <View style={styles.nutritionCircles}>
-              <MacroNutrients data={weeklyMacros} size={70} />
-            </View>
-            <View style={styles.nutritionGrid}>
-              {[
-                {
-                  label: 'Vitamin D',
-                  value: '82%',
-                  color: Colors.light.secondary,
-                },
-                { label: 'Iron', value: '68%', color: Colors.light.error },
-                { label: 'Calcium', value: '75%', color: Colors.light.primary },
-                {
-                  label: 'B12',
-                  value: '91%',
-                  color: Colors.light.charts.carbs,
-                },
-              ].map((item, i) => (
-                <View key={i} style={styles.nutritionRow}>
-                  <Text style={styles.nutriLabel}>{item.label}</Text>
-                  <Text style={[styles.nutriValue, { color: item.color }]}>{item.value}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
         </View>
 
         {/* Achievements */}
@@ -233,26 +194,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16, // Matching template padding
     ...Shadows.card,
   },
-  nutritionCircles: {
-    marginBottom: 20,
-  },
-  nutritionGrid: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    paddingTop: 16,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  nutritionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '48%',
-  },
-  nutriLabel: { fontSize: 13, color: Colors.light.textMuted },
-  nutriValue: { fontSize: 14, fontWeight: '600' },
-
   achievementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

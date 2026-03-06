@@ -13,6 +13,8 @@ from app.core.config import settings
 from app.db.base_class import Base
 from app.models.user import User
 from app.models.schedule import ScheduleItem
+from app.models.dietary import UserAllergy, UserBusyTime, UserExcludeCuisine, UserIncludeCuisine
+from app.models.saved_meal_plan import SavedMealPlan
 
 config = context.config
 

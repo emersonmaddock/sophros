@@ -4,46 +4,22 @@ import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { router } from 'expo-router';
 import React from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step4Screen() {
-  const {
-    data,
-    updateField,
-    loading,
-    error: apiError,
-    submit,
-    isSection4Complete,
-  } = useOnboarding();
+  const { data, updateField, isSection4Complete } = useOnboarding();
 
   const canContinue = isSection4Complete();
-
-  const handleSubmit = async () => {
-    const success = await submit();
-    if (success) {
-      router.replace('/onboarding/done');
-    } else if (apiError) {
-      Alert.alert('Error', apiError);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '100%' }]} />
+            <View style={[styles.progressFill, { width: '80%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 4 of 4</Text>
+          <Text style={styles.progressText}>Step 4 of 5</Text>
         </View>
 
         <View style={styles.header}>
@@ -69,15 +45,11 @@ export default function Step4Screen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity
           style={[styles.submitButton, !canContinue && styles.submitButtonDisabled]}
-          onPress={handleSubmit}
-          disabled={!canContinue || loading}
+          onPress={() => router.push('/onboarding/step5')}
+          disabled={!canContinue}
           activeOpacity={0.8}
         >
-          {loading ? (
-            <ActivityIndicator color={Colors.light.surface} />
-          ) : (
-            <Text style={styles.submitButtonText}>Complete Profile</Text>
-          )}
+          <Text style={styles.submitButtonText}>Continue</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

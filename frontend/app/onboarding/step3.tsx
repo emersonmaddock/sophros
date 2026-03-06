@@ -17,9 +17,9 @@ export default function Step3Screen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: '75%' }]} />
+            <View style={[styles.progressFill, { width: '50%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 3 of 4</Text>
+          <Text style={styles.progressText}>Step 3 of 5</Text>
         </View>
 
         <View style={styles.header}>

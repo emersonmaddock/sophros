@@ -32,6 +32,21 @@ export type Allergy =
   | 'Wheat';
 
 /**
+ * BusyTime
+ */
+export type BusyTime = {
+  day?: Day;
+  /**
+   * Start
+   */
+  start?: string;
+  /**
+   * End
+   */
+  end?: string;
+};
+
+/**
  * Cuisine
  */
 export type Cuisine =
@@ -76,12 +91,40 @@ export type DriOutput = {
 /**
  * DailyMealPlan
  */
-export type DailyMealPlan = {
+export type DailyMealPlanInput = {
   day: Day;
   /**
    * Slots
    */
-  slots: Array<MealSlotTarget>;
+  slots: Array<MealSlotTargetInput>;
+  exercise?: ExerciseRecommendation | null;
+  /**
+   * Total Calories
+   */
+  total_calories: number;
+  /**
+   * Total Protein
+   */
+  total_protein: number;
+  /**
+   * Total Carbs
+   */
+  total_carbs: number;
+  /**
+   * Total Fat
+   */
+  total_fat: number;
+};
+
+/**
+ * DailyMealPlan
+ */
+export type DailyMealPlanOutput = {
+  day: Day;
+  /**
+   * Slots
+   */
+  slots: Array<MealSlotTargetOutput>;
   exercise?: ExerciseRecommendation | null;
   /**
    * Total Calories
@@ -154,7 +197,18 @@ export type HttpValidationError = {
 /**
  * MealOption
  */
-export type MealOption = {
+export type MealOptionInput = {
+  main_recipe?: Recipe | null;
+  /**
+   * Alternatives
+   */
+  alternatives?: Array<Recipe>;
+};
+
+/**
+ * MealOption
+ */
+export type MealOptionOutput = {
   main_recipe?: Recipe | null;
   /**
    * Alternatives
@@ -170,7 +224,7 @@ export type MealSlot = 'Breakfast' | 'Lunch' | 'Dinner';
 /**
  * MealSlotTarget
  */
-export type MealSlotTarget = {
+export type MealSlotTargetInput = {
   slot_name: MealSlot;
   /**
    * Calories
@@ -192,7 +246,45 @@ export type MealSlotTarget = {
    * Time
    */
   time?: string | null;
-  plan?: MealOption | null;
+  plan?: MealOptionInput | null;
+  /**
+   * Is Leftover
+   */
+  is_leftover?: boolean;
+  leftover_from_day?: Day | null;
+  leftover_from_slot?: MealSlot | null;
+  /**
+   * Prep Time Minutes
+   */
+  prep_time_minutes?: number;
+};
+
+/**
+ * MealSlotTarget
+ */
+export type MealSlotTargetOutput = {
+  slot_name: MealSlot;
+  /**
+   * Calories
+   */
+  calories: number;
+  /**
+   * Protein
+   */
+  protein: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates: number;
+  /**
+   * Fat
+   */
+  fat: number;
+  /**
+   * Time
+   */
+  time?: string | null;
+  plan?: MealOptionOutput | null;
   /**
    * Is Leftover
    */
@@ -269,6 +361,14 @@ export type Recipe = {
    * Preparation Time Minutes
    */
   preparation_time_minutes?: number | null;
+  /**
+   * Source Url
+   */
+  source_url?: string | null;
+  /**
+   * Image Url
+   */
+  image_url?: string | null;
 };
 
 /**
@@ -291,6 +391,40 @@ export type RecipeNutrients = {
    * Fat
    */
   fat: number;
+};
+
+/**
+ * SaveMealPlanRequest
+ */
+export type SaveMealPlanRequest = {
+  /**
+   * Week Start Date
+   */
+  week_start_date: string;
+  plan_data: WeeklyMealPlanInput;
+};
+
+/**
+ * SavedMealPlanResponse
+ */
+export type SavedMealPlanResponse = {
+  /**
+   * Id
+   */
+  id: number;
+  /**
+   * Week Start Date
+   */
+  week_start_date: string;
+  plan_data: WeeklyMealPlanOutput;
+  /**
+   * Created At
+   */
+  created_at: string;
+  /**
+   * Updated At
+   */
+  updated_at: string;
 };
 
 /**
@@ -411,6 +545,10 @@ export type UserCreate = {
    */
   sleep_time?: string;
   /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime>;
+  /**
    * Allergies
    */
   allergies?: Array<Allergy>;
@@ -491,6 +629,10 @@ export type UserRead = {
    * Sleep Time
    */
   sleep_time?: string;
+  /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime>;
   /**
    * Allergies
    */
@@ -581,6 +723,10 @@ export type UserUpdate = {
    */
   sleep_time?: string | null;
   /**
+   * Busy Times
+   */
+  busy_times?: Array<BusyTime> | null;
+  /**
    * Allergies
    */
   allergies?: Array<Allergy> | null;
@@ -640,6 +786,34 @@ export type ValidationError = {
   ctx?: {
     [key: string]: unknown;
   };
+};
+
+/**
+ * WeeklyMealPlan
+ */
+export type WeeklyMealPlanInput = {
+  /**
+   * Daily Plans
+   */
+  daily_plans: Array<DailyMealPlanInput>;
+  /**
+   * Total Weekly Calories
+   */
+  total_weekly_calories: number;
+};
+
+/**
+ * WeeklyMealPlan
+ */
+export type WeeklyMealPlanOutput = {
+  /**
+   * Daily Plans
+   */
+  daily_plans: Array<DailyMealPlanOutput>;
+  /**
+   * Total Weekly Calories
+   */
+  total_weekly_calories: number;
 };
 
 export type CreateUserApiV1UsersPostData = {
@@ -897,11 +1071,110 @@ export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
   /**
    * Successful Response
    */
-  200: DailyMealPlan;
+  200: DailyMealPlanOutput;
 };
 
 export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
   GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/meal-plans/generate-week';
+};
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: WeeklyMealPlanOutput;
+};
+
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponse =
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses[keyof GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses];
+
+export type SaveMealPlanApiV1MealPlansSavePostData = {
+  body: SaveMealPlanRequest;
+  path?: never;
+  query?: never;
+  url: '/api/v1/meal-plans/save';
+};
+
+export type SaveMealPlanApiV1MealPlansSavePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SaveMealPlanApiV1MealPlansSavePostError =
+  SaveMealPlanApiV1MealPlansSavePostErrors[keyof SaveMealPlanApiV1MealPlansSavePostErrors];
+
+export type SaveMealPlanApiV1MealPlansSavePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: SavedMealPlanResponse;
+};
+
+export type SaveMealPlanApiV1MealPlansSavePostResponse =
+  SaveMealPlanApiV1MealPlansSavePostResponses[keyof SaveMealPlanApiV1MealPlansSavePostResponses];
+
+export type GetWeekPlanApiV1MealPlansWeekGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Week Start Date
+     *
+     * Monday of the week to fetch
+     */
+    week_start_date: string;
+  };
+  url: '/api/v1/meal-plans/week';
+};
+
+export type GetWeekPlanApiV1MealPlansWeekGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetWeekPlanApiV1MealPlansWeekGetError =
+  GetWeekPlanApiV1MealPlansWeekGetErrors[keyof GetWeekPlanApiV1MealPlansWeekGetErrors];
+
+export type GetWeekPlanApiV1MealPlansWeekGetResponses = {
+  /**
+   * Response Get Week Plan Api V1 Meal Plans Week Get
+   *
+   * Successful Response
+   */
+  200: SavedMealPlanResponse | null;
+};
+
+export type GetWeekPlanApiV1MealPlansWeekGetResponse =
+  GetWeekPlanApiV1MealPlansWeekGetResponses[keyof GetWeekPlanApiV1MealPlansWeekGetResponses];
+
+export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/meal-plans/planned-weeks';
+};
+
+export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses = {
+  /**
+   * Response Get Planned Weeks Api V1 Meal Plans Planned Weeks Get
+   *
+   * Successful Response
+   */
+  200: Array<string>;
+};
+
+export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponse =
+  GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses[keyof GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;

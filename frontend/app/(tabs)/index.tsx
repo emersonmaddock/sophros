@@ -1,66 +1,171 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
+import { calculateHealthScore } from '@/utils/healthScore';
+import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
+import type { Day } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronRight, Dumbbell, Plus, TrendingUp, Utensils } from 'lucide-react-native';
-import React from 'react';
+import { ChevronRight, Utensils } from 'lucide-react-native';
+import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+const JS_DAY_TO_API_DAY: Record<number, Day> = {
+  0: 'Sunday',
+  1: 'Monday',
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday',
+};
 
 export default function DashboardPage() {
   const router = useRouter();
 
-  // Get user for name
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
 
-  // Get date for subtitle
-  // e.g., 'Wednesday, Dec 23'
   const today = new Date();
   const day = today.getDate();
   const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
   const monthName = today.toLocaleString('en-US', { month: 'short' });
+  const currentHour = today.getHours();
 
-  const upcomingItems = [
-    {
-      time: '12:30 PM',
-      title: 'Lunch',
-      subtitle: 'Chicken & Quinoa',
-      icon: Utensils,
-      color: Colors.light.secondary,
-      status: 'upcoming',
-    },
-    {
-      time: '3:00 PM',
-      title: 'Afternoon Snack',
-      subtitle: 'Protein Shake',
-      icon: Utensils,
-      color: Colors.light.secondary,
-      status: 'upcoming',
-    },
-    {
-      time: '6:00 PM',
-      title: 'Evening Workout',
-      subtitle: '45 min Strength',
-      icon: Dumbbell,
-      color: Colors.light.primary,
-      status: 'scheduled',
-    },
-  ];
+  // Compute this week's Monday to fetch the saved plan
+  const weekStartStr = useMemo(() => {
+    const d = new Date(today);
+    const dow = d.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().split('T')[0];
+  }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const macroData = {
-    calories: { value: '1,840', percentage: 84 },
-    protein: { value: '78g', percentage: 65 },
-    carbs: { value: '185g', percentage: 74 },
-    fats: { value: '52g', percentage: 80 },
-  };
+  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: targets } = useUserTargetsQuery();
+  const { data: user } = useUserQuery();
+
+  // Derive today's plan
+  const todayPlan = useMemo(() => {
+    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
+    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
+  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Compute health score
+  const healthScore = useMemo(
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
+    [todayPlan, targets, user]
+  );
+
+  // Derive upcoming meals from the saved plan
+  const upcomingItems = useMemo(() => {
+    if (!todayPlan) {
+      return [];
+    }
+
+    const mapped = mapDailyPlanToScheduleItems(todayPlan);
+
+    // Filter to upcoming meals only
+    return mapped
+      .filter((item) => {
+        const [timePart, period] = item.time.split(' ');
+        const [hours] = timePart.split(':').map(Number);
+        let itemHour = hours;
+        if (period === 'PM' && hours !== 12) itemHour += 12;
+        if (period === 'AM' && hours === 12) itemHour = 0;
+        return itemHour >= currentHour;
+      })
+      .slice(0, 3)
+      .map((item) => ({
+        time: item.time,
+        title: item.title,
+        subtitle: item.subtitle || '',
+        icon: Utensils,
+        color: Colors.light.secondary,
+      }));
+  }, [todayPlan, currentHour]);
+
+  // Derive macro data from today's plan totals vs DRI targets
+  const macroData = useMemo(() => {
+    const pct = (actual: number, target: number | undefined) =>
+      target ? Math.min(100, Math.round((actual / target) * 100)) : 0;
+
+    const calTarget = targets?.calories.target;
+    const proTarget = targets?.protein.target;
+    const carbTarget = targets?.carbohydrates.target;
+    const fatTarget = targets?.fat.target;
+
+    if (!todayPlan) {
+      return {
+        calories: {
+          value: '--',
+          percentage: 0,
+          label: 'Calories',
+          subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
+        },
+        protein: {
+          value: '--',
+          percentage: 0,
+          label: 'Protein',
+          subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
+        },
+        carbs: {
+          value: '--',
+          percentage: 0,
+          label: 'Carbs',
+          subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
+        },
+        fats: {
+          value: '--',
+          percentage: 0,
+          label: 'Fat',
+          subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
+        },
+      };
+    }
+
+    return {
+      calories: {
+        value: `${todayPlan.total_calories}`,
+        percentage: pct(todayPlan.total_calories, calTarget),
+        label: 'Calories',
+        subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
+      },
+      protein: {
+        value: `${todayPlan.total_protein}g`,
+        percentage: pct(todayPlan.total_protein, proTarget),
+        label: 'Protein',
+        subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
+      },
+      carbs: {
+        value: `${todayPlan.total_carbs}g`,
+        percentage: pct(todayPlan.total_carbs, carbTarget),
+        label: 'Carbs',
+        subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
+      },
+      fats: {
+        value: `${todayPlan.total_fat}g`,
+        percentage: pct(todayPlan.total_fat, fatTarget),
+        label: 'Fat',
+        subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
+      },
+    };
+  }, [todayPlan, targets]);
+
+  // Determine greeting based on time of day
+  const greeting =
+    currentHour < 12 ? 'Good Morning' : currentHour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Good Morning, {userName}</Text>
+          <Text style={styles.headerTitle}>
+            {greeting}, {userName}
+          </Text>
           <Text style={styles.headerSubtitle}>
             Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
           </Text>
@@ -75,19 +180,26 @@ export default function DashboardPage() {
           <View style={styles.scoreHeader}>
             <View>
               <Text style={styles.scoreLabel}>Health Score</Text>
-              <Text style={styles.scoreValue}>87</Text>
+              <Text style={styles.scoreValue}>{healthScore.overall}</Text>
             </View>
-            <View style={styles.trendBadge}>
-              <TrendingUp size={16} color="#FFFFFF" />
-              <Text style={styles.trendText}>+5</Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>
+                {healthScore.overall >= 90
+                  ? 'Excellent'
+                  : healthScore.overall >= 70
+                    ? 'Good'
+                    : healthScore.overall >= 50
+                      ? 'Fair'
+                      : 'Needs Work'}
+              </Text>
             </View>
           </View>
 
           <View style={styles.scoreDetails}>
             {[
-              { label: 'Nutrition', value: 92 },
-              { label: 'Exercise', value: 85 },
-              { label: 'Sleep', value: 84 },
+              { label: 'Nutrition', value: healthScore.nutrition.score },
+              { label: 'Exercise', value: healthScore.exercise.score },
+              { label: 'Sleep', value: healthScore.sleep.score },
             ].map((item, i) => (
               <View key={i} style={styles.scoreItem}>
                 <View style={styles.progressBarBg}>
@@ -112,62 +224,48 @@ export default function DashboardPage() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.listContainer}>
-            {upcomingItems.map((item, i) => (
-              <TouchableOpacity key={i} style={[styles.listItem, i === 0 && styles.activeListItem]}>
-                <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                  <item.icon size={24} color={item.color} />
-                </View>
-                <View style={styles.itemContent}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemSubtitle}>{item.subtitle}</Text>
-                </View>
-                <View style={styles.timeBox}>
-                  <View style={styles.timeBadge}>
-                    <Text style={styles.timeText}>{item.time}</Text>
+          {upcomingItems.length > 0 ? (
+            <View style={styles.listContainer}>
+              {upcomingItems.map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.listItem, i === 0 && styles.activeListItem]}
+                >
+                  <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
+                    <item.icon size={24} color={item.color} />
                   </View>
-                  {i === 0 && <Text style={styles.nowText}>• Now</Text>}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
+                  <View style={styles.itemContent}>
+                    <Text style={styles.itemTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.itemSubtitle} numberOfLines={1}>
+                      {item.subtitle}
+                    </Text>
+                  </View>
+                  <View style={styles.timeBox}>
+                    <View style={styles.timeBadge}>
+                      <Text style={styles.timeText}>{item.time}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyUpcoming}>
+              <Text style={styles.emptyText}>
+                No meals planned yet. Head to the Schedule tab to plan your week!
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Macros Progress */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/profile')}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>View All</Text>
-              <ChevronRight size={24} color={Colors.light.primary} />
-            </TouchableOpacity>
           </View>
           <View style={styles.card}>
             <MacroNutrients data={macroData} />
-          </View>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-          </View>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={styles.actionCard}
-              onPress={() => router.push('/(tabs)/schedule')}
-            >
-              <Calendar size={24} color={Colors.light.primary} />
-              <Text style={styles.actionText}>Plan Week</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.actionCard}>
-              <Plus size={24} color={Colors.light.primary} />
-              <Text style={styles.actionText}>Log Activity</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -220,16 +318,13 @@ const styles = StyleSheet.create({
     color: Colors.light.surface,
     lineHeight: 48,
   },
-  trendBadge: {
+  statusBadge: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
   },
-  trendText: {
+  statusText: {
     fontSize: 13,
     color: Colors.light.surface,
     fontWeight: '600',
@@ -285,10 +380,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     ...Shadows.card,
   },
-  macrosContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
   listContainer: {
     gap: 12,
   },
@@ -340,27 +431,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
   },
-  nowText: {
-    display: 'none', // Hide for now
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.light.primary,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionCard: {
-    flex: 1,
+  emptyUpcoming: {
     backgroundColor: Colors.light.surface,
     borderRadius: Layout.cardRadius,
-    padding: 20,
-    gap: 8,
+    padding: 24,
+    alignItems: 'center',
     ...Shadows.card,
   },
-  actionText: {
+  emptyText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
   },
 });

@@ -63,3 +63,9 @@ class User(Base):
     user_exclude_cuisines: Mapped[list["UserExcludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "UserExcludeCuisine", back_populates="user"
     )
+    user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "UserBusyTime", back_populates="user"
+    )
+    saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "SavedMealPlan", back_populates="user"
+    )

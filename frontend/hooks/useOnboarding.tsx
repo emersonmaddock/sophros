@@ -13,6 +13,9 @@ export interface OnboardingData {
   showImperial: boolean;
   pregnancyStatus?: PregnancyStatus;
   activityLevel: ActivityLevel | null;
+  targetWeight: string; // kg (stored in metric regardless of display)
+  wakeUpTime: string; // HH:MM
+  sleepTime: string; // HH:MM
 }
 
 interface ValidationErrors {
@@ -35,6 +38,7 @@ interface OnboardingContextType {
   isSection2Complete: () => boolean;
   isSection3Complete: () => boolean;
   isSection4Complete: () => boolean;
+  isSection5Complete: () => boolean;
   canSubmit: () => boolean;
 }
 
@@ -53,6 +57,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     showImperial: true,
     pregnancyStatus: undefined,
     activityLevel: null,
+    targetWeight: '',
+    wakeUpTime: '07:00',
+    sleepTime: '23:00',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -166,6 +173,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     return data.activityLevel !== undefined;
   };
 
+  const isSection5Complete = () => {
+    // All fields are optional/pre-filled, so always complete
+    return true;
+  };
+
   const canSubmit = () => {
     return (
       isSection1Complete() && isSection2Complete() && isSection3Complete() && isSection4Complete()
@@ -207,6 +219,20 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         payload.pregnancy_status = data.pregnancyStatus;
       }
 
+      // Include target weight if provided
+      const targetWeightKg = parseFloat(data.targetWeight);
+      if (!isNaN(targetWeightKg) && targetWeightKg > 0) {
+        payload.target_weight = targetWeightKg;
+      }
+
+      // Include wake/sleep times
+      if (data.wakeUpTime) {
+        payload.wake_up_time = `${data.wakeUpTime}:00`;
+      }
+      if (data.sleepTime) {
+        payload.sleep_time = `${data.sleepTime}:00`;
+      }
+
       await createUser(payload, token);
 
       // Refresh user context to update isOnboarded status
@@ -234,6 +260,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     isSection2Complete,
     isSection3Complete,
     isSection4Complete,
+    isSection5Complete,
     canSubmit,
   };
 

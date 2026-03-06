@@ -53,6 +53,7 @@ export default function OnboardingLayout() {
         <Stack.Screen name="step2" />
         <Stack.Screen name="step3" />
         <Stack.Screen name="step4" />
+        <Stack.Screen name="step5" />
         <Stack.Screen name="done" options={{ headerShown: false }} />
       </Stack>
     </OnboardingProvider>

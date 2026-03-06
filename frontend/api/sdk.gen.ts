@@ -15,9 +15,16 @@ import type {
   GenerateMealPlanApiV1MealPlansGeneratePostData,
   GenerateMealPlanApiV1MealPlansGeneratePostErrors,
   GenerateMealPlanApiV1MealPlansGeneratePostResponses,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+  GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData,
+  GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
   GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponses,
+  GetWeekPlanApiV1MealPlansWeekGetData,
+  GetWeekPlanApiV1MealPlansWeekGetErrors,
+  GetWeekPlanApiV1MealPlansWeekGetResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
@@ -27,6 +34,9 @@ import type {
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
   RootGetData,
   RootGetResponses,
+  SaveMealPlanApiV1MealPlansSavePostData,
+  SaveMealPlanApiV1MealPlansSavePostErrors,
+  SaveMealPlanApiV1MealPlansSavePostResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
@@ -237,6 +247,87 @@ export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends 
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/generate',
+    ...options,
+  });
+
+/**
+ * Generate Week Plan
+ *
+ * Generate a complete weekly meal plan for the current user.
+ *
+ * Runs all 7 days in parallel via asyncio.gather.
+ * Returns a WeeklyMealPlan with recipes for every slot of every day.
+ */
+export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/generate-week',
+    ...options,
+  });
+
+/**
+ * Save Meal Plan
+ *
+ * Upsert a confirmed weekly meal plan. week_start_date must be a Monday.
+ */
+export const saveMealPlanApiV1MealPlansSavePost = <ThrowOnError extends boolean = false>(
+  options: Options<SaveMealPlanApiV1MealPlansSavePostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    SaveMealPlanApiV1MealPlansSavePostResponses,
+    SaveMealPlanApiV1MealPlansSavePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/save',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get Week Plan
+ *
+ * Get a saved meal plan for a specific week, or null if none exists.
+ */
+export const getWeekPlanApiV1MealPlansWeekGet = <ThrowOnError extends boolean = false>(
+  options: Options<GetWeekPlanApiV1MealPlansWeekGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetWeekPlanApiV1MealPlansWeekGetResponses,
+    GetWeekPlanApiV1MealPlansWeekGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/week',
+    ...options,
+  });
+
+/**
+ * Get Planned Weeks
+ *
+ * List all week_start_dates the user has planned.
+ */
+export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extends boolean = false>(
+  options?: Options<GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/planned-weeks',
     ...options,
   });
 
