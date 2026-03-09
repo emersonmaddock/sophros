@@ -1,6 +1,7 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth } from '@clerk/clerk-expo';
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import {
   Calendar,
@@ -30,6 +31,10 @@ interface MenuItem {
   value?: string;
   onPress?: () => void;
 }
+
+const appVersion = Constants.expoConfig?.version ?? 'unknown';
+const gitHash = (Constants.expoConfig?.extra as { gitHash?: string } | undefined)?.gitHash;
+const versionDisplay = gitHash ? `v${appVersion} (${gitHash})` : `v${appVersion}`;
 
 export default function ProfilePage() {
   const { signOut } = useAuth();
@@ -188,6 +193,8 @@ export default function ProfilePage() {
             <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={styles.versionText}>{versionDisplay}</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -354,5 +361,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.error,
+  },
+  versionText: {
+    fontSize: 12,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
   },
 });
