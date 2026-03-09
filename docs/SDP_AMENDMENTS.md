@@ -1,5 +1,7 @@
 # SDP & Design Document Amendments
 
+LAST UPDATED: 03/09/2026 by Eduard Tanase
+
 This document formally records approved amendments to the Software Development Plan (`SDP.md`) and Design Document (`DesignDocument.md`). Each amendment describes what changed, why, and any impact on requirements or design scores.
 
 ---
@@ -11,6 +13,7 @@ This document formally records approved amendments to the Software Development P
 **Original:** Redux listed as the frontend state management library.
 
 **Amendment:** Redux is not used. State management is split between:
+
 - **TanStack React Query** for all server state (user profile, meal plans, schedules, nutrient targets). Provides caching, background refetching, and mutation lifecycle management out of the box.
 - **React Context** for lightweight local app state (current user object, onboarding flow progress).
 
@@ -55,6 +58,7 @@ This document formally records approved amendments to the Software Development P
 **Original:** Design document selected NA3 (Genetic Mixed Model): a neural network constrains the recipe search space, a linear regression scores meal plans, and a genetic algorithm iteratively improves candidate sets.
 
 **Amendment:** The nutrition engine uses a deterministic DRI-based linear allocation approach:
+
 1. **NutrientCalculator**: Computes daily calorie and macro targets using Mifflin-St Jeor BMR + TDEE multiplier + goal-based calorie offset.
 2. **MealAllocator**: Distributes daily targets across breakfast (30%), lunch (35%), and dinner (35%) slots.
 3. **SpoonacularClient**: Fetches recipes matching the per-slot macro targets using Spoonacular's built-in filtering.
@@ -72,6 +76,7 @@ This document formally records approved amendments to the Software Development P
 **Original:** FR-11 requires the system to "retrieve nutritional data for ingredients and meals using the USDA FoodData Central API."
 
 **Amendment:** USDA FoodData Central is not called directly. Nutritional data is sourced as follows:
+
 - **DRI/BMR calculations**: Implemented internally in `nutrient_calculator.py` using published USDA Dietary Reference Intake formulas (Mifflin-St Jeor, AMDR percentages). No API call is needed as these are fixed mathematical formulas, not data lookups.
 - **Recipe and ingredient nutrition**: Retrieved from the **Spoonacular API**, which maintains a nutritional database sourced from USDA and other verified providers.
 
@@ -97,11 +102,11 @@ This document formally records approved amendments to the Software Development P
 
 ## Summary Table
 
-| # | Area | Original | Amended | SDP Impact |
-|---|------|----------|---------|------------|
-| 1 | Frontend state | Redux | TanStack React Query + React Context | None |
-| 2 | Backend hosting | AWS Lambda / API Gateway | Standard FastAPI / Uvicorn | NFR-2 provider-dependent |
-| 3 | Activity levels | 4-level USDA scale | 5-level Mifflin-St Jeor scale | FR-1 unchanged |
-| 4 | Nutrition algorithm | NA3 Genetic Mixed Model | DRI linear allocator + Spoonacular filtering | FR-7 criterion unchanged |
-| 5 | USDA API | Direct FoodData Central calls | Internal formulas + Spoonacular | FR-11 criterion unchanged |
-| 6 | Recipe API | Generic "recipe database API" | Spoonacular | FR-6 criterion unchanged |
+| #   | Area                | Original                      | Amended                                      | SDP Impact                |
+| --- | ------------------- | ----------------------------- | -------------------------------------------- | ------------------------- |
+| 1   | Frontend state      | Redux                         | TanStack React Query + React Context         | None                      |
+| 2   | Backend hosting     | AWS Lambda / API Gateway      | Standard FastAPI / Uvicorn                   | NFR-2 provider-dependent  |
+| 3   | Activity levels     | 4-level USDA scale            | 5-level Mifflin-St Jeor scale                | FR-1 unchanged            |
+| 4   | Nutrition algorithm | NA3 Genetic Mixed Model       | DRI linear allocator + Spoonacular filtering | FR-7 criterion unchanged  |
+| 5   | USDA API            | Direct FoodData Central calls | Internal formulas + Spoonacular              | FR-11 criterion unchanged |
+| 6   | Recipe API          | Generic "recipe database API" | Spoonacular                                  | FR-6 criterion unchanged  |
