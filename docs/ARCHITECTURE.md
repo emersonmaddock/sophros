@@ -12,17 +12,14 @@ Sophros is a health planning mobile application that collects lifestyle data (nu
 
 ```mermaid
 graph TD
-    subgraph Client["Mobile Client — React Native + Expo"]
+    subgraph Client["Mobile&nbsp;Client&nbsp;—&nbsp;React&nbsp;Native&nbsp;+&nbsp;Expo"]
         direction LR
-        Auth["Auth<br/>(Clerk)"]
-        Tabs["Tabs<br/>(4 pages)"]
-        Onboarding["Onboarding<br/>(5 steps)"]
-        MealPlan["Meal Planning<br/>Screen"]
+        Auth["Auth<br/>(Clerk)"] ~~~ Tabs["Tabs<br/>(4 pages)"] ~~~ Onboarding["Onboarding<br/>(5 steps)"] ~~~ MealPlan["Meal Planning<br/>Screen"]
     end
 
     Client -- "HTTPS / REST" --> Backend
 
-    subgraph Backend["FastAPI Backend — Python 3.11"]
+    subgraph Backend["FastAPI&nbsp;Backend&nbsp;—&nbsp;Python&nbsp;3.11"]
         API["API Layer<br/>/users · /schedules · /meal-plans"]
         API --> Services["Service Layer<br/>NutrientCalculator · MealAllocator<br/>MealPlanGenerator · ExerciseService"]
     end
@@ -30,7 +27,7 @@ graph TD
     Backend --> DB
     Backend --> External
 
-    subgraph DB["PostgreSQL — Neon / asyncpg"]
+    subgraph DB["PostgreSQL&nbsp;—&nbsp;Neon&nbsp;/&nbsp;asyncpg"]
         Tables["Users · Schedules · MealPlans · BusyTimes · Dietary"]
     end
 
