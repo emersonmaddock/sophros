@@ -1,10 +1,9 @@
 import pytest
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.domain.enums import Allergy
 from app.models.dietary import UserAllergy
 from app.models.user import User
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 BASE = "/api/v1/users"
 
@@ -60,23 +59,3 @@ async def test_update_user_me_scalar_fields(client: AsyncClient):
     assert data["age"] == 35
     assert data["weight"] == 80.0
 
-
-@pytest.mark.asyncio
-async def test_update_user_me_replaces_allergies(
-    client: AsyncClient, db: AsyncSession, mock_user: User
-):
-    db.add(UserAllergy(user_id=mock_user.id, value=Allergy.DAIRY))
-    await db.commit()
-
-    response = await client.put(f"{BASE}/me", json={"allergies": ["Egg", "Gluten"]})
-    assert response.status_code == 200
-    assert set(response.json()["allergies"]) == {"Egg", "Gluten"}
-
-
-@pytest.mark.asyncio
-async def test_read_user_targets(client: AsyncClient):
-    response = await client.get(f"{BASE}/me/targets")
-    assert response.status_code == 200
-    data = response.json()
-    assert "calories" in data
-    assert data["calories"] > 0

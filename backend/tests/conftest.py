@@ -3,7 +3,9 @@ from collections.abc import AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import selectinload
 
 from app.api import deps
 from app.core.config import settings
@@ -64,12 +66,21 @@ async def mock_user(db: AsyncSession) -> User:
     )
     db.add(user)
     await db.commit()
-    # Manually set relationship lists to empty to avoid lazy-load errors
-    user.user_allergies = []
-    user.user_include_cuisines = []
-    user.user_exclude_cuisines = []
-    user.user_busy_times = []
-    return user
+    # Re-fetch with all relationships eagerly loaded.
+    # SQLAlchemy async cannot lazy-load; accessing an unloaded relationship
+    # outside of greenlet_spawn raises MissingGreenlet.
+    stmt = (
+        select(User)
+        .where(User.id == MOCK_USER_ID)
+        .options(
+            selectinload(User.user_allergies),
+            selectinload(User.user_include_cuisines),
+            selectinload(User.user_exclude_cuisines),
+            selectinload(User.user_busy_times),
+        )
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
 
 
 @pytest_asyncio.fixture
