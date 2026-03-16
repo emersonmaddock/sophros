@@ -58,7 +58,7 @@
     "@typescript-eslint/parser": "^8.55.0",
     "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.39.2",
-    "eslint-config-expo": "~10.0.0",
+    "eslint-config-expo": "~55.0.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "prettier": "^3.8.1",
