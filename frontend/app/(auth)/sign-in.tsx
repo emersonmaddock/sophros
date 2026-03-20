@@ -5,7 +5,7 @@ import { useSignIn } from '@clerk/clerk-expo';
 import type { ClerkAPIResponseError, EmailCodeFactor } from '@clerk/types';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function isClerkAPIResponseError(err: unknown): err is ClerkAPIResponseError {
@@ -117,103 +117,115 @@ function SignInScreen() {
   if (pendingVerification) {
     return (
       <SafeAreaView style={localStyles.container} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={localStyles.scrollContent}>
-          <View style={styles.formContainer}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>Verify your email</Text>
-              <Text style={styles.subtitle}>
-                Enter the verification code sent to your email address
-              </Text>
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Verification code</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter the verification code"
-                  placeholderTextColor={Colors.light.textMuted}
-                  value={code}
-                  onChangeText={(text) => setCode(text)}
-                />
+        <KeyboardAvoidingView style={localStyles.keyboardAvoid} behavior="padding">
+          <ScrollView
+            style={localStyles.scrollView}
+            contentContainerStyle={localStyles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.formContainer}>
+              <View style={styles.headerContainer}>
+                <Text style={styles.title}>Verify your email</Text>
+                <Text style={styles.subtitle}>
+                  Enter the verification code sent to your email address
+                </Text>
               </View>
 
-              {error && <Text style={styles.error}>{error}</Text>}
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Verification code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter the verification code"
+                    placeholderTextColor={Colors.light.textMuted}
+                    value={code}
+                    onChangeText={(text) => setCode(text)}
+                  />
+                </View>
 
-              <TouchableOpacity style={styles.button} onPress={onVerifyPress} activeOpacity={0.8}>
-                <Text style={styles.buttonText}>Verify</Text>
-              </TouchableOpacity>
+                {error && <Text style={styles.error}>{error}</Text>}
+
+                <TouchableOpacity style={styles.button} onPress={onVerifyPress} activeOpacity={0.8}>
+                  <Text style={styles.buttonText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={localStyles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={localStyles.scrollContent}>
-        <View style={styles.formContainer}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Sign In</Text>
-            <Text style={styles.subtitle}>Enter your credentials to access your account</Text>
-          </View>
-
-          {/* OAuthButton component to handle OAuth sign-in */}
-          <View style={{ marginBottom: 24 }}>
-            <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email address"
-                placeholderTextColor={Colors.light.textMuted}
-                value={emailAddress}
-                onChangeText={(text) => setEmailAddress(text)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-              />
+      <KeyboardAvoidingView style={localStyles.keyboardAvoid} behavior="padding">
+        <ScrollView
+          style={localStyles.scrollView}
+          contentContainerStyle={localStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Sign In</Text>
+              <Text style={styles.subtitle}>Enter your credentials to access your account</Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
-                placeholderTextColor={Colors.light.textMuted}
-                value={password}
-                onChangeText={(text) => setPassword(text)}
-                secureTextEntry
-                autoComplete="password"
-              />
+            {/* OAuthButton component to handle OAuth sign-in */}
+            <View style={{ marginBottom: 24 }}>
+              <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
             </View>
 
-            {error && <Text style={styles.error}>{error}</Text>}
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={emailAddress}
+                  onChangeText={(text) => setEmailAddress(text)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                />
+              </View>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onSignInPress}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>Sign In</Text>
-            </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={password}
+                  onChangeText={(text) => setPassword(text)}
+                  secureTextEntry
+                  autoComplete="password"
+                />
+              </View>
 
-            {/* Link to sign-up screen */}
-            <TouchableOpacity
-              style={styles.textButton}
-              onPress={() => router.push('/sign-up')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.textButtonText}>Don&apos;t have an account? Sign up.</Text>
-            </TouchableOpacity>
+              {error && <Text style={styles.error}>{error}</Text>}
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onSignInPress}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>Sign In</Text>
+              </TouchableOpacity>
+
+              {/* Link to sign-up screen */}
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => router.push('/sign-up')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.textButtonText}>Don&apos;t have an account? Sign up.</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -222,6 +234,12 @@ const localStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

@@ -10,6 +10,7 @@ import React from 'react';
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
   Text,
@@ -465,19 +466,25 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <ArrowLeft size={20} color={Colors.light.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior="padding">
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.8}
+          >
+            <ArrowLeft size={20} color={Colors.light.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Basics</Text>
 
@@ -729,6 +736,7 @@ export default function EditProfileScreen() {
           )}
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -772,6 +780,12 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
     height: 40,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,

@@ -6,7 +6,6 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -109,11 +108,13 @@ export default function Step2Screen() {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
       >
         <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -246,9 +247,12 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   progressContainer: {
     marginBottom: 24,
@@ -329,10 +333,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
