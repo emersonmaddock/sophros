@@ -1,4 +1,5 @@
 import { MetricInput } from '@/components/MetricInput';
+import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { kgToLbs, lbsToKg } from '@/utils/units';
@@ -11,7 +12,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -88,27 +88,17 @@ export default function Step5Screen() {
               />
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Wake Up Time</Text>
-              <TextInput
-                style={styles.input}
-                value={data.wakeUpTime}
-                onChangeText={(value) => updateField('wakeUpTime', value)}
-                placeholder="07:00"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
+            <TimePickerInput
+              label="Wake Up Time"
+              value={data.wakeUpTime}
+              onChange={(v) => updateField('wakeUpTime', v)}
+            />
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Sleep Time</Text>
-              <TextInput
-                style={styles.input}
-                value={data.sleepTime}
-                onChangeText={(value) => updateField('sleepTime', value)}
-                placeholder="23:00"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
+            <TimePickerInput
+              label="Sleep Time"
+              value={data.sleepTime}
+              onChange={(v) => updateField('sleepTime', v)}
+            />
           </View>
         </ScrollView>
 
@@ -181,24 +171,6 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 24,
-  },
-  fieldContainer: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  input: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: Colors.light.text,
   },
   buttonContainer: {
     padding: 20,

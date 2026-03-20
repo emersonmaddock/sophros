@@ -1,5 +1,6 @@
 import { Colors } from '@/constants/theme';
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { TimePickerInput } from '@/components/TimePickerInput';
 import { X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
@@ -114,13 +115,11 @@ export function EditItemModal({
           {/* Form */}
           <ScrollView style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Time</Text>
-              <TextInput
-                style={styles.input}
+              <TimePickerInput
+                label="Time"
                 value={time}
-                onChangeText={setTime}
-                placeholder="e.g., 7:00 AM"
-                placeholderTextColor={Colors.light.textMuted}
+                onChange={setTime}
+                format="12h"
               />
             </View>
 

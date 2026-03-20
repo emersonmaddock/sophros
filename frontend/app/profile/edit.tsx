@@ -1,5 +1,7 @@
 import type { ActivityLevel, BusyTime, Day, UserUpdate } from '@/api/types.gen';
+import { DatePickerInput } from '@/components/DatePickerInput';
 import { SelectionCard } from '@/components/SelectionCard';
+import { TimePickerInput } from '@/components/TimePickerInput';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -627,42 +629,27 @@ export default function EditProfileScreen() {
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Target Date</Text>
-            <TextInput
-              style={styles.input}
-              value={form.targetDate}
-              onChangeText={(text) => updateForm('targetDate', text)}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+          <DatePickerInput
+            label="Target Date"
+            value={form.targetDate}
+            onChange={(v) => updateForm('targetDate', v)}
+          />
         </View>
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Schedule</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Wake Up Time</Text>
-            <TextInput
-              style={styles.input}
-              value={form.wakeUpTime}
-              onChangeText={(text) => updateForm('wakeUpTime', text)}
-              placeholder="07:00"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+          <TimePickerInput
+            label="Wake Up Time"
+            value={form.wakeUpTime}
+            onChange={(v) => updateForm('wakeUpTime', v)}
+          />
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Sleep Time</Text>
-            <TextInput
-              style={styles.input}
-              value={form.sleepTime}
-              onChangeText={(text) => updateForm('sleepTime', text)}
-              placeholder="23:00"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+          <TimePickerInput
+            label="Sleep Time"
+            value={form.sleepTime}
+            onChange={(v) => updateForm('sleepTime', v)}
+          />
 
           <View style={styles.busyTimesHeader}>
             <Text style={styles.inputLabel}>Busy Times</Text>
@@ -695,20 +682,18 @@ export default function EditProfileScreen() {
                   ))}
                 </View>
                 <View style={styles.busyTimeRow}>
-                  <TextInput
-                    style={[styles.input, styles.timeInput]}
+                  <TimePickerInput
+                    label="Start"
                     value={bt.start}
-                    onChangeText={(text) => updateBusyTime(index, 'start', text)}
-                    placeholder="09:00"
-                    placeholderTextColor={Colors.light.textMuted}
+                    onChange={(text) => updateBusyTime(index, 'start', text)}
+                    style={styles.imperialInput}
                   />
                   <Text style={styles.timeSeparator}>to</Text>
-                  <TextInput
-                    style={[styles.input, styles.timeInput]}
+                  <TimePickerInput
+                    label="End"
                     value={bt.end}
-                    onChangeText={(text) => updateBusyTime(index, 'end', text)}
-                    placeholder="17:00"
-                    placeholderTextColor={Colors.light.textMuted}
+                    onChange={(text) => updateBusyTime(index, 'end', text)}
+                    style={styles.imperialInput}
                   />
                   <TouchableOpacity
                     style={styles.removeButton}
@@ -907,7 +892,7 @@ const styles = StyleSheet.create({
   },
   busyTimeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 8,
   },
   timeInput: {
@@ -916,6 +901,7 @@ const styles = StyleSheet.create({
   timeSeparator: {
     color: Colors.light.textMuted,
     fontSize: 14,
+    paddingBottom: 12,
   },
   removeButton: {
     paddingHorizontal: 8,
