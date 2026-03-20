@@ -5,7 +5,15 @@ import { useSignIn } from '@clerk/clerk-expo';
 import type { ClerkAPIResponseError, EmailCodeFactor } from '@clerk/types';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function isClerkAPIResponseError(err: unknown): err is ClerkAPIResponseError {

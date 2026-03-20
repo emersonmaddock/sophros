@@ -22,10 +22,7 @@ export default function Step1Screen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior="padding"
-      >
+      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior="padding">
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}

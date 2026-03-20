@@ -115,12 +115,7 @@ export function EditItemModal({
           {/* Form */}
           <ScrollView style={styles.form}>
             <View style={styles.field}>
-              <TimePickerInput
-                label="Time"
-                value={time}
-                onChange={setTime}
-                format="12h"
-              />
+              <TimePickerInput label="Time" value={time} onChange={setTime} format="12h" />
             </View>
 
             <View style={styles.field}>

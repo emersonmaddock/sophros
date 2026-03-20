@@ -487,240 +487,240 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Basics</Text>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Basics</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Age</Text>
-            <TextInput
-              style={styles.input}
-              value={form.age}
-              onChangeText={(text) => updateForm('age', text)}
-              keyboardType="number-pad"
-              placeholder="Enter age"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Unit Preference</Text>
-            <View style={styles.segmentedControl}>
-              <TouchableOpacity
-                style={[styles.segmentButton, !form.showImperial && styles.segmentButtonActive]}
-                onPress={() => handleUnitPreferenceChange(false)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.segmentButtonText,
-                    !form.showImperial && styles.segmentButtonTextActive,
-                  ]}
-                >
-                  Metric
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.segmentButton, form.showImperial && styles.segmentButtonActive]}
-                onPress={() => handleUnitPreferenceChange(true)}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.segmentButtonText,
-                    form.showImperial && styles.segmentButtonTextActive,
-                  ]}
-                >
-                  Imperial
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Weight ({form.showImperial ? 'lbs' : 'kg'})</Text>
-            <TextInput
-              style={styles.input}
-              value={form.weight}
-              onChangeText={(text) => updateForm('weight', text)}
-              keyboardType="decimal-pad"
-              placeholder={form.showImperial ? 'Enter weight in lbs' : 'Enter weight in kg'}
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
-
-          {form.showImperial ? (
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height</Text>
-              <View style={styles.imperialHeightRow}>
-                <TextInput
-                  style={[styles.input, styles.imperialInput]}
-                  value={form.heightFeet}
-                  onChangeText={(text) => updateForm('heightFeet', text)}
-                  keyboardType="decimal-pad"
-                  placeholder="ft"
-                  placeholderTextColor={Colors.light.textMuted}
-                />
-                <TextInput
-                  style={[styles.input, styles.imperialInput]}
-                  value={form.heightInches}
-                  onChangeText={(text) => updateForm('heightInches', text)}
-                  keyboardType="decimal-pad"
-                  placeholder="in"
-                  placeholderTextColor={Colors.light.textMuted}
-                />
-              </View>
-            </View>
-          ) : (
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Height (cm)</Text>
+              <Text style={styles.inputLabel}>Age</Text>
               <TextInput
                 style={styles.input}
-                value={form.heightCm}
-                onChangeText={(text) => updateForm('heightCm', text)}
-                keyboardType="decimal-pad"
-                placeholder="Enter height in cm"
+                value={form.age}
+                onChangeText={(text) => updateForm('age', text)}
+                keyboardType="number-pad"
+                placeholder="Enter age"
                 placeholderTextColor={Colors.light.textMuted}
               />
             </View>
-          )}
-        </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Activity Level</Text>
-          <View style={styles.activityList}>
-            {ACTIVITY_LEVEL_OPTIONS.map((option) => (
-              <SelectionCard
-                key={option.value}
-                title={option.label}
-                description={option.description}
-                selected={form.activityLevel === option.value}
-                onPress={() => updateForm('activityLevel', option.value)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Goals</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              Target Weight ({form.showImperial ? 'lbs' : 'kg'})
-            </Text>
-            <TextInput
-              style={styles.input}
-              value={form.targetWeight}
-              onChangeText={(text) => updateForm('targetWeight', text)}
-              keyboardType="decimal-pad"
-              placeholder="Optional"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Target Body Fat %</Text>
-            <TextInput
-              style={styles.input}
-              value={form.targetBodyFat}
-              onChangeText={(text) => updateForm('targetBodyFat', text)}
-              keyboardType="decimal-pad"
-              placeholder="Optional"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
-
-          <DatePickerInput
-            label="Target Date"
-            value={form.targetDate}
-            onChange={(v) => updateForm('targetDate', v)}
-          />
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Schedule</Text>
-
-          <TimePickerInput
-            label="Wake Up Time"
-            value={form.wakeUpTime}
-            onChange={(v) => updateForm('wakeUpTime', v)}
-          />
-
-          <TimePickerInput
-            label="Sleep Time"
-            value={form.sleepTime}
-            onChange={(v) => updateForm('sleepTime', v)}
-          />
-
-          <View style={styles.busyTimesHeader}>
-            <Text style={styles.inputLabel}>Busy Times</Text>
-            <TouchableOpacity onPress={addBusyTime} activeOpacity={0.8}>
-              <Text style={styles.addButtonText}>+ Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          {form.busyTimes.length === 0 ? (
-            <Text style={styles.emptyStateText}>
-              No busy times set. Add recurring weekly blocks to optimize meal scheduling.
-            </Text>
-          ) : (
-            form.busyTimes.map((bt, index) => (
-              <View key={index} style={styles.busyTimeBlock}>
-                <View style={styles.dayChipsRow}>
-                  {DAYS.map((day, dayIndex) => (
-                    <TouchableOpacity
-                      key={day}
-                      style={[styles.dayChip, bt.day === day && styles.dayChipActive]}
-                      onPress={() => updateBusyTime(index, 'day', day)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
-                        style={[styles.dayChipText, bt.day === day && styles.dayChipTextActive]}
-                      >
-                        {DAY_LABELS[dayIndex]}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.busyTimeRow}>
-                  <TimePickerInput
-                    label="Start"
-                    value={bt.start}
-                    onChange={(text) => updateBusyTime(index, 'start', text)}
-                    style={styles.imperialInput}
-                  />
-                  <Text style={styles.timeSeparator}>to</Text>
-                  <TimePickerInput
-                    label="End"
-                    value={bt.end}
-                    onChange={(text) => updateBusyTime(index, 'end', text)}
-                    style={styles.imperialInput}
-                  />
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => removeBusyTime(index)}
-                    activeOpacity={0.8}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Unit Preference</Text>
+              <View style={styles.segmentedControl}>
+                <TouchableOpacity
+                  style={[styles.segmentButton, !form.showImperial && styles.segmentButtonActive]}
+                  onPress={() => handleUnitPreferenceChange(false)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.segmentButtonText,
+                      !form.showImperial && styles.segmentButtonTextActive,
+                    ]}
                   >
-                    <Text style={styles.removeButtonText}>Remove</Text>
-                  </TouchableOpacity>
+                    Metric
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.segmentButton, form.showImperial && styles.segmentButtonActive]}
+                  onPress={() => handleUnitPreferenceChange(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.segmentButtonText,
+                      form.showImperial && styles.segmentButtonTextActive,
+                    ]}
+                  >
+                    Imperial
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Weight ({form.showImperial ? 'lbs' : 'kg'})</Text>
+              <TextInput
+                style={styles.input}
+                value={form.weight}
+                onChangeText={(text) => updateForm('weight', text)}
+                keyboardType="decimal-pad"
+                placeholder={form.showImperial ? 'Enter weight in lbs' : 'Enter weight in kg'}
+                placeholderTextColor={Colors.light.textMuted}
+              />
+            </View>
+
+            {form.showImperial ? (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Height</Text>
+                <View style={styles.imperialHeightRow}>
+                  <TextInput
+                    style={[styles.input, styles.imperialInput]}
+                    value={form.heightFeet}
+                    onChangeText={(text) => updateForm('heightFeet', text)}
+                    keyboardType="decimal-pad"
+                    placeholder="ft"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
+                  <TextInput
+                    style={[styles.input, styles.imperialInput]}
+                    value={form.heightInches}
+                    onChangeText={(text) => updateForm('heightInches', text)}
+                    keyboardType="decimal-pad"
+                    placeholder="in"
+                    placeholderTextColor={Colors.light.textMuted}
+                  />
                 </View>
               </View>
-            ))
-          )}
-        </View>
+            ) : (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Height (cm)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={form.heightCm}
+                  onChangeText={(text) => updateForm('heightCm', text)}
+                  keyboardType="decimal-pad"
+                  placeholder="Enter height in cm"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+              </View>
+            )}
+          </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-          activeOpacity={0.8}
-        >
-          {saving ? (
-            <ActivityIndicator color={Colors.light.surface} size="small" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Activity Level</Text>
+            <View style={styles.activityList}>
+              {ACTIVITY_LEVEL_OPTIONS.map((option) => (
+                <SelectionCard
+                  key={option.value}
+                  title={option.label}
+                  description={option.description}
+                  selected={form.activityLevel === option.value}
+                  onPress={() => updateForm('activityLevel', option.value)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Goals</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>
+                Target Weight ({form.showImperial ? 'lbs' : 'kg'})
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={form.targetWeight}
+                onChangeText={(text) => updateForm('targetWeight', text)}
+                keyboardType="decimal-pad"
+                placeholder="Optional"
+                placeholderTextColor={Colors.light.textMuted}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Target Body Fat %</Text>
+              <TextInput
+                style={styles.input}
+                value={form.targetBodyFat}
+                onChangeText={(text) => updateForm('targetBodyFat', text)}
+                keyboardType="decimal-pad"
+                placeholder="Optional"
+                placeholderTextColor={Colors.light.textMuted}
+              />
+            </View>
+
+            <DatePickerInput
+              label="Target Date"
+              value={form.targetDate}
+              onChange={(v) => updateForm('targetDate', v)}
+            />
+          </View>
+
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Schedule</Text>
+
+            <TimePickerInput
+              label="Wake Up Time"
+              value={form.wakeUpTime}
+              onChange={(v) => updateForm('wakeUpTime', v)}
+            />
+
+            <TimePickerInput
+              label="Sleep Time"
+              value={form.sleepTime}
+              onChange={(v) => updateForm('sleepTime', v)}
+            />
+
+            <View style={styles.busyTimesHeader}>
+              <Text style={styles.inputLabel}>Busy Times</Text>
+              <TouchableOpacity onPress={addBusyTime} activeOpacity={0.8}>
+                <Text style={styles.addButtonText}>+ Add</Text>
+              </TouchableOpacity>
+            </View>
+
+            {form.busyTimes.length === 0 ? (
+              <Text style={styles.emptyStateText}>
+                No busy times set. Add recurring weekly blocks to optimize meal scheduling.
+              </Text>
+            ) : (
+              form.busyTimes.map((bt, index) => (
+                <View key={index} style={styles.busyTimeBlock}>
+                  <View style={styles.dayChipsRow}>
+                    {DAYS.map((day, dayIndex) => (
+                      <TouchableOpacity
+                        key={day}
+                        style={[styles.dayChip, bt.day === day && styles.dayChipActive]}
+                        onPress={() => updateBusyTime(index, 'day', day)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[styles.dayChipText, bt.day === day && styles.dayChipTextActive]}
+                        >
+                          {DAY_LABELS[dayIndex]}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={styles.busyTimeRow}>
+                    <TimePickerInput
+                      label="Start"
+                      value={bt.start}
+                      onChange={(text) => updateBusyTime(index, 'start', text)}
+                      style={styles.imperialInput}
+                    />
+                    <Text style={styles.timeSeparator}>to</Text>
+                    <TimePickerInput
+                      label="End"
+                      value={bt.end}
+                      onChange={(text) => updateBusyTime(index, 'end', text)}
+                      style={styles.imperialInput}
+                    />
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => removeBusyTime(index)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.removeButtonText}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+            activeOpacity={0.8}
+          >
+            {saving ? (
+              <ActivityIndicator color={Colors.light.surface} size="small" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
