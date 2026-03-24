@@ -15,7 +15,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,7 +42,7 @@ export default function Step5Screen() {
 
   const displayTargetWeight = data.showImperial
     ? imperialTargetWeight ||
-    (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
+      (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
   // Compute live validation error whenever wake/sleep times change

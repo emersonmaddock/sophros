@@ -194,20 +194,30 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       const [wakeH, wakeM] = data.wakeUpTime.split(':').map(Number);
       const [sleepH, sleepM] = data.sleepTime.split(':').map(Number);
 
-      let sleepDurationMinutes = (wakeH * 60 + wakeM) - (sleepH * 60 + sleepM);
+      let sleepDurationMinutes = wakeH * 60 + wakeM - (sleepH * 60 + sleepM);
       if (sleepDurationMinutes <= 0) sleepDurationMinutes += 24 * 60;
 
       const sleepHours = sleepDurationMinutes / 60;
       if (sleepHours <= 5) {
-        return { success: false, error: `Your schedule only allows ${sleepHours} hours of sleep. Please schedule more than 5 hours.` };
+        return {
+          success: false,
+          error: `Your schedule only allows ${sleepHours} hours of sleep. Please schedule more than 5 hours.`,
+        };
       }
       if (sleepHours > 10) {
-        return { success: false, error: `Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours or less to leave room for meals.` };
+        return {
+          success: false,
+          error: `Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours or less to leave room for meals.`,
+        };
       }
     }
 
     if (!validate()) {
-      return { success: false, error: 'Please ensure all previous profile fields (Age, Weight, Height, etc.) are filled out correctly.' };
+      return {
+        success: false,
+        error:
+          'Please ensure all previous profile fields (Age, Weight, Height, etc.) are filled out correctly.',
+      };
     }
 
     if (!user?.id || !user?.primaryEmailAddress?.emailAddress) {
@@ -250,7 +260,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       const parseTimeString = (timeStr: string): string => {
         const cleanStr = timeStr.trim().toLowerCase();
         const match = cleanStr.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
-        if (!match) throw new Error(`Invalid time format: ${timeStr}. Please use HH:MM (e.g., 07:00 or 7:00 AM)`);
+        if (!match)
+          throw new Error(
+            `Invalid time format: ${timeStr}. Please use HH:MM (e.g., 07:00 or 7:00 AM)`
+          );
 
         let hours = parseInt(match[1], 10);
         const minutes = parseInt(match[2] || '0', 10);

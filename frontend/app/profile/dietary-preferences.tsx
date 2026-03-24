@@ -39,14 +39,6 @@ const DIET_KEY_MAP: Record<string, DietFlagKey> = {
   is_pescatarian: 'isPescatarian',
 };
 
-const DIET_API_KEY_MAP: Record<DietFlagKey, keyof UserUpdate> = {
-  isGlutenFree: 'is_gluten_free',
-  isKetogenic: 'is_ketogenic',
-  isVegetarian: 'is_vegetarian',
-  isVegan: 'is_vegan',
-  isPescatarian: 'is_pescatarian',
-};
-
 export default function DietaryPreferencesScreen() {
   const router = useRouter();
   const { backendUser, loading, updateUserProfile } = useUserProfile();
@@ -108,13 +100,6 @@ export default function DietaryPreferencesScreen() {
     setForm((prev) => (prev ? { ...prev, [key]: !prev[key] } : prev));
   };
 
-  const arraysEqual = (a: string[], b: string[]): boolean => {
-    if (a.length !== b.length) return false;
-    const sortedA = [...a].sort();
-    const sortedB = [...b].sort();
-    return sortedA.every((v, i) => v === sortedB[i]);
-  };
-
   const handleSave = async () => {
     if (!backendUser || !form) return;
 
@@ -137,7 +122,10 @@ export default function DietaryPreferencesScreen() {
         Alert.alert('Saved', 'Dietary preferences updated successfully.');
         router.back();
       } else {
-        Alert.alert('Save Failed', 'The server rejected the update. Check your backend terminal for details (look for a PUT /api/v1/users/me request).');
+        Alert.alert(
+          'Save Failed',
+          'The server rejected the update. Check your backend terminal for details (look for a PUT /api/v1/users/me request).'
+        );
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

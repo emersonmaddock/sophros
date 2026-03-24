@@ -1,2 +1,0 @@
-[PUT] /api/v1/users/me - Body: {"allergies":[],"include_cuisine":["Thai","Japanese","Greek","Italian"],"exclude_cuisine":["Indian","Korean","Mediterranean","Middle Eastern","Mexican"],"is_gluten_free":false,"is_ketogenic":false,"is_vegetarian":false,"is_vegan":false,"is_pescatarian":false}
-[PUT] /api/v1/users/me - Body: {"allergies":[],"include_cuisine":["Thai","Japanese","Greek","Italian"],"exclude_cuisine":["Indian","Korean","Mediterranean","Middle Eastern","Mexican"],"is_gluten_free":false,"is_ketogenic":false,"is_vegetarian":false,"is_vegan":false,"is_pescatarian":false}

@@ -184,9 +184,9 @@ export default function EditProfileScreen() {
     setForm((prev) =>
       prev
         ? {
-          ...prev,
-          busyTimes: [...prev.busyTimes, { day: 'Monday' as Day, start: '09:00', end: '17:00' }],
-        }
+            ...prev,
+            busyTimes: [...prev.busyTimes, { day: 'Monday' as Day, start: '09:00', end: '17:00' }],
+          }
         : prev
     );
   };
@@ -398,14 +398,18 @@ export default function EditProfileScreen() {
         const [wakeH, wakeM] = wakeUpText.split(':').map(Number);
         const [sleepH, sleepM] = sleepText.split(':').map(Number);
 
-        let sleepDurationMinutes = (wakeH * 60 + wakeM) - (sleepH * 60 + sleepM);
+        let sleepDurationMinutes = wakeH * 60 + wakeM - (sleepH * 60 + sleepM);
         if (sleepDurationMinutes <= 0) sleepDurationMinutes += 24 * 60;
 
         const sleepHours = sleepDurationMinutes / 60;
         if (sleepHours <= 5) {
-          errors.push(`Your schedule only allows ${sleepHours} hours of sleep. You need more than 5 hours.`);
+          errors.push(
+            `Your schedule only allows ${sleepHours} hours of sleep. You need more than 5 hours.`
+          );
         } else if (sleepHours > 10) {
-          errors.push(`Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours maximum.`);
+          errors.push(
+            `Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours maximum.`
+          );
         }
       }
     }
@@ -675,7 +679,9 @@ export default function EditProfileScreen() {
             />
             {validateSleepDuration(form.wakeUpTime, form.sleepTime) ? (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>⚠️ {validateSleepDuration(form.wakeUpTime, form.sleepTime)}</Text>
+                <Text style={styles.errorText}>
+                  ⚠️ {validateSleepDuration(form.wakeUpTime, form.sleepTime)}
+                </Text>
               </View>
             ) : null}
           </View>

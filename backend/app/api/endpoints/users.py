@@ -117,7 +117,7 @@ async def update_user_me(
             for bt in (user_in.busy_times or [])
         ]
 
-    # Handle dietary relationship fields (wholesale replacement via collection assignment)
+    # Handle diet relationship fields (wholesale replacement via collection assignment)
     if "allergies" in update_data:
         allergies = update_data.pop("allergies")
         current_user.user_allergies = [UserAllergy(value=a) for a in allergies]
