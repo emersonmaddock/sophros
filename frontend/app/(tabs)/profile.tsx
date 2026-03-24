@@ -47,9 +47,10 @@ export default function ProfilePage() {
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: async () => {
-          await signOut();
-          router.replace('/(auth)/sign-in');
+        onPress: () => {
+          // Let Clerk handle state change; (tabs)/_layout.tsx will redirect
+          // automatically when isSignedIn flips to false.
+          signOut();
         },
       },
     ]);

@@ -55,16 +55,16 @@ class User(Base):
         "ScheduleItem", back_populates="user"
     )
     user_allergies: Mapped[list["UserAllergy"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserAllergy", back_populates="user"
+        "UserAllergy", back_populates="user", cascade="all, delete-orphan"
     )
     user_include_cuisines: Mapped[list["UserIncludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserIncludeCuisine", back_populates="user"
+        "UserIncludeCuisine", back_populates="user", cascade="all, delete-orphan"
     )
     user_exclude_cuisines: Mapped[list["UserExcludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserExcludeCuisine", back_populates="user"
+        "UserExcludeCuisine", back_populates="user", cascade="all, delete-orphan"
     )
     user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserBusyTime", back_populates="user"
+        "UserBusyTime", back_populates="user", cascade="all, delete-orphan"
     )
     saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "SavedMealPlan", back_populates="user"

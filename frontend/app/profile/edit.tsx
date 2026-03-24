@@ -1,8 +1,10 @@
 import type { ActivityLevel, BusyTime, Day, UserUpdate } from '@/api/types.gen';
 import { SelectionCard } from '@/components/SelectionCard';
+import { TimePicker } from '@/components/TimePicker';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { validateSleepDuration } from '@/utils/sleepValidation';
 import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
@@ -182,9 +184,9 @@ export default function EditProfileScreen() {
     setForm((prev) =>
       prev
         ? {
-            ...prev,
-            busyTimes: [...prev.busyTimes, { day: 'Monday' as Day, start: '09:00', end: '17:00' }],
-          }
+          ...prev,
+          busyTimes: [...prev.busyTimes, { day: 'Monday' as Day, start: '09:00', end: '17:00' }],
+        }
         : prev
     );
   };
@@ -386,6 +388,26 @@ export default function EditProfileScreen() {
       }
     } else if (backendUser.sleep_time) {
       updates.sleep_time = null;
+    }
+
+    // Relative Wake/Sleep validation
+    if (wakeUpText && sleepText) {
+      if (wakeUpText === sleepText) {
+        errors.push('Wake up time and sleep time cannot be exactly identical.');
+      } else {
+        const [wakeH, wakeM] = wakeUpText.split(':').map(Number);
+        const [sleepH, sleepM] = sleepText.split(':').map(Number);
+
+        let sleepDurationMinutes = (wakeH * 60 + wakeM) - (sleepH * 60 + sleepM);
+        if (sleepDurationMinutes <= 0) sleepDurationMinutes += 24 * 60;
+
+        const sleepHours = sleepDurationMinutes / 60;
+        if (sleepHours <= 5) {
+          errors.push(`Your schedule only allows ${sleepHours} hours of sleep. You need more than 5 hours.`);
+        } else if (sleepHours > 10) {
+          errors.push(`Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours maximum.`);
+        }
+      }
     }
 
     // Busy times
@@ -637,24 +659,25 @@ export default function EditProfileScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Wake Up Time</Text>
-            <TextInput
-              style={styles.input}
+            <TimePicker
               value={form.wakeUpTime}
-              onChangeText={(text) => updateForm('wakeUpTime', text)}
-              placeholder="07:00"
-              placeholderTextColor={Colors.light.textMuted}
+              onChange={(text) => updateForm('wakeUpTime', text)}
+              placeholder="07:00 AM"
             />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Sleep Time</Text>
-            <TextInput
-              style={styles.input}
+            <TimePicker
               value={form.sleepTime}
-              onChangeText={(text) => updateForm('sleepTime', text)}
-              placeholder="23:00"
-              placeholderTextColor={Colors.light.textMuted}
+              onChange={(text) => updateForm('sleepTime', text)}
+              placeholder="11:00 PM"
             />
+            {validateSleepDuration(form.wakeUpTime, form.sleepTime) ? (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorText}>⚠️ {validateSleepDuration(form.wakeUpTime, form.sleepTime)}</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.busyTimesHeader}>
@@ -688,21 +711,25 @@ export default function EditProfileScreen() {
                   ))}
                 </View>
                 <View style={styles.busyTimeRow}>
-                  <TextInput
-                    style={[styles.input, styles.timeInput]}
-                    value={bt.start}
-                    onChangeText={(text) => updateBusyTime(index, 'start', text)}
-                    placeholder="09:00"
-                    placeholderTextColor={Colors.light.textMuted}
-                  />
+                  <View style={styles.timeInput}>
+                    <TimePicker
+                      value={bt.start}
+                      onChange={(text) => updateBusyTime(index, 'start', text)}
+                      placeholder="09:00 AM"
+                      validWindow={{ start: form.wakeUpTime, end: form.sleepTime }}
+                      maxTime={bt.end}
+                    />
+                  </View>
                   <Text style={styles.timeSeparator}>to</Text>
-                  <TextInput
-                    style={[styles.input, styles.timeInput]}
-                    value={bt.end}
-                    onChangeText={(text) => updateBusyTime(index, 'end', text)}
-                    placeholder="17:00"
-                    placeholderTextColor={Colors.light.textMuted}
-                  />
+                  <View style={styles.timeInput}>
+                    <TimePicker
+                      value={bt.end}
+                      onChange={(text) => updateBusyTime(index, 'end', text)}
+                      placeholder="05:00 PM"
+                      validWindow={{ start: form.wakeUpTime, end: form.sleepTime }}
+                      minTime={bt.start}
+                    />
+                  </View>
                   <TouchableOpacity
                     style={styles.removeButton}
                     onPress={() => removeBusyTime(index)}
@@ -926,5 +953,19 @@ const styles = StyleSheet.create({
     color: Colors.light.surface,
     fontSize: 16,
     fontWeight: '700',
+  },
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#DC2626',
+    lineHeight: 20,
   },
 });

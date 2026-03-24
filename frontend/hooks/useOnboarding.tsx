@@ -32,7 +32,7 @@ interface OnboardingContextType {
   errors: ValidationErrors;
   loading: boolean;
   error: string | null;
-  submit: () => Promise<boolean>;
+  submit: () => Promise<{ success: boolean; error?: string }>;
   validate: () => boolean;
   isSection1Complete: () => boolean;
   isSection2Complete: () => boolean;
@@ -185,14 +185,35 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   // Submit the onboarding data
-  const submit = async (): Promise<boolean> => {
+  const submit = async (): Promise<{ success: boolean; error?: string }> => {
+    if (data.wakeUpTime && data.sleepTime) {
+      if (data.wakeUpTime === data.sleepTime) {
+        return { success: false, error: 'Wake up and sleep time cannot be exactly identical.' };
+      }
+
+      const [wakeH, wakeM] = data.wakeUpTime.split(':').map(Number);
+      const [sleepH, sleepM] = data.sleepTime.split(':').map(Number);
+
+      let sleepDurationMinutes = (wakeH * 60 + wakeM) - (sleepH * 60 + sleepM);
+      if (sleepDurationMinutes <= 0) sleepDurationMinutes += 24 * 60;
+
+      const sleepHours = sleepDurationMinutes / 60;
+      if (sleepHours <= 5) {
+        return { success: false, error: `Your schedule only allows ${sleepHours} hours of sleep. Please schedule more than 5 hours.` };
+      }
+      if (sleepHours > 10) {
+        return { success: false, error: `Your schedule has ${sleepHours} hours of sleep. Please limit it to 10 hours or less to leave room for meals.` };
+      }
+    }
+
     if (!validate()) {
-      return false;
+      return { success: false, error: 'Please ensure all previous profile fields (Age, Weight, Height, etc.) are filled out correctly.' };
     }
 
     if (!user?.id || !user?.primaryEmailAddress?.emailAddress) {
-      setError('User information is not available. Please try signing in again.');
-      return false;
+      const msg = 'User information is not available. Please try signing in again.';
+      setError(msg);
+      return { success: false, error: msg };
     }
 
     setLoading(true);
@@ -225,12 +246,34 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         payload.target_weight = targetWeightKg;
       }
 
+      // Helper to parse time string into HH:MM:00 format
+      const parseTimeString = (timeStr: string): string => {
+        const cleanStr = timeStr.trim().toLowerCase();
+        const match = cleanStr.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/);
+        if (!match) throw new Error(`Invalid time format: ${timeStr}. Please use HH:MM (e.g., 07:00 or 7:00 AM)`);
+
+        let hours = parseInt(match[1], 10);
+        const minutes = parseInt(match[2] || '0', 10);
+        const ampm = match[3];
+
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+          throw new Error(`Invalid time values: ${timeStr}`);
+        }
+
+        if (ampm === 'pm' && hours < 12) hours += 12;
+        else if (ampm === 'am' && hours === 12) hours = 0;
+
+        const hh = hours.toString().padStart(2, '0');
+        const mm = minutes.toString().padStart(2, '0');
+        return `${hh}:${mm}:00`;
+      };
+
       // Include wake/sleep times
       if (data.wakeUpTime) {
-        payload.wake_up_time = `${data.wakeUpTime}:00`;
+        payload.wake_up_time = parseTimeString(data.wakeUpTime);
       }
       if (data.sleepTime) {
-        payload.sleep_time = `${data.sleepTime}:00`;
+        payload.sleep_time = parseTimeString(data.sleepTime);
       }
 
       await createUser(payload, token);
@@ -238,11 +281,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       // Refresh user context to update isOnboarded status
       await refreshUser();
 
-      return true;
+      return { success: true };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create user profile';
       setError(errorMessage);
-      return false;
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }

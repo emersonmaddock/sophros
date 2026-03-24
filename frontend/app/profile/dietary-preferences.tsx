@@ -53,9 +53,12 @@ export default function DietaryPreferencesScreen() {
   const [form, setForm] = React.useState<DietaryForm | null>(null);
   const [saving, setSaving] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!backendUser) return;
+  const formInitialized = React.useRef(false);
 
+  React.useEffect(() => {
+    if (!backendUser || formInitialized.current) return;
+
+    formInitialized.current = true;
     setForm({
       allergies: (backendUser.allergies as Allergy[]) ?? [],
       includeCuisine: (backendUser.include_cuisine as Cuisine[]) ?? [],
@@ -115,48 +118,30 @@ export default function DietaryPreferencesScreen() {
   const handleSave = async () => {
     if (!backendUser || !form) return;
 
-    const updates: UserUpdate = {};
-
-    const backendAllergies = (backendUser.allergies as Allergy[]) ?? [];
-    if (!arraysEqual(form.allergies, backendAllergies)) {
-      updates.allergies = form.allergies;
-    }
-
-    const backendInclude = (backendUser.include_cuisine as Cuisine[]) ?? [];
-    if (!arraysEqual(form.includeCuisine, backendInclude)) {
-      updates.include_cuisine = form.includeCuisine;
-    }
-
-    const backendExclude = (backendUser.exclude_cuisine as Cuisine[]) ?? [];
-    if (!arraysEqual(form.excludeCuisine, backendExclude)) {
-      updates.exclude_cuisine = form.excludeCuisine;
-    }
-
-    for (const option of DIET_OPTIONS) {
-      const formKey = DIET_KEY_MAP[option.key];
-      const apiKey = DIET_API_KEY_MAP[formKey];
-      const backendValue = (backendUser as Record<string, unknown>)[option.key] ?? false;
-      if (form[formKey] !== backendValue) {
-        (updates as Record<string, unknown>)[apiKey] = form[formKey];
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      router.back();
-      return;
-    }
+    // Always send full dietary state — avoid silent "no changes" bail
+    const updates: UserUpdate = {
+      allergies: form.allergies,
+      include_cuisine: form.includeCuisine,
+      exclude_cuisine: form.excludeCuisine,
+      is_gluten_free: form.isGlutenFree,
+      is_ketogenic: form.isKetogenic,
+      is_vegetarian: form.isVegetarian,
+      is_vegan: form.isVegan,
+      is_pescatarian: form.isPescatarian,
+    };
 
     setSaving(true);
     try {
       const success = await updateUserProfile(updates);
       if (success) {
-        Alert.alert('Success', 'Dietary preferences updated.');
+        Alert.alert('Saved', 'Dietary preferences updated successfully.');
         router.back();
       } else {
-        Alert.alert('Error', 'Failed to update preferences. Please try again.');
+        Alert.alert('Save Failed', 'The server rejected the update. Check your backend terminal for details (look for a PUT /api/v1/users/me request).');
       }
-    } catch {
-      Alert.alert('Error', 'An unexpected error occurred.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('Unexpected Error', msg);
     } finally {
       setSaving(false);
     }

@@ -1,6 +1,8 @@
 import { MetricInput } from '@/components/MetricInput';
+import { TimePicker } from '@/components/TimePicker';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { validateSleepDuration } from '@/utils/sleepValidation';
 import { kgToLbs, lbsToKg } from '@/utils/units';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -12,9 +14,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,13 +42,22 @@ export default function Step5Screen() {
 
   const displayTargetWeight = data.showImperial
     ? imperialTargetWeight ||
-      (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
+    (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
+  // Compute live validation error whenever wake/sleep times change
+  const sleepError = validateSleepDuration(data.wakeUpTime, data.sleepTime);
+
   const handleSubmit = async () => {
-    const success = await submit();
-    if (success) {
+    if (sleepError) {
+      Alert.alert('Invalid Schedule', sleepError);
+      return;
+    }
+    const response = await submit();
+    if (response.success) {
       router.replace('/onboarding/done');
+    } else if (response.error) {
+      Alert.alert('Error', response.error);
     } else if (apiError) {
       Alert.alert('Error', apiError);
     }
@@ -71,7 +81,7 @@ export default function Step5Screen() {
           </View>
 
           <View style={styles.header}>
-            <Text style={styles.title}>Goals & Schedule</Text>
+            <Text style={styles.title}>Goals &amp; Schedule</Text>
             <Text style={styles.subtitle}>Help us optimize your exercise and meal timing</Text>
           </View>
 
@@ -89,33 +99,34 @@ export default function Step5Screen() {
 
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Wake Up Time</Text>
-              <TextInput
-                style={styles.input}
+              <TimePicker
                 value={data.wakeUpTime}
-                onChangeText={(value) => updateField('wakeUpTime', value)}
-                placeholder="07:00"
-                placeholderTextColor={Colors.light.textMuted}
+                onChange={(value) => updateField('wakeUpTime', value)}
+                placeholder="07:00 AM"
               />
             </View>
 
             <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Sleep Time</Text>
-              <TextInput
-                style={styles.input}
+              <TimePicker
                 value={data.sleepTime}
-                onChangeText={(value) => updateField('sleepTime', value)}
-                placeholder="23:00"
-                placeholderTextColor={Colors.light.textMuted}
+                onChange={(value) => updateField('sleepTime', value)}
+                placeholder="11:00 PM"
               />
+              {sleepError ? (
+                <View style={styles.errorBanner}>
+                  <Text style={styles.errorText}>⚠️ {sleepError}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </ScrollView>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[styles.submitButton, (loading || !!sleepError) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={loading || !!sleepError}
             activeOpacity={0.8}
           >
             {loading ? (
@@ -186,15 +197,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
   },
-  input: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: Colors.light.text,
+    borderColor: '#FCA5A5',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#DC2626',
+    lineHeight: 20,
   },
   buttonContainer: {
     position: 'absolute',

@@ -26,9 +26,10 @@ app = FastAPI(
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Relaxed for local dev debugging
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

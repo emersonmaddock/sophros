@@ -91,13 +91,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const updateUserProfile = useCallback(
     async (updates: UserUpdate): Promise<boolean> => {
-      try {
-        await updateMutation.mutateAsync(updates);
-        return true;
-      } catch (err) {
-        console.error('[UserContext] Error updating user:', err);
-        return false;
-      }
+      await updateMutation.mutateAsync(updates);
+      return true;
     },
     [updateMutation]
   );
