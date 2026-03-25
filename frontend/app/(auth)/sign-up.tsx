@@ -5,7 +5,15 @@ import { useSignUp } from '@clerk/clerk-expo';
 import type { ClerkAPIResponseError } from '@clerk/types';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function SignUpScreen() {
@@ -99,40 +107,46 @@ function SignUpScreen() {
   if (pendingVerification) {
     return (
       <SafeAreaView style={localStyles.container} edges={['top', 'bottom']}>
-        <ScrollView contentContainerStyle={localStyles.scrollContent}>
-          <View style={styles.formContainer}>
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>Verify your email</Text>
-              <Text style={styles.subtitle}>
-                Enter the verification code sent to your email address
-              </Text>
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Verification code</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter the verification code"
-                  placeholderTextColor={Colors.light.textMuted}
-                  value={code}
-                  onChangeText={(text) => setCode(text)}
-                />
+        <KeyboardAvoidingView style={localStyles.keyboardAvoid} behavior="padding">
+          <ScrollView
+            style={localStyles.scrollView}
+            contentContainerStyle={localStyles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.formContainer}>
+              <View style={styles.headerContainer}>
+                <Text style={styles.title}>Verify your email</Text>
+                <Text style={styles.subtitle}>
+                  Enter the verification code sent to your email address
+                </Text>
               </View>
 
-              {error && <Text style={styles.error}>{error}</Text>}
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Verification code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter the verification code"
+                    placeholderTextColor={Colors.light.textMuted}
+                    value={code}
+                    onChangeText={(text) => setCode(text)}
+                  />
+                </View>
 
-              <TouchableOpacity
-                style={styles.button}
-                onPress={onVerifyPress}
-                activeOpacity={0.8}
-                disabled={loading}
-              >
-                <Text style={styles.buttonText}>Verify</Text>
-              </TouchableOpacity>
+                {error && <Text style={styles.error}>{error}</Text>}
+
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={onVerifyPress}
+                  activeOpacity={0.8}
+                  disabled={loading}
+                >
+                  <Text style={styles.buttonText}>Verify</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -140,89 +154,95 @@ function SignUpScreen() {
   // Sign up screen
   return (
     <SafeAreaView style={localStyles.container} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={localStyles.scrollContent}>
-        <View style={styles.formContainer}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Sign Up</Text>
-            <Text style={styles.subtitle}>Create your account to get started</Text>
+      <KeyboardAvoidingView style={localStyles.keyboardAvoid} behavior="padding">
+        <ScrollView
+          style={localStyles.scrollView}
+          contentContainerStyle={localStyles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Sign Up</Text>
+              <Text style={styles.subtitle}>Create your account to get started</Text>
+            </View>
+
+            {/* OAuthButton component can also be used to create accounts */}
+            <View style={{ marginBottom: 24 }}>
+              <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
+            </View>
+
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>First name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your first name"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={firstName}
+                  onChangeText={(text) => setFirstName(text)}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Last name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your last name"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={lastName}
+                  onChangeText={(text) => setLastName(text)}
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={emailAddress}
+                  onChangeText={(text) => setEmailAddress(text)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor={Colors.light.textMuted}
+                  value={password}
+                  onChangeText={(text) => setPassword(text)}
+                  secureTextEntry
+                />
+              </View>
+
+              {error && <Text style={styles.error}>{error}</Text>}
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onSignUpPress}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                <Text style={styles.buttonText}>Sign Up</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => router.push('/sign-in')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.textButtonText}>Already have an account? Sign in.</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* OAuthButton component can also be used to create accounts */}
-          <View style={{ marginBottom: 24 }}>
-            <OAuthButton strategy="oauth_google">Sign in with Google</OAuthButton>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>First name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your first name"
-                placeholderTextColor={Colors.light.textMuted}
-                value={firstName}
-                onChangeText={(text) => setFirstName(text)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Last name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your last name"
-                placeholderTextColor={Colors.light.textMuted}
-                value={lastName}
-                onChangeText={(text) => setLastName(text)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email address</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your email address"
-                placeholderTextColor={Colors.light.textMuted}
-                value={emailAddress}
-                onChangeText={(text) => setEmailAddress(text)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Create a password"
-                placeholderTextColor={Colors.light.textMuted}
-                value={password}
-                onChangeText={(text) => setPassword(text)}
-                secureTextEntry
-              />
-            </View>
-
-            {error && <Text style={styles.error}>{error}</Text>}
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={onSignUpPress}
-              activeOpacity={0.8}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.textButton}
-              onPress={() => router.push('/sign-in')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.textButtonText}>Already have an account? Sign in.</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -231,6 +251,12 @@ const localStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

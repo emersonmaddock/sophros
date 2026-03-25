@@ -1,4 +1,5 @@
 import { MetricInput } from '@/components/MetricInput';
+import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { kgToLbs, lbsToKg } from '@/utils/units';
@@ -8,11 +9,9 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -55,13 +54,12 @@ export default function Step5Screen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior="padding">
         <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
@@ -87,27 +85,17 @@ export default function Step5Screen() {
               />
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Wake Up Time</Text>
-              <TextInput
-                style={styles.input}
-                value={data.wakeUpTime}
-                onChangeText={(value) => updateField('wakeUpTime', value)}
-                placeholder="07:00"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
+            <TimePickerInput
+              label="Wake Up Time"
+              value={data.wakeUpTime}
+              onChange={(v) => updateField('wakeUpTime', v)}
+            />
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Sleep Time</Text>
-              <TextInput
-                style={styles.input}
-                value={data.sleepTime}
-                onChangeText={(value) => updateField('sleepTime', value)}
-                placeholder="23:00"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
+            <TimePickerInput
+              label="Sleep Time"
+              value={data.sleepTime}
+              onChange={(v) => updateField('sleepTime', v)}
+            />
           </View>
         </ScrollView>
 
@@ -138,9 +126,12 @@ const styles = StyleSheet.create({
   keyboardAvoid: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   progressContainer: {
     marginBottom: 24,
@@ -178,29 +169,7 @@ const styles = StyleSheet.create({
   content: {
     gap: 24,
   },
-  fieldContainer: {
-    gap: 8,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  input: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: Colors.light.text,
-  },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
