@@ -70,6 +70,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:
@@ -107,7 +108,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
-        run: pnpm test --ci
+        run: pnpm test --ci --forceExit
 
   build-android:
     name: Build Android

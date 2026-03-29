@@ -5,7 +5,7 @@ import DashboardPage from '@/app/(tabs)/index';
 
 // Override the global Clerk mock to make useUser a jest.fn() for per-test control
 jest.mock('@clerk/clerk-expo', () => ({
-  ...jest.requireActual('@clerk/clerk-expo'),
+  useAuth: jest.fn(() => ({ isSignedIn: true, getToken: jest.fn().mockResolvedValue('mock-token') })),
   useUser: jest.fn(() => ({
     user: {
       id: 'test-user-id',
@@ -16,6 +16,10 @@ jest.mock('@clerk/clerk-expo', () => ({
     },
     isLoaded: true,
   })),
+  useSignIn: jest.fn(() => ({ signIn: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
+  useSignUp: jest.fn(() => ({ signUp: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
+  useClerk: jest.fn(() => ({ signOut: jest.fn() })),
+  ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
 
 // Mock all data-fetching hooks used by the dashboard

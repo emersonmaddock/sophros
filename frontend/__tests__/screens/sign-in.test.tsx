@@ -6,9 +6,22 @@ import SignInScreen from '@/app/(auth)/sign-in';
 
 // Override the global Clerk mock so useSignIn is a proper jest.fn() for per-test control
 jest.mock('@clerk/clerk-expo', () => ({
-  ...jest.requireActual('@clerk/clerk-expo'),
+  useAuth: jest.fn(() => ({ isSignedIn: true, getToken: jest.fn().mockResolvedValue('mock-token') })),
+  useUser: jest.fn(() => ({
+    user: {
+      id: 'test-user-id',
+      firstName: 'Test',
+      lastName: 'User',
+      primaryEmailAddress: { emailAddress: 'test@example.com' },
+      emailAddresses: [{ emailAddress: 'test@example.com' }],
+    },
+    isLoaded: true,
+  })),
   useSignIn: jest.fn(),
+  useSignUp: jest.fn(() => ({ signUp: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
   useSSO: jest.fn(() => ({ startSSOFlow: jest.fn() })),
+  useClerk: jest.fn(() => ({ signOut: jest.fn() })),
+  ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
 
 // Mock native modules used by this screen's dependency tree
