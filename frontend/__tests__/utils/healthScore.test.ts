@@ -107,34 +107,54 @@ describe('calculateHealthScore – nutrition score', () => {
 
 describe('calculateHealthScore – sleep score', () => {
   it('returns 100 for 8 hours sleep (23:00 to 07:00)', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '23:00',
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '23:00',
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(100);
   });
 
   it('returns 75 for 6 hours sleep (01:00 to 07:00)', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '01:00',
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '01:00',
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(75);
   });
 
   it('returns 70 when sleep_time is null', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: null,
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: null,
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(70);
   });
 
   it('returns 70 when wake_up_time is null', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '23:00',
-      wake_up_time: null,
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '23:00',
+        wake_up_time: null,
+      },
+      false
+    );
     expect(result.sleep.score).toBe(70);
   });
 
@@ -144,26 +164,41 @@ describe('calculateHealthScore – sleep score', () => {
   });
 
   it('returns 100 for exactly 7 hours (00:00 to 07:00)', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '00:00',
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '00:00',
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(100);
   });
 
   it('returns 100 for exactly 9 hours (22:00 to 07:00)', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '22:00',
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '22:00',
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(100);
   });
 
   it('returns 50 for less than 6 hours sleep (03:00 to 07:00 = 4h)', () => {
-    const result = calculateHealthScore(undefined, undefined, {
-      sleep_time: '03:00',
-      wake_up_time: '07:00',
-    }, false);
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      {
+        sleep_time: '03:00',
+        wake_up_time: '07:00',
+      },
+      false
+    );
     expect(result.sleep.score).toBe(50);
   });
 });
@@ -222,9 +257,18 @@ describe('calculateHealthScore – exercise score', () => {
 describe('calculateHealthScore – status labels', () => {
   it('returns "Excellent" for score >= 90', () => {
     // Perfect everything → overall 100
-    const plan = makeDailyPlan(2000, 150, 250, 65, { category: 'Cardio', duration_minutes: 30, calories_burned: 300 });
+    const plan = makeDailyPlan(2000, 150, 250, 65, {
+      category: 'Cardio',
+      duration_minutes: 30,
+      calories_burned: 300,
+    });
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, { sleep_time: '23:00', wake_up_time: '07:00' }, true);
+    const result = calculateHealthScore(
+      plan,
+      targets,
+      { sleep_time: '23:00', wake_up_time: '07:00' },
+      true
+    );
     expect(result.overall).toBe(100);
     expect(result.nutrition.status).toBe('Excellent');
     expect(result.exercise.status).toBe('Excellent');
@@ -235,7 +279,12 @@ describe('calculateHealthScore – status labels', () => {
     // nutrition=100, exercise=0 (hasPlan=false), sleep=100 → overall = 40+0+30 = 70
     const plan = makeDailyPlan(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, { sleep_time: '23:00', wake_up_time: '07:00' }, false);
+    const result = calculateHealthScore(
+      plan,
+      targets,
+      { sleep_time: '23:00', wake_up_time: '07:00' },
+      false
+    );
     expect(result.overall).toBe(70);
     expect(result.nutrition.status).toBe('Excellent');
     expect(result.exercise.status).toBe('Needs Work');
@@ -247,12 +296,17 @@ describe('calculateHealthScore – status labels', () => {
     // Let's use nutrition=100, exercise=0, sleep=75 → 40 + 0 + 22.5 = 62.5 → 63
     const plan = makeDailyPlan(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, { sleep_time: '01:00', wake_up_time: '07:00' }, false);
+    const result = calculateHealthScore(
+      plan,
+      targets,
+      { sleep_time: '01:00', wake_up_time: '07:00' },
+      false
+    );
     // nutrition=100, exercise=0, sleep=75 → 40 + 0 + 22.5 = 62.5 → 63
     expect(result.overall).toBe(63);
     expect(result.nutrition.status).toBe('Excellent'); // 100
     expect(result.exercise.status).toBe('Needs Work'); // 0
-    expect(result.sleep.status).toBe('Good');           // 75
+    expect(result.sleep.status).toBe('Good'); // 75
   });
 
   it('returns "Needs Work" for score < 50', () => {
@@ -272,9 +326,18 @@ describe('calculateHealthScore – status labels', () => {
 describe('calculateHealthScore – overall weighted formula', () => {
   it('computes overall as round(nutrition*0.4 + exercise*0.3 + sleep*0.3)', () => {
     // nutrition=100, exercise=100, sleep=75 → round(40 + 30 + 22.5) = 93
-    const plan = makeDailyPlan(2000, 150, 250, 65, { category: 'Cardio', duration_minutes: 30, calories_burned: 300 });
+    const plan = makeDailyPlan(2000, 150, 250, 65, {
+      category: 'Cardio',
+      duration_minutes: 30,
+      calories_burned: 300,
+    });
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, { sleep_time: '01:00', wake_up_time: '07:00' }, true);
+    const result = calculateHealthScore(
+      plan,
+      targets,
+      { sleep_time: '01:00', wake_up_time: '07:00' },
+      true
+    );
     expect(result.overall).toBe(93);
   });
 

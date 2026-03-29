@@ -16,7 +16,14 @@ import {
 // Fixture helpers
 // ---------------------------------------------------------------------------
 
-function makeRecipe(id: string, title: string, calories = 400, protein = 30, carbs = 50, fat = 10): Recipe {
+function makeRecipe(
+  id: string,
+  title: string,
+  calories = 400,
+  protein = 30,
+  carbs = 50,
+  fat = 10
+): Recipe {
   return {
     id,
     title,
@@ -42,8 +49,14 @@ function makeSlot(
   };
 }
 
-function makeDailyPlan(slots: MealSlotTargetOutput[], exercise?: DailyMealPlanOutput['exercise']): DailyMealPlanOutput {
-  const total_calories = slots.reduce((sum, s) => sum + (s.plan?.main_recipe?.nutrients.calories ?? s.calories), 0);
+function makeDailyPlan(
+  slots: MealSlotTargetOutput[],
+  exercise?: DailyMealPlanOutput['exercise']
+): DailyMealPlanOutput {
+  const total_calories = slots.reduce(
+    (sum, s) => sum + (s.plan?.main_recipe?.nutrients.calories ?? s.calories),
+    0
+  );
   return {
     day: 'Monday',
     slots,

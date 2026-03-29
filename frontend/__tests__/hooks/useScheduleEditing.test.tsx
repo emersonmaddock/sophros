@@ -43,7 +43,7 @@ function makeSlot(
   slotName: MealSlotTargetOutput['slot_name'],
   time: string,
   calories: number,
-  recipe?: Recipe,
+  recipe?: Recipe
 ): MealSlotTargetOutput {
   return {
     slot_name: slotName,
@@ -58,7 +58,7 @@ function makeSlot(
 
 function makeDailyPlan(
   day: DailyMealPlanOutput['day'],
-  slots: MealSlotTargetOutput[],
+  slots: MealSlotTargetOutput[]
 ): DailyMealPlanOutput {
   return {
     day,
@@ -66,7 +66,7 @@ function makeDailyPlan(
     exercise: null,
     total_calories: slots.reduce(
       (sum, s) => sum + (s.plan?.main_recipe?.nutrients.calories ?? s.calories),
-      0,
+      0
     ),
     total_protein: 0,
     total_carbs: 0,
@@ -252,7 +252,7 @@ describe('useScheduleEditing', () => {
       expect.objectContaining({
         week_start_date: WEEK_START,
         plan_data: expect.any(Object),
-      }),
+      })
     );
     expect(result.current.isDirty).toBe(false);
   });

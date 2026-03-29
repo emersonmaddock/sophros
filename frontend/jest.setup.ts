@@ -14,9 +14,7 @@ jest.mock('react-native/Libraries/Utilities/Platform', () => ({
 }));
 
 // Mock react-native-reanimated
-jest.mock('react-native-reanimated', () =>
-  require('react-native-reanimated/mock')
-);
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 
 // Mock expo-router
 jest.mock('expo-router', () => ({

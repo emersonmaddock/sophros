@@ -212,7 +212,7 @@ describe('useOnboarding', () => {
         gender: 'male',
         activity_level: 'moderate',
       }),
-      'mock-token',
+      'mock-token'
     );
   });
 

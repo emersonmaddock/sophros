@@ -6,7 +6,10 @@ import SignInScreen from '@/app/(auth)/sign-in';
 
 // Override the global Clerk mock so useSignIn is a proper jest.fn() for per-test control
 jest.mock('@clerk/clerk-expo', () => ({
-  useAuth: jest.fn(() => ({ isSignedIn: true, getToken: jest.fn().mockResolvedValue('mock-token') })),
+  useAuth: jest.fn(() => ({
+    isSignedIn: true,
+    getToken: jest.fn().mockResolvedValue('mock-token'),
+  })),
   useUser: jest.fn(() => ({
     user: {
       id: 'test-user-id',
@@ -18,7 +21,11 @@ jest.mock('@clerk/clerk-expo', () => ({
     isLoaded: true,
   })),
   useSignIn: jest.fn(),
-  useSignUp: jest.fn(() => ({ signUp: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
+  useSignUp: jest.fn(() => ({
+    signUp: { create: jest.fn() },
+    isLoaded: true,
+    setActive: jest.fn(),
+  })),
   useSSO: jest.fn(() => ({ startSSOFlow: jest.fn() })),
   useClerk: jest.fn(() => ({ signOut: jest.fn() })),
   ClerkProvider: ({ children }: { children: unknown }) => children,
@@ -168,7 +175,10 @@ describe('SignInScreen', () => {
 
     renderSignIn();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter your email address'), 'test@example.com');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Enter your email address'),
+      'test@example.com'
+    );
     fireEvent.changeText(screen.getByPlaceholderText('Enter your password'), 'password123');
     pressSignInButton();
 
@@ -184,7 +194,10 @@ describe('SignInScreen', () => {
 
     renderSignIn();
 
-    fireEvent.changeText(screen.getByPlaceholderText('Enter your email address'), 'test@example.com');
+    fireEvent.changeText(
+      screen.getByPlaceholderText('Enter your email address'),
+      'test@example.com'
+    );
     fireEvent.changeText(screen.getByPlaceholderText('Enter your password'), 'password123');
     await act(async () => {
       pressSignInButton();

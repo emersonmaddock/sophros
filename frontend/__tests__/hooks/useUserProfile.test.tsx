@@ -72,7 +72,7 @@ function makeClerkUser(overrides: Record<string, unknown> = {}) {
 
 function setupMocks(
   backendUser: ReturnType<typeof makeBackendUser> | null,
-  clerkUser: ReturnType<typeof makeClerkUser> | null,
+  clerkUser: ReturnType<typeof makeClerkUser> | null
 ) {
   mockUseContextUser.mockReturnValue({
     user: backendUser as any,
@@ -126,7 +126,7 @@ describe('useUserProfile', () => {
     setupMocks(makeBackendUser({ height: 180, show_imperial: true }), makeClerkUser());
     const { result } = renderHook(() => useUserProfile());
     // 180 cm → ~70.87 inches → 5 feet 11 inches
-    expect(result.current.profile?.height).toBe("5' 11\"");
+    expect(result.current.profile?.height).toBe('5\' 11"');
   });
 
   it('formats weight in kg when show_imperial is false', () => {

@@ -5,7 +5,10 @@ import DashboardPage from '@/app/(tabs)/index';
 
 // Override the global Clerk mock to make useUser a jest.fn() for per-test control
 jest.mock('@clerk/clerk-expo', () => ({
-  useAuth: jest.fn(() => ({ isSignedIn: true, getToken: jest.fn().mockResolvedValue('mock-token') })),
+  useAuth: jest.fn(() => ({
+    isSignedIn: true,
+    getToken: jest.fn().mockResolvedValue('mock-token'),
+  })),
   useUser: jest.fn(() => ({
     user: {
       id: 'test-user-id',
@@ -16,8 +19,16 @@ jest.mock('@clerk/clerk-expo', () => ({
     },
     isLoaded: true,
   })),
-  useSignIn: jest.fn(() => ({ signIn: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
-  useSignUp: jest.fn(() => ({ signUp: { create: jest.fn() }, isLoaded: true, setActive: jest.fn() })),
+  useSignIn: jest.fn(() => ({
+    signIn: { create: jest.fn() },
+    isLoaded: true,
+    setActive: jest.fn(),
+  })),
+  useSignUp: jest.fn(() => ({
+    signUp: { create: jest.fn() },
+    isLoaded: true,
+    setActive: jest.fn(),
+  })),
   useClerk: jest.fn(() => ({ signOut: jest.fn() })),
   ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
@@ -82,11 +93,9 @@ describe('DashboardPage (Home)', () => {
     expect(screen.getByText('Health Score')).toBeTruthy();
   });
 
-  it("renders the \"No meals planned yet\" message when there is no saved plan", () => {
+  it('renders the "No meals planned yet" message when there is no saved plan', () => {
     renderWithProviders(<DashboardPage />);
-    expect(
-      screen.getByText(/No meals planned yet/i)
-    ).toBeTruthy();
+    expect(screen.getByText(/No meals planned yet/i)).toBeTruthy();
   });
 
   it("shows the user's first name in the greeting when Clerk user has firstName", async () => {
