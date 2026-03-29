@@ -8,6 +8,8 @@ const config = {
     '^@/(.*)$': '<rootDir>/$1',
   },
 
+  testPathIgnorePatterns: ['<rootDir>/__tests__/test-utils.tsx'],
+
   // Ensure lucide-react-native, @tanstack, and reanimated are transformed.
   // Extends the jest-expo default to add project-specific packages.
   transformIgnorePatterns: [
