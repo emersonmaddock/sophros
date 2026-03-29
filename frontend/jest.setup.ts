@@ -1,9 +1,16 @@
 import '@testing-library/react-native/extend-expect';
 
 // Silence React Native log warnings in tests
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+// Platform.select is called at module-init level in theme.ts and OAuthButton.tsx.
+// react-native's index.js resolves Platform as require('./Libraries/Utilities/Platform').default,
+// so the mock must export a `default` property.
+const platformMock = {
   OS: 'ios',
   select: (obj: Record<string, unknown>) => obj['ios'] ?? obj['default'],
+};
+jest.mock('react-native/Libraries/Utilities/Platform', () => ({
+  ...platformMock,
+  default: platformMock,
 }));
 
 // Mock react-native-reanimated
