@@ -3,7 +3,7 @@ import '@testing-library/react-native/extend-expect';
 // Silence React Native log warnings in tests
 jest.mock('react-native/Libraries/Utilities/Platform', () => ({
   OS: 'ios',
-  select: (obj: Record<string, unknown>) => obj.ios,
+  select: (obj: Record<string, unknown>) => obj['ios'] ?? obj['default'],
 }));
 
 // Mock react-native-reanimated
@@ -21,6 +21,8 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: 'Screen' },
   Tabs: { Screen: 'Screen' },
   router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
+  useFocusEffect: jest.fn(),
+  useSegments: () => [],
 }));
 
 // Mock Clerk
@@ -51,7 +53,7 @@ jest.mock('@clerk/clerk-expo', () => ({
     setActive: jest.fn(),
   }),
   useClerk: () => ({ signOut: jest.fn() }),
-  ClerkProvider: ({ children }: { children: React.ReactNode }) => children,
+  ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
 
 // Mock expo-secure-store

@@ -11,7 +11,7 @@ const config = {
   // Ensure lucide-react-native, @tanstack, and reanimated are transformed.
   // Extends the jest-expo default to add project-specific packages.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@tanstack/.*|react-native-reanimated)',
+    '/node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|lucide-react-native|@tanstack/.*|react-native-reanimated)',
   ],
 };
 
