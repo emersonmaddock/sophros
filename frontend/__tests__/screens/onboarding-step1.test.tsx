@@ -2,28 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { OnboardingProvider } from '@/hooks/useOnboarding';
 import Step1Screen from '@/app/onboarding/step1';
-
-// theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
-jest.mock('@/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#111827',
-      textMuted: '#6B7280',
-      background: '#F8FAFC',
-      surface: '#FFFFFF',
-      primary: '#2B9D8F',
-      primaryDark: '#1F6D63',
-      tint: '#2B9D8F',
-      secondary: '#FFB74D',
-      success: '#22C55E',
-      error: '#EF4444',
-      charts: { calories: '#FFB74D', protein: '#2B9D8F', carbs: '#8B5CF6', fats: '#EC4899' },
-    },
-  },
-  Shadows: { card: {} },
-  Layout: { cardRadius: 16 },
-  Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
-}));
+import { router } from 'expo-router';
 
 // Mocks required by the onboarding hook and screen
 jest.mock('@/contexts/UserContext', () => ({
@@ -77,25 +56,24 @@ describe('Step1Screen (Onboarding)', () => {
 
   it('Continue button is disabled when age and gender are empty', () => {
     renderStep1();
-    // Use UNSAFE_getByProps to find the TouchableOpacity that has disabled=true
-    const disabledButton = screen.UNSAFE_getByProps({ disabled: true });
-    expect(disabledButton).toBeTruthy();
-    // Confirm it's the Continue button by checking its child text
-    expect(disabledButton.findByProps({ children: 'Continue' })).toBeTruthy();
+    // When the button is disabled, pressing it should not trigger navigation
+    fireEvent.press(screen.getByText('Continue'));
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it('Continue button becomes enabled after valid age and gender are provided', () => {
     renderStep1();
 
-    // Verify it starts disabled
-    expect(screen.UNSAFE_getByProps({ disabled: true })).toBeTruthy();
+    // Verify it starts disabled: pressing does nothing
+    fireEvent.press(screen.getByText('Continue'));
+    expect(router.push).not.toHaveBeenCalled();
 
     fireEvent.changeText(screen.getByPlaceholderText('Enter your age'), '25');
     fireEvent.press(screen.getByText('Male'));
 
-    // After valid input, the disabled button should no longer exist
-    const stillDisabled = screen.UNSAFE_queryByProps({ disabled: true });
-    expect(stillDisabled).toBeNull();
+    // After valid input, pressing Continue should navigate
+    fireEvent.press(screen.getByText('Continue'));
+    expect(router.push).toHaveBeenCalledWith('/onboarding/step2');
   });
 
   it('pressing gender option selects it', () => {

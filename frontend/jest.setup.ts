@@ -78,3 +78,25 @@ jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
   ImpactFeedbackStyle: { Light: 'Light', Medium: 'Medium', Heavy: 'Heavy' },
 }));
+
+// theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
+jest.mock('@/constants/theme', () => ({
+  Colors: {
+    light: {
+      text: '#111827',
+      textMuted: '#6B7280',
+      background: '#F8FAFC',
+      surface: '#FFFFFF',
+      primary: '#2B9D8F',
+      primaryDark: '#1F6D63',
+      tint: '#2B9D8F',
+      secondary: '#FFB74D',
+      success: '#22C55E',
+      error: '#EF4444',
+      charts: { calories: '#FFB74D', protein: '#2B9D8F', carbs: '#8B5CF6', fats: '#EC4899' },
+    },
+  },
+  Shadows: { card: {} },
+  Layout: { cardRadius: 16 },
+  Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
+}));

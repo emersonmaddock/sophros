@@ -1,28 +1,21 @@
 import React from 'react';
-import { screen } from '@testing-library/react-native';
+import { screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@/__tests__/test-utils';
 import DashboardPage from '@/app/(tabs)/index';
 
-// theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
-jest.mock('@/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#111827',
-      textMuted: '#6B7280',
-      background: '#F8FAFC',
-      surface: '#FFFFFF',
-      primary: '#2B9D8F',
-      primaryDark: '#1F6D63',
-      tint: '#2B9D8F',
-      secondary: '#FFB74D',
-      success: '#22C55E',
-      error: '#EF4444',
-      charts: { calories: '#FFB74D', protein: '#2B9D8F', carbs: '#8B5CF6', fats: '#EC4899' },
+// Override the global Clerk mock to make useUser a jest.fn() for per-test control
+jest.mock('@clerk/clerk-expo', () => ({
+  ...jest.requireActual('@clerk/clerk-expo'),
+  useUser: jest.fn(() => ({
+    user: {
+      id: 'test-user-id',
+      firstName: 'Test',
+      lastName: 'User',
+      primaryEmailAddress: { emailAddress: 'test@example.com' },
+      emailAddresses: [{ emailAddress: 'test@example.com' }],
     },
-  },
-  Shadows: { card: {} },
-  Layout: { cardRadius: 16 },
-  Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
+    isLoaded: true,
+  })),
 }));
 
 // Mock all data-fetching hooks used by the dashboard
@@ -58,7 +51,7 @@ jest.mock('react-native-svg', () => {
 
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/clerk-expo';
 
 describe('DashboardPage (Home)', () => {
   beforeEach(() => {
@@ -92,11 +85,17 @@ describe('DashboardPage (Home)', () => {
     ).toBeTruthy();
   });
 
-  it("shows the user's first name in the greeting when Clerk user has firstName", () => {
-    // The global mock in jest.setup.ts returns { user: { firstName: 'Test', ... } }
-    // so the greeting should say "Test" rather than "there"
+  it("shows the user's first name in the greeting when Clerk user has firstName", async () => {
+    // Override the global Clerk mock for this test only
+    (useUser as jest.Mock).mockReturnValueOnce({
+      user: { firstName: 'Alice', lastName: 'Smith' },
+      isLoaded: true,
+    });
+
     renderWithProviders(<DashboardPage />);
-    expect(screen.getByText(/Test/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/Alice/)).toBeTruthy();
+    });
   });
 
   it('renders macro nutrient section labels', () => {

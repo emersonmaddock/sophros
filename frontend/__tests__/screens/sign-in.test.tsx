@@ -1,31 +1,8 @@
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useSignIn } from '@clerk/clerk-expo';
 import { renderWithProviders } from '@/__tests__/test-utils';
 import SignInScreen from '@/app/(auth)/sign-in';
-
-// theme.ts calls Platform.select at module-init level; mock the whole module to
-// avoid relying on the Platform mock being established before module evaluation.
-jest.mock('@/constants/theme', () => ({
-  Colors: {
-    light: {
-      text: '#111827',
-      textMuted: '#6B7280',
-      background: '#F8FAFC',
-      surface: '#FFFFFF',
-      primary: '#2B9D8F',
-      primaryDark: '#1F6D63',
-      tint: '#2B9D8F',
-      secondary: '#FFB74D',
-      success: '#22C55E',
-      error: '#EF4444',
-      charts: { calories: '#FFB74D', protein: '#2B9D8F', carbs: '#8B5CF6', fats: '#EC4899' },
-    },
-  },
-  Shadows: { card: {} },
-  Layout: { cardRadius: 16 },
-  Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
-}));
 
 // Override the global Clerk mock so useSignIn is a proper jest.fn() for per-test control
 jest.mock('@clerk/clerk-expo', () => ({
@@ -65,15 +42,20 @@ jest.mock('react-native-svg', () => {
 // Override the global Clerk mock for per-test control
 const mockSetActive = jest.fn();
 const mockSignInCreate = jest.fn();
+const mockPrepareSecondFactor = jest.fn();
 
 beforeEach(() => {
   jest.clearAllMocks();
   (useSignIn as jest.Mock).mockReturnValue({
-    signIn: { create: mockSignInCreate },
+    signIn: { create: mockSignInCreate, prepareSecondFactor: mockPrepareSecondFactor },
     isLoaded: true,
     setActive: mockSetActive,
   });
 });
+
+function renderSignIn() {
+  return renderWithProviders(<SignInScreen />);
+}
 
 // Helper: the screen has both a title "Sign In" and a button labeled "Sign In".
 // getAllByText returns them in DOM order; the last one is the button inside the form.
@@ -161,6 +143,42 @@ describe('SignInScreen', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Invalid credentials')).toBeTruthy();
+    });
+  });
+
+  it('does not call signIn.create when Clerk is not loaded', async () => {
+    (useSignIn as jest.Mock).mockReturnValue({
+      signIn: { create: mockSignInCreate, prepareSecondFactor: mockPrepareSecondFactor },
+      isLoaded: false,
+      setActive: mockSetActive,
+    });
+
+    renderSignIn();
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter your email address'), 'test@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter your password'), 'password123');
+    pressSignInButton();
+
+    expect(mockSignInCreate).not.toHaveBeenCalled();
+  });
+
+  it('shows verification screen after needs_second_factor response', async () => {
+    mockSignInCreate.mockResolvedValueOnce({
+      status: 'needs_second_factor',
+      supportedSecondFactors: [{ strategy: 'email_code', emailAddressId: 'ead_123' }],
+    });
+    mockPrepareSecondFactor.mockResolvedValueOnce({});
+
+    renderSignIn();
+
+    fireEvent.changeText(screen.getByPlaceholderText('Enter your email address'), 'test@example.com');
+    fireEvent.changeText(screen.getByPlaceholderText('Enter your password'), 'password123');
+    await act(async () => {
+      pressSignInButton();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/verify your email/i)).toBeTruthy();
     });
   });
 });
