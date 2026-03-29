@@ -79,6 +79,20 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'Light', Medium: 'Medium', Heavy: 'Heavy' },
 }));
 
+// Mock expo-web-browser — warmUpAsync/coolDownAsync spawn timers that prevent Jest from exiting
+jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
+  warmUpAsync: jest.fn().mockResolvedValue({}),
+  coolDownAsync: jest.fn().mockResolvedValue({}),
+  openAuthSessionAsync: jest.fn().mockResolvedValue({ type: 'cancel' }),
+}));
+
+// Mock expo-auth-session (used by OAuthButton)
+jest.mock('expo-auth-session', () => ({
+  useAuthRequest: jest.fn(() => [null, null, jest.fn()]),
+  makeRedirectUri: jest.fn(() => 'exp://redirect'),
+}));
+
 // theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
 jest.mock('@/constants/theme', () => ({
   Colors: {
