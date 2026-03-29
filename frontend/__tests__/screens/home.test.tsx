@@ -103,4 +103,18 @@ describe('DashboardPage (Home)', () => {
     renderWithProviders(<DashboardPage />);
     expect(screen.getByText("Today's Macros")).toBeTruthy();
   });
+
+  it('shows loading indicator when isLoading: true', () => {
+    // Mock the query to return isLoading: true
+    (useSavedWeekPlanQuery as jest.Mock).mockReturnValue({
+      data: null,
+      isLoading: true,
+      error: null,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    // Check for ActivityIndicator by testID or by looking for the loading indicator
+    expect(screen.getByTestId('home-loading-indicator')).toBeTruthy();
+  });
 });

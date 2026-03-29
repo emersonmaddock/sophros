@@ -9,7 +9,7 @@ import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const JS_DAY_TO_API_DAY: Record<number, Day> = {
@@ -43,9 +43,11 @@ export default function DashboardPage() {
     return d.toISOString().split('T')[0];
   }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
-  const { data: targets } = useUserTargetsQuery();
-  const { data: user } = useUserQuery();
+  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
+  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+
+  const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
   // Derive today's plan
   const todayPlan = useMemo(() => {
@@ -160,6 +162,12 @@ export default function DashboardPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} testID="home-loading-indicator" />
+        </View>
+      )}
+      {!isLoading && (
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
@@ -269,6 +277,7 @@ export default function DashboardPage() {
           </View>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -277,6 +286,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     gap: 24,
