@@ -227,4 +227,26 @@ describe('useOnboarding', () => {
     expect(submitResult!).toBe(false);
     expect(mockCreateUser).not.toHaveBeenCalled();
   });
+
+  it('submit() sets error when createUser throws', async () => {
+    mockCreateUser.mockRejectedValueOnce(new Error('Network error'));
+    const { result } = renderOnboarding();
+
+    // Set all required fields to valid values first
+    act(() => {
+      result.current.updateField('age', VALID_AGE);
+      result.current.updateField('gender', 'male');
+      result.current.updateField('weight', VALID_WEIGHT);
+      result.current.updateField('height', VALID_HEIGHT);
+      result.current.updateField('activityLevel', 'moderate');
+    });
+
+    let success: boolean;
+    await act(async () => {
+      success = await result.current.submit();
+    });
+
+    expect(success!).toBe(false);
+    expect(result.current.error).toBe('Network error');
+  });
 });

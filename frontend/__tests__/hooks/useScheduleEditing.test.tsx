@@ -104,9 +104,17 @@ describe('useScheduleEditing', () => {
   let mutateAsync: jest.Mock;
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mutateAsync = jest.fn().mockResolvedValue({});
     mockUseSaveMealPlanMutation.mockReturnValue({ mutateAsync } as any);
+  });
+
+  afterEach(() => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
   });
 
   it('initializes rawPlan from savedPlan.plan_data on mount', () => {
@@ -292,6 +300,11 @@ describe('useScheduleEditing', () => {
 
     await waitFor(() => {
       expect(result.current.statusText).toBe('Changes saved');
+    });
+
+    // Advance past the 2-second reset timer so it doesn't leak
+    act(() => {
+      jest.advanceTimersByTime(2000);
     });
   });
 
