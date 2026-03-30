@@ -47,7 +47,8 @@ export function useGenerateWeekPlanMutation() {
       const response = await generateWeekPlanApiV1MealPlansGenerateWeekPost();
 
       if (response.error || !response.data) {
-        throw new Error('Failed to generate weekly meal plan');
+        const detail = (response.error as any)?.detail || 'Failed to generate weekly meal plan';
+        throw new Error(detail);
       }
 
       return response.data;
@@ -72,7 +73,8 @@ export function useGenerateDayPlanMutation() {
       });
 
       if (response.error || !response.data) {
-        throw new Error(`Failed to generate meal plan for ${day}`);
+        const detail = (response.error as any)?.detail || `Failed to generate meal plan for ${day}`;
+        throw new Error(detail);
       }
 
       return { day, plan: response.data };
@@ -113,7 +115,8 @@ export function useSavedWeekPlanQuery(weekStartDate: string) {
       });
 
       if (response.error) {
-        throw new Error('Failed to fetch saved meal plan');
+        const detail = (response.error as any)?.detail || 'Failed to fetch saved meal plan';
+        throw new Error(detail);
       }
 
       return response.data ?? null;
@@ -150,7 +153,8 @@ export function useSaveMealPlanMutation() {
       const response = await saveMealPlanApiV1MealPlansSavePost({ body });
 
       if (response.error || !response.data) {
-        throw new Error('Failed to save meal plan');
+        const detail = (response.error as any)?.detail || 'Failed to save meal plan';
+        throw new Error(detail);
       }
 
       return response.data;

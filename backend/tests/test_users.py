@@ -1,9 +1,5 @@
 import pytest
-from app.domain.enums import Allergy
-from app.models.dietary import UserAllergy
-from app.models.user import User
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
 BASE = "/api/v1/users"
 

@@ -19,9 +19,15 @@ interface DatePickerInputProps {
   style?: StyleProp<ViewStyle>;
 }
 
-function parseValue(value: string): Date {
-  if (!value) return new Date();
-  const d = new Date(value + 'T00:00:00');
+function parseValue(value: string | null | undefined): Date {
+  if (!value || value.trim() === '') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+  // format YYYY-MM-DD
+  const [year, month, day] = value.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
   return isNaN(d.getTime()) ? new Date() : d;
 }
 

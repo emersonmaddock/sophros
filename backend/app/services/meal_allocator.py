@@ -57,11 +57,6 @@ class MealAllocator:
         daily_carbs = daily_targets.carbohydrates.target
         daily_fat = daily_targets.fat.target
 
-        total_distribution = sum(config.slots.values())
-        if abs(total_distribution - 1.0) > 0.01:
-            # Basic validation, though in production we might just normalize
-            pass
-
         for slot_name_str, percentage in config.slots.items():
             # Try to match string to Enum
             slot_enum = MealSlot(slot_name_str)
@@ -70,6 +65,8 @@ class MealAllocator:
             meal_time = None
             if user_schedule:
                 meal_time = cls._find_time_for_slot(slot_enum, user_schedule, day)
+
+            # If still no time, or scheduler failed, use fixed default
             if meal_time is None:
                 meal_time = cls.DEFAULT_TIMES.get(slot_enum)
 
@@ -108,6 +105,21 @@ class MealAllocator:
         window_start = _time_to_mins(window_start_t)
         window_end = _time_to_mins(window_end_t)
 
+        # Clamp window to waking hours
+        wake_mins = _time_to_mins(schedule.wake_up_time)
+        sleep_mins = _time_to_mins(schedule.sleep_time)
+
+        # Handle typical day (sleep after wake)
+        if sleep_mins > wake_mins:
+            actual_start = max(window_start, wake_mins)
+            actual_end = min(window_end, sleep_mins)
+        else:
+            # Sleep crosses midnight (e.g., wake 7 AM, sleep 1 AM)
+            # For meal planning, we assume meals are between wake and sleep
+            # within the same "active day"
+            actual_start = max(window_start, wake_mins)
+            actual_end = window_end  # window_end is typically before midnight anyway
+
         # Parse busy times for the day
         busy_intervals = []
         for busy in schedule.busy_times:
@@ -116,11 +128,14 @@ class MealAllocator:
                     (_time_to_mins(busy.start), _time_to_mins(busy.end))
                 )
 
-        # Search for a 30 min gap
-        current_time = window_start
+        # Sort busy intervals by start time for the jumping logic to work correctly
+        busy_intervals.sort(key=lambda x: x[0])
+
+        current_time = actual_start
         duration = 30
 
-        while current_time + duration <= window_end:
+        while current_time + duration <= actual_end:
+            prev_time = current_time
             # check conflict
             conflict = False
             slot_end = current_time + duration
@@ -129,12 +144,17 @@ class MealAllocator:
                 # If overlap: (StartA <= EndB) and (EndA >= StartB)
                 if current_time < b_end and slot_end > b_start:
                     conflict = True
-                    # Jump forward to end of busy slot to optimize search
                     current_time = max(current_time, b_end)
                     break
 
             if not conflict:
                 return _mins_to_time(current_time)
+
+            # Move forward - either to end of conflict or by 15 min fallback
+            # Absolute safety check: if we didn't move forward through jump,
+            # we use a manual increment
+            if current_time <= prev_time:
+                current_time += 15
 
         return None  # No slot found
 
@@ -160,16 +180,20 @@ class MealAllocator:
                     (_time_to_mins(busy.start), _time_to_mins(busy.end))
                 )
 
-        # Add meal times as busy (plus 1 hour buffer)
+        # Add meal times as busy (plus 1 hour buffer for digestion/rest)
         for m_time in meal_times:
             if m_time:
                 m_mins = _time_to_mins(m_time)
                 busy_intervals.append((m_mins - 60, m_mins + 60))
 
+        # Re-sort to include meals
+        busy_intervals.sort(key=lambda x: x[0])
+
         current_time = start_bound
         duration = recommendation.duration_minutes
 
         while current_time + duration <= end_bound:
+            prev_time = current_time
             conflict = False
             slot_end = current_time + duration
             for b_start, b_end in busy_intervals:
@@ -180,6 +204,8 @@ class MealAllocator:
 
             if not conflict:
                 return _mins_to_time(current_time)
-            current_time += 15  # Check every 15 mins
+
+            if current_time <= prev_time:
+                current_time += 15  # Check every 15 mins
 
         return None

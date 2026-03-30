@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import random
+from datetime import time
 from typing import Any
 
 from app.domain.enums import Day, MealSlot
@@ -161,9 +162,10 @@ class MealPlanService:
             activity_level=user.activity_level,
         )
 
+        user_schedule = self._get_user_schedule(user, day)
         meal_plan = MealAllocator.allocate_targets(
             daily_targets=daily_targets,
-            user_schedule=None,
+            user_schedule=user_schedule,
             day=day,
         )
 
@@ -260,22 +262,29 @@ class MealPlanService:
         constraints = self._build_dietary_constraints(user)
 
         # Use first day's slots for representative calorie targets
+        # Fallback to defaults if for some reason slots are missing
         first_plan = daily_plans[0]
-        breakfast_slot = next(
-            s for s in first_plan.slots if s.slot_name == MealSlot.BREAKFAST
+
+        # Helper to find slot with fallback
+        def _get_cal_target(slots, target_names, default_ratio):
+            found = next((s for s in slots if s.slot_name in target_names), None)
+            if found:
+                return found.calories
+            return int(user.weight * 30 * default_ratio) # Very crude fallback
+
+        breakfast_cals = _get_cal_target(
+            first_plan.slots, [MealSlot.BREAKFAST], 0.25
         )
-        main_slot = next(
-            s
-            for s in first_plan.slots
-            if s.slot_name in (MealSlot.LUNCH, MealSlot.DINNER)
+        main_cals = _get_cal_target(
+            first_plan.slots, [MealSlot.LUNCH, MealSlot.DINNER], 0.35
         )
 
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
-                MealType.BREAKFAST, breakfast_slot.calories, constraints, count=25
+                MealType.BREAKFAST, breakfast_cals, constraints, count=25
             ),
             self._fetch_recipe_pool(
-                MealType.MAIN_COURSE, main_slot.calories, constraints, count=50
+                MealType.MAIN_COURSE, main_cals, constraints, count=50
             ),
         )
 
@@ -390,13 +399,32 @@ class MealPlanService:
         """
         busy_times = []
 
-        if user.busy_times:
-            for bt in user.busy_times:
+        # Access busy_times (Schema property)
+        # Check if user is a Pydantic model or ORM model
+        is_pydantic = not hasattr(user, "__dict__") or isinstance(user, User)
+        
+        if is_pydantic:
+            # We are using the UserRead/UserBase schema
+            source_busy = getattr(user, "busy_times", [])
+            for bt in source_busy:
                 if bt.day == day:
-                    busy_times.append(bt)
+                    # Schema uses 'start', 'end'
+                    busy_times.append(
+                        BusyTime(day=day, start=bt.start, end=bt.end)
+                    )
+        elif hasattr(user, "user_busy_times"):
+            # We are using the ORM model (fallback)
+            for bt in user.user_busy_times:
+                if bt.day == day:
+                    # Model uses 'start_time', 'end_time'
+                    busy_times.append(
+                        BusyTime(day=day, start=bt.start_time, end=bt.end_time)
+                    )
         else:
             # Fallback: derive from ScheduleItem records
-            for item in user.schedules or []:
+            # Explicitly check schedules before looping
+            schedules = getattr(user, "schedules", []) or []
+            for item in schedules:
                 if item.date.strftime("%A") == day:
                     from datetime import timedelta
 
@@ -408,8 +436,8 @@ class MealPlanService:
 
         return UserSchedule(
             busy_times=busy_times,
-            wake_up_time=user.wake_up_time,
-            sleep_time=user.sleep_time,
+            wake_up_time=user.wake_up_time or time(7, 0),
+            sleep_time=user.sleep_time or time(23, 0),
         )
 
     @staticmethod

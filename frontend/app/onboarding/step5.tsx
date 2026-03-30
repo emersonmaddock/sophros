@@ -3,6 +3,7 @@ import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Shadows } from '@/constants/theme';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { kgToLbs, lbsToKg } from '@/utils/units';
+import { getSleepWarning } from '@/utils/sleep-validation';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -96,6 +97,14 @@ export default function Step5Screen() {
               value={data.sleepTime}
               onChange={(v) => updateField('sleepTime', v)}
             />
+
+            {getSleepWarning(data.wakeUpTime, data.sleepTime) && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  {getSleepWarning(data.wakeUpTime, data.sleepTime)}
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
 
@@ -192,5 +201,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.surface,
+  },
+  warningContainer: {
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+    marginTop: -8,
+  },
+  warningText: {
+    color: '#92400E',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });

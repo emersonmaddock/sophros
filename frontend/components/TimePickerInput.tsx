@@ -2,6 +2,7 @@ import { Colors } from '@/constants/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import {
+  Alert,
   Modal,
   Platform,
   StyleProp,
@@ -11,6 +12,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { timeToMins } from '@/utils/sleep-validation';
 
 interface TimePickerInputProps {
   label: string;
@@ -18,6 +20,8 @@ interface TimePickerInputProps {
   onChange: (v: string) => void;
   format?: '24h' | '12h';
   style?: StyleProp<ViewStyle>;
+  minTime?: string;
+  maxTime?: string;
 }
 
 function parseValue(value: string, format: '24h' | '12h'): Date {
@@ -72,6 +76,8 @@ export function TimePickerInput({
   onChange,
   format = '24h',
   style,
+  minTime,
+  maxTime,
 }: TimePickerInputProps) {
   const currentDate = parseValue(value, format);
   const [showPicker, setShowPicker] = useState(false);
@@ -82,9 +88,32 @@ export function TimePickerInput({
     setShowPicker(true);
   };
 
+  const minDate = React.useMemo(
+    () => (minTime ? parseValue(minTime, format) : undefined),
+    [minTime, format]
+  );
+  const maxDate = React.useMemo(
+    () => (maxTime ? parseValue(maxTime, format) : undefined),
+    [maxTime, format]
+  );
+
   const confirm = () => {
     setShowPicker(false);
-    onChange(formatOutput(tempDate, format));
+    const result = formatOutput(tempDate, format);
+
+    if (minTime || maxTime) {
+      const resultMins = timeToMins(result);
+      if (minTime && resultMins < timeToMins(minTime)) {
+        Alert.alert('Invalid Time', `Time must be after wake up (${minTime})`);
+        return;
+      }
+      if (maxTime && resultMins > timeToMins(maxTime)) {
+        Alert.alert('Invalid Time', `Time must be before sleep (${maxTime})`);
+        return;
+      }
+    }
+
+    onChange(result);
   };
 
   const cancel = () => {
@@ -118,7 +147,17 @@ export function TimePickerInput({
                 display="spinner"
                 textColor="black"
                 themeVariant="light"
-                onChange={(_, date) => setTempDate(date ?? tempDate)}
+                minimumDate={minDate}
+                maximumDate={maxDate}
+                onChange={(_, date) => {
+                  if (
+                    date &&
+                    (date.getHours() !== tempDate.getHours() ||
+                      date.getMinutes() !== tempDate.getMinutes())
+                  ) {
+                    setTempDate(date);
+                  }
+                }}
               />
             </View>
           </View>
