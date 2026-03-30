@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -109,51 +109,36 @@ async def update_user_me(
     """
     update_data = user_in.model_dump(exclude_unset=True)
 
-    # Handle busy_times (relational table, delete + re-insert pattern)
+    # Handle busy_times (relational table, collection assignment)
     if "busy_times" in update_data:
-        busy_times = update_data.pop("busy_times")
-        await db.execute(
-            delete(UserBusyTime).where(UserBusyTime.user_id == current_user.id)
-        )
-        if busy_times and user_in.busy_times:
-            for bt in user_in.busy_times:
-                db.add(
-                    UserBusyTime(
-                        user_id=current_user.id,
-                        day=bt.day,
-                        start_time=bt.start,
-                        end_time=bt.end,
-                    )
-                )
+        new_busy_times = update_data.pop("busy_times")
+        current_user.user_busy_times = [
+            UserBusyTime(
+                day=bt["day"],
+                start_time=bt["start"],
+                end_time=bt["end"],
+            )
+            for bt in (new_busy_times or [])
+        ]
 
-    # Handle dietary relationship fields (delete + re-insert pattern)
+    # Handle dietary relationship fields (collection assignment)
     if "allergies" in update_data:
-        allergies = update_data.pop("allergies")
-        await db.execute(
-            delete(UserAllergy).where(UserAllergy.user_id == current_user.id)
-        )
-        for allergy in allergies:
-            db.add(UserAllergy(user_id=current_user.id, value=allergy))
+        new_allergies = update_data.pop("allergies")
+        current_user.user_allergies = [
+            UserAllergy(value=a) for a in (new_allergies or [])
+        ]
 
     if "include_cuisine" in update_data:
-        cuisines = update_data.pop("include_cuisine")
-        await db.execute(
-            delete(UserIncludeCuisine).where(
-                UserIncludeCuisine.user_id == current_user.id
-            )
-        )
-        for cuisine in cuisines:
-            db.add(UserIncludeCuisine(user_id=current_user.id, value=cuisine))
+        new_include = update_data.pop("include_cuisine")
+        current_user.user_include_cuisines = [
+            UserIncludeCuisine(value=c) for c in (new_include or [])
+        ]
 
     if "exclude_cuisine" in update_data:
-        cuisines = update_data.pop("exclude_cuisine")
-        await db.execute(
-            delete(UserExcludeCuisine).where(
-                UserExcludeCuisine.user_id == current_user.id
-            )
-        )
-        for cuisine in cuisines:
-            db.add(UserExcludeCuisine(user_id=current_user.id, value=cuisine))
+        new_exclude = update_data.pop("exclude_cuisine")
+        current_user.user_exclude_cuisines = [
+            UserExcludeCuisine(value=c) for c in (new_exclude or [])
+        ]
 
     # Update scalar fields directly on the ORM object
     for field, value in update_data.items():

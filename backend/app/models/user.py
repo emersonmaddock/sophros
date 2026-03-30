@@ -1,6 +1,6 @@
-from datetime import time
+from datetime import date, time
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Time
+from sqlalchemy import Boolean, Date, Float, Integer, String, Time
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,7 +26,7 @@ class User(Base):
     # Goals
     target_weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
     target_body_fat: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
-    target_date: Mapped[DateTime | None] = mapped_column(DateTime, nullable=True)
+    target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Scheduling Anchors
     wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
@@ -52,20 +52,20 @@ class User(Base):
     # Use string of class name
     # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/type-annotation-strings/
     schedules: Mapped[list["ScheduleItem"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "ScheduleItem", back_populates="user"
+        "ScheduleItem", back_populates="user", cascade="all, delete-orphan"
     )
     user_allergies: Mapped[list["UserAllergy"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserAllergy", back_populates="user"
+        "UserAllergy", back_populates="user", cascade="all, delete-orphan"
     )
     user_include_cuisines: Mapped[list["UserIncludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserIncludeCuisine", back_populates="user"
+        "UserIncludeCuisine", back_populates="user", cascade="all, delete-orphan"
     )
     user_exclude_cuisines: Mapped[list["UserExcludeCuisine"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserExcludeCuisine", back_populates="user"
+        "UserExcludeCuisine", back_populates="user", cascade="all, delete-orphan"
     )
     user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "UserBusyTime", back_populates="user"
+        "UserBusyTime", back_populates="user", cascade="all, delete-orphan"
     )
     saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "SavedMealPlan", back_populates="user"
+        "SavedMealPlan", back_populates="user", cascade="all, delete-orphan"
     )

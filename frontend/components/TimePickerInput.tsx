@@ -116,6 +116,8 @@ export function TimePickerInput({
                 value={tempDate}
                 mode="time"
                 display="spinner"
+                textColor="black"
+                themeVariant="light"
                 onChange={(_, date) => setTempDate(date ?? tempDate)}
               />
             </View>

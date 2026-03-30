@@ -91,6 +91,8 @@ export function DatePickerInput({ label, value, onChange, style }: DatePickerInp
                 value={tempDate}
                 mode="date"
                 display="spinner"
+                textColor="black"
+                themeVariant="light"
                 onChange={(_, date) => setTempDate(date ?? tempDate)}
               />
             </View>
