@@ -38,9 +38,6 @@ yarn-error.*
 
 app-example
 
-# generated native folders
-/ios
-/android
-
 # generated files
 openapi.json
+coverage/

@@ -38,6 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.sophros.app',
   },
   android: {
     package: 'com.sophros.app',
