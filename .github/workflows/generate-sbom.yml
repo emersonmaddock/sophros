@@ -1,0 +1,3 @@
+name: Anchore SBOM Action
+
+uses: anchore/sbom-action@v0.24.0
