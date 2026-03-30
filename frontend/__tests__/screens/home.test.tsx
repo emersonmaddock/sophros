@@ -4,7 +4,7 @@ import { renderWithProviders } from '@/__tests__/test-utils';
 import DashboardPage from '@/app/(tabs)/index';
 
 // Override the global Clerk mock to make useUser a jest.fn() for per-test control
-jest.mock('@clerk/clerk-expo', () => ({
+jest.mock('@clerk/expo', () => ({
   useAuth: jest.fn(() => ({
     isSignedIn: true,
     getToken: jest.fn().mockResolvedValue('mock-token'),
@@ -66,7 +66,7 @@ jest.mock('react-native-svg', () => {
 
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { useUser } from '@clerk/clerk-expo';
+import { useUser } from '@clerk/expo';
 
 describe('DashboardPage (Home)', () => {
   beforeEach(() => {
