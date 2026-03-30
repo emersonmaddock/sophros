@@ -1,7 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { useUser } from '@/contexts/UserContext';
 import { OnboardingProvider } from '@/hooks/useOnboarding';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { Redirect, Stack, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
