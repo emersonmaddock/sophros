@@ -1,3 +1,10 @@
 name: Anchore SBOM Action
 
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
 uses: anchore/sbom-action@v0.24.0
