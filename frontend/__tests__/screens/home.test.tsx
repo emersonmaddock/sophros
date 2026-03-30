@@ -44,7 +44,7 @@ jest.mock('@/lib/queries/user', () => ({
   useUserTargetsQuery: jest.fn(() => ({ data: null, isLoading: false })),
 }));
 
-// Note: the home screen imports useUser from @clerk/clerk-expo (as useClerkUser alias),
+// Note: the home screen imports useUser from @clerk/expo (as useClerkUser alias),
 // not from @/contexts/UserContext — the global mock in jest.setup.ts covers this.
 
 jest.mock('react-native-safe-area-context', () => ({
