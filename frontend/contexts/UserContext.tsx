@@ -1,7 +1,7 @@
 import { client } from '@/api/client.gen';
 import type { UserRead, UserUpdate } from '@/api/types.gen';
 import { getErrorStatus, useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
-import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useAuth, useUser as useClerkUser } from '@clerk/expo';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 
 interface UserContextType {
