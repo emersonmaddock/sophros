@@ -78,6 +78,7 @@ jobs:
           output-file: docs/SBOM.json
 
       - name: Commit SBOM to docs/
+        if: github.ref != 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
