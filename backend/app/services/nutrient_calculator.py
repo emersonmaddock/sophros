@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date
 
 from app.domain.enums import ActivityLevel
 from app.schemas.nutrient import DRIOutput, NutrientRange
@@ -118,20 +118,21 @@ class NutrientCalculator:
         daily_offset = 0
         if target_weight is not None and target_date:
             try:
-                # Convert date to datetime for subtraction if needed,
-                # or just use dates
-                today = datetime.now().date()
+                today = date.today()
                 days_to_target = (target_date - today).days
 
-                if days_to_target > 0:
-                    weight_diff = target_weight - weight_kg
-                    total_kcal_diff = weight_diff * 7700  # 1kg ~ 7700kcal
-                    daily_offset = int(total_kcal_diff / days_to_target)
+                # Avoid division by zero and handle past/today dates by assuming 1 day
+                if days_to_target < 1:
+                    days_to_target = 1
 
-                    # Safety rails: max +/- 1000 kcal offset
-                    daily_offset = max(-1000, min(1000, daily_offset))
-            except (ValueError, TypeError):
-                # Fallback if date is invalid
+                weight_diff = target_weight - weight_kg
+                total_kcal_diff = weight_diff * 7700  # 1kg ~ 7700kcal
+                daily_offset = int(total_kcal_diff / days_to_target)
+
+                # Safety rails: max +/- 1000 kcal offset
+                daily_offset = max(-1000, min(1000, daily_offset))
+            except (ValueError, TypeError, ZeroDivisionError):
+                # Fallback if date is invalid or calculation fails
                 pass
 
         # Adjust TDEE by goal offset AND calories burned from exercise today
