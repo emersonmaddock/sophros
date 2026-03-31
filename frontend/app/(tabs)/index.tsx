@@ -9,7 +9,14 @@ import { useUser as useClerkUser } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const JS_DAY_TO_API_DAY: Record<number, Day> = {
@@ -43,9 +50,11 @@ export default function DashboardPage() {
     return d.toISOString().split('T')[0];
   }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
-  const { data: targets } = useUserTargetsQuery();
-  const { data: user } = useUserQuery();
+  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
+  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+
+  const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
   // Derive today's plan
   const todayPlan = useMemo(() => {
@@ -160,115 +169,126 @@ export default function DashboardPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>
-            {greeting}, {userName}
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
-          </Text>
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator
+            size="large"
+            color={Colors.light.primary}
+            testID="home-loading-indicator"
+          />
         </View>
-
-        {/* Health Score Card */}
-        <TouchableOpacity
-          style={styles.scoreCard}
-          onPress={() => router.push('/health-score')}
-          activeOpacity={0.9}
-        >
-          <View style={styles.scoreHeader}>
-            <View>
-              <Text style={styles.scoreLabel}>Health Score</Text>
-              <Text style={styles.scoreValue}>{healthScore.overall}</Text>
-            </View>
-            <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>
-                {healthScore.overall >= 90
-                  ? 'Excellent'
-                  : healthScore.overall >= 70
-                    ? 'Good'
-                    : healthScore.overall >= 50
-                      ? 'Fair'
-                      : 'Needs Work'}
-              </Text>
-            </View>
+      )}
+      {!isLoading && (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>
+              {greeting}, {userName}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              Let&apos;s make today healthy · {dayOfWeek}, {monthName} {day}
+            </Text>
           </View>
 
-          <View style={styles.scoreDetails}>
-            {[
-              { label: 'Nutrition', value: healthScore.nutrition.score },
-              { label: 'Exercise', value: healthScore.exercise.score },
-              { label: 'Sleep', value: healthScore.sleep.score },
-            ].map((item, i) => (
-              <View key={i} style={styles.scoreItem}>
-                <View style={styles.progressBarBg}>
-                  <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
-                </View>
-                <Text style={styles.scoreItemLabel}>{item.label}</Text>
+          {/* Health Score Card */}
+          <TouchableOpacity
+            style={styles.scoreCard}
+            onPress={() => router.push('/health-score')}
+            activeOpacity={0.9}
+          >
+            <View style={styles.scoreHeader}>
+              <View>
+                <Text style={styles.scoreLabel}>Health Score</Text>
+                <Text style={styles.scoreValue}>{healthScore.overall}</Text>
               </View>
-            ))}
-          </View>
-        </TouchableOpacity>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>
+                  {healthScore.overall >= 90
+                    ? 'Excellent'
+                    : healthScore.overall >= 70
+                      ? 'Good'
+                      : healthScore.overall >= 50
+                        ? 'Fair'
+                        : 'Needs Work'}
+                </Text>
+              </View>
+            </View>
 
-        {/* Today's Schedule */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/schedule')}
-              style={styles.viewAllButton}
-            >
-              <Text style={styles.viewAllText}>Full Schedule</Text>
-              <ChevronRight size={24} color={Colors.light.primary} />
-            </TouchableOpacity>
-          </View>
-
-          {upcomingItems.length > 0 ? (
-            <View style={styles.listContainer}>
-              {upcomingItems.map((item, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.listItem, i === 0 && styles.activeListItem]}
-                >
-                  <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                    <item.icon size={24} color={item.color} />
+            <View style={styles.scoreDetails}>
+              {[
+                { label: 'Nutrition', value: healthScore.nutrition.score },
+                { label: 'Exercise', value: healthScore.exercise.score },
+                { label: 'Sleep', value: healthScore.sleep.score },
+              ].map((item, i) => (
+                <View key={i} style={styles.scoreItem}>
+                  <View style={styles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
                   </View>
-                  <View style={styles.itemContent}>
-                    <Text style={styles.itemTitle} numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text style={styles.itemSubtitle} numberOfLines={1}>
-                      {item.subtitle}
-                    </Text>
-                  </View>
-                  <View style={styles.timeBox}>
-                    <View style={styles.timeBadge}>
-                      <Text style={styles.timeText}>{item.time}</Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
+                  <Text style={styles.scoreItemLabel}>{item.label}</Text>
+                </View>
               ))}
             </View>
-          ) : (
-            <View style={styles.emptyUpcoming}>
-              <Text style={styles.emptyText}>
-                No meals planned yet. Head to the Schedule tab to plan your week!
-              </Text>
-            </View>
-          )}
-        </View>
+          </TouchableOpacity>
 
-        {/* Macros Progress */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
+          {/* Today's Schedule */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Upcoming</Text>
+              <TouchableOpacity
+                onPress={() => router.push('/(tabs)/schedule')}
+                style={styles.viewAllButton}
+              >
+                <Text style={styles.viewAllText}>Full Schedule</Text>
+                <ChevronRight size={24} color={Colors.light.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {upcomingItems.length > 0 ? (
+              <View style={styles.listContainer}>
+                {upcomingItems.map((item, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.listItem, i === 0 && styles.activeListItem]}
+                  >
+                    <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
+                      <item.icon size={24} color={item.color} />
+                    </View>
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemTitle} numberOfLines={1}>
+                        {item.title}
+                      </Text>
+                      <Text style={styles.itemSubtitle} numberOfLines={1}>
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                    <View style={styles.timeBox}>
+                      <View style={styles.timeBadge}>
+                        <Text style={styles.timeText}>{item.time}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyUpcoming}>
+                <Text style={styles.emptyText}>
+                  No meals planned yet. Head to the Schedule tab to plan your week!
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={styles.card}>
-            <MacroNutrients data={macroData} />
+
+          {/* Macros Progress */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Today&apos;s Macros</Text>
+            </View>
+            <View style={styles.card}>
+              <MacroNutrients data={macroData} />
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -277,6 +297,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     gap: 24,
