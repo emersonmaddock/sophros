@@ -1,7 +1,14 @@
+import type {
+  DailyMealPlanOutput,
+  Day,
+  MealSlotTargetOutput,
+  WeeklyMealPlanOutput,
+} from '@/api/types.gen';
 import { AlternativesModal } from '@/components/AlternativesModal';
 import { EditItemModal } from '@/components/EditItemModal';
 import { ScheduleItemCard } from '@/components/ScheduleItemCard';
 import { Colors, Layout } from '@/constants/theme';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   useGenerateWeekPlanMutation,
   useSaveMealPlanMutation,
@@ -9,13 +16,6 @@ import {
 } from '@/lib/queries/mealPlan';
 import type { DaySchedule, ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
-import type {
-  DailyMealPlanOutput,
-  Day,
-  MealSlotTargetOutput,
-  WeeklyMealPlanOutput,
-} from '@/api/types.gen';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, RefreshCw, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -303,7 +303,12 @@ export default function WeekPlanningScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <Sparkles size={48} color={Colors.light.secondary} style={{ marginBottom: 16 }} />
-          <Text style={[styles.loadingText, { fontWeight: '700', fontSize: 20, color: Colors.light.text }]}>
+          <Text
+            style={[
+              styles.loadingText,
+              { fontWeight: '700', fontSize: 20, color: Colors.light.text },
+            ]}
+          >
             Complete Your Profile
           </Text>
           <Text style={[styles.loadingSubtext, { textAlign: 'center', paddingHorizontal: 40 }]}>
