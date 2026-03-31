@@ -61,7 +61,7 @@ export const userKeys = {
   all: ['user'] as const,
   me: (clerkId?: string) => ['user', clerkId] as const,
   detail: (userId?: string) => [...userKeys.all, userId] as const,
-  targets: ['userTargets'] as const,
+  targets: (clerkId?: string) => ['userTargets', clerkId] as const,
 };
 
 /**
@@ -101,8 +101,10 @@ export function useUserQuery(enabled: boolean = true) {
  * Targets change rarely — only when user profile changes.
  */
 export function useUserTargetsQuery() {
+  const { user: clerkUser } = useClerkUser();
+
   return useQuery({
-    queryKey: userKeys.targets,
+    queryKey: userKeys.targets(clerkUser?.id),
     queryFn: async () => {
       const response = await readUserTargetsApiV1UsersMeTargetsGet();
       if (response.data) {
