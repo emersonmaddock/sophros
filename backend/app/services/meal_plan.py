@@ -270,11 +270,9 @@ class MealPlanService:
             found = next((s for s in slots if s.slot_name in target_names), None)
             if found:
                 return found.calories
-            return int(user.weight * 30 * default_ratio) # Very crude fallback
+            return int(user.weight * 30 * default_ratio)  # Very crude fallback
 
-        breakfast_cals = _get_cal_target(
-            first_plan.slots, [MealSlot.BREAKFAST], 0.25
-        )
+        breakfast_cals = _get_cal_target(first_plan.slots, [MealSlot.BREAKFAST], 0.25)
         main_cals = _get_cal_target(
             first_plan.slots, [MealSlot.LUNCH, MealSlot.DINNER], 0.35
         )
@@ -402,16 +400,14 @@ class MealPlanService:
         # Access busy_times (Schema property)
         # Check if user is a Pydantic model or ORM model
         is_pydantic = not hasattr(user, "__dict__") or isinstance(user, User)
-        
+
         if is_pydantic:
             # We are using the UserRead/UserBase schema
             source_busy = getattr(user, "busy_times", [])
             for bt in source_busy:
                 if bt.day == day:
                     # Schema uses 'start', 'end'
-                    busy_times.append(
-                        BusyTime(day=day, start=bt.start, end=bt.end)
-                    )
+                    busy_times.append(BusyTime(day=day, start=bt.start, end=bt.end))
         elif hasattr(user, "user_busy_times"):
             # We are using the ORM model (fallback)
             for bt in user.user_busy_times:

@@ -111,7 +111,7 @@ class UserRead(UserBase):
         """
         if isinstance(data, dict):
             return data
-        
+
         # If it's already a Pydantic model (UserRead or UserBase), return it
         if hasattr(data, "model_dump"):
             return data
