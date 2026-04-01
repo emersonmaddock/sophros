@@ -1,0 +1,18 @@
+# Enforce LF line endings for all text files.
+# This prevents Windows CRLF conversion from breaking Prettier and bash script CI checks.
+
+* text=auto eol=lf
+
+# Explicitly declare binary files to prevent corruption
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+*.otf binary

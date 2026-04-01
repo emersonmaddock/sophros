@@ -1,7 +1,14 @@
+import type {
+  DailyMealPlanOutput,
+  Day,
+  MealSlotTargetOutput,
+  WeeklyMealPlanOutput,
+} from '@/api/types.gen';
 import { AlternativesModal } from '@/components/AlternativesModal';
 import { EditItemModal } from '@/components/EditItemModal';
 import { ScheduleItemCard } from '@/components/ScheduleItemCard';
 import { Colors, Layout } from '@/constants/theme';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   useGenerateWeekPlanMutation,
   useSaveMealPlanMutation,
@@ -9,12 +16,6 @@ import {
 } from '@/lib/queries/mealPlan';
 import type { DaySchedule, ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
-import type {
-  DailyMealPlanOutput,
-  Day,
-  MealSlotTargetOutput,
-  WeeklyMealPlanOutput,
-} from '@/api/types.gen';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, Check, RefreshCw, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -83,13 +84,24 @@ export default function WeekPlanningScreen() {
   const saveMutation = useSaveMealPlanMutation();
   const { data: cachedPlan } = useWeeklyMealPlanOutputQuery();
 
+  const { backendUser, loading: profileLoading } = useUserProfile();
+
   useEffect(() => {
+    // If profile is still loading, wait
+    if (profileLoading) return;
+
+    // If critical settings are missing, don't generate automatically
+    if (!backendUser?.target_weight || !backendUser?.target_date) {
+      return;
+    }
+
     // If we have a cached plan, use it
     if (cachedPlan) {
       setRawPlan(cachedPlan);
       setWeekPlan(weeklyPlanToDaySchedules(cachedPlan, weekStart));
       return;
     }
+
     // Otherwise, generate a new plan
     generateWeekMutation.mutate(undefined, {
       onSuccess: (data) => {
@@ -101,7 +113,7 @@ export default function WeekPlanningScreen() {
         console.error('[WeekPlanning] Generation error:', error);
       },
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profileLoading, backendUser]);
 
   const handleRegenerate = () => {
     generateWeekMutation.mutate(undefined, {
@@ -275,6 +287,44 @@ export default function WeekPlanningScreen() {
     return `${month} ${day}`;
   };
 
+  if (profileLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!backendUser?.target_weight || !backendUser?.target_date) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <Sparkles size={48} color={Colors.light.secondary} style={{ marginBottom: 16 }} />
+          <Text
+            style={[
+              styles.loadingText,
+              { fontWeight: '700', fontSize: 20, color: Colors.light.text },
+            ]}
+          >
+            Complete Your Profile
+          </Text>
+          <Text style={[styles.loadingSubtext, { textAlign: 'center', paddingHorizontal: 40 }]}>
+            To generate a personalized meal plan, we need your target weight and goal date.
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { marginTop: 12 }]}
+            onPress={() => router.push('/profile/edit')}
+          >
+            <Text style={styles.retryButtonText}>Go to Profile Settings</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (weekPlan.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -288,10 +338,19 @@ export default function WeekPlanningScreen() {
           ) : generateWeekMutation.isError ? (
             <>
               <Text style={styles.loadingText}>Something went wrong</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={handleRegenerate}>
-                <RefreshCw size={20} color="#FFF" />
-                <Text style={styles.retryButtonText}>Try Again</Text>
-              </TouchableOpacity>
+              <View style={styles.errorButtons}>
+                <TouchableOpacity style={styles.retryButton} onPress={handleRegenerate}>
+                  <RefreshCw size={20} color="#FFF" />
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.retryButton, { backgroundColor: '#F3F4F6' }]}
+                  onPress={() => router.back()}
+                >
+                  <ArrowLeft size={20} color={Colors.light.text} />
+                  <Text style={[styles.retryButtonText, { color: Colors.light.text }]}>Back</Text>
+                </TouchableOpacity>
+              </View>
             </>
           ) : (
             <>
@@ -456,6 +515,11 @@ const styles = StyleSheet.create({
   loadingSubtext: {
     fontSize: 13,
     color: Colors.light.textMuted,
+  },
+  errorButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
   },
   retryButton: {
     backgroundColor: Colors.light.primary,

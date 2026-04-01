@@ -5,6 +5,7 @@ import { TimePickerInput } from '@/components/TimePickerInput';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { getSleepWarning } from '@/utils/sleep-validation';
 import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
@@ -651,6 +652,14 @@ export default function EditProfileScreen() {
               onChange={(v) => updateForm('sleepTime', v)}
             />
 
+            {getSleepWarning(form.wakeUpTime, form.sleepTime) && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  {getSleepWarning(form.wakeUpTime, form.sleepTime)}
+                </Text>
+              </View>
+            )}
+
             <View style={styles.busyTimesHeader}>
               <Text style={styles.inputLabel}>Busy Times</Text>
               <TouchableOpacity onPress={addBusyTime} activeOpacity={0.8}>
@@ -687,6 +696,8 @@ export default function EditProfileScreen() {
                       value={bt.start}
                       onChange={(text) => updateBusyTime(index, 'start', text)}
                       style={styles.imperialInput}
+                      minTime={form.wakeUpTime}
+                      maxTime={form.sleepTime}
                     />
                     <Text style={styles.timeSeparator}>to</Text>
                     <TimePickerInput
@@ -694,6 +705,8 @@ export default function EditProfileScreen() {
                       value={bt.end}
                       onChange={(text) => updateBusyTime(index, 'end', text)}
                       style={styles.imperialInput}
+                      minTime={form.wakeUpTime}
+                      maxTime={form.sleepTime}
                     />
                     <TouchableOpacity
                       style={styles.removeButton}
@@ -926,5 +939,20 @@ const styles = StyleSheet.create({
     color: Colors.light.surface,
     fontSize: 16,
     fontWeight: '700',
+  },
+  warningContainer: {
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  warningText: {
+    color: '#92400E',
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
   },
 });
