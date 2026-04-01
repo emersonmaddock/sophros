@@ -9,7 +9,12 @@ import { Calendar, Home, TrendingUp, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   const colorScheme = 'light'; // Forcing light mode based on design system for now
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Wait for Clerk to load before making routing decisions
+  if (!isLoaded) {
+    return null;
+  }
 
   // Protect tabs - redirect to auth if session expires
   if (!isSignedIn) {
