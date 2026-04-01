@@ -31,7 +31,7 @@ jest.mock('expo-router', () => ({
 }));
 
 // Mock Clerk
-jest.mock('@clerk/clerk-expo', () => ({
+jest.mock('@clerk/expo', () => ({
   useAuth: () => ({
     isSignedIn: true,
     userId: 'test-user-id',
@@ -58,6 +58,7 @@ jest.mock('@clerk/clerk-expo', () => ({
     setActive: jest.fn(),
   }),
   useClerk: () => ({ signOut: jest.fn() }),
+  useUserProfileModal: () => ({ presentUserProfile: jest.fn() }),
   ClerkProvider: ({ children }: { children: unknown }) => children,
 }));
 

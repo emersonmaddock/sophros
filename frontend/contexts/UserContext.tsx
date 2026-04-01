@@ -1,7 +1,7 @@
 import { client } from '@/api/client.gen';
 import type { UserRead, UserUpdate } from '@/api/types.gen';
 import { getErrorStatus, useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
-import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useAuth, useUser as useClerkUser } from '@clerk/expo';
 import React, { createContext, useCallback, useContext, useMemo } from 'react';
 
 interface UserContextType {
@@ -70,6 +70,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   // Mutation for updating user
   const updateMutation = useUpdateUserMutation();
+
+  // Sync Clerk primary email to backend when it changes
+  const clerkEmail = clerkUser?.primaryEmailAddress?.emailAddress;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => {
+    if (!clerkEmail || !user || clerkEmail === user.email) return;
+    updateMutation.mutate({ email: clerkEmail });
+  }, [clerkEmail, user?.email]);
 
   // Derived state: user is onboarded if they exist in backend
   const isOnboarded = user !== null;

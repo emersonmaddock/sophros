@@ -5,7 +5,7 @@ import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import type { Day } from '@/api/types.gen';
-import { useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
 import React, { useMemo } from 'react';

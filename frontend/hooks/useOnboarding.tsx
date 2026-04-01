@@ -2,7 +2,7 @@ import type { ActivityLevel, PregnancyStatus, Sex, UserCreate } from '@/api/type
 import { VALIDATION_RULES } from '@/constants/onboarding';
 import { useUser } from '@/contexts/UserContext';
 import { createUser } from '@/lib/api-client';
-import { useAuth, useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useAuth, useUser as useClerkUser } from '@clerk/expo';
 import React, { createContext, useContext, useState } from 'react';
 
 export interface OnboardingData {
