@@ -7,7 +7,7 @@ jest.mock('@/contexts/UserContext', () => ({
   useUser: jest.fn(),
 }));
 
-jest.mock('@clerk/clerk-expo', () => ({
+jest.mock('@clerk/expo', () => ({
   useAuth: jest.fn(() => ({
     isSignedIn: true,
     userId: 'test-user-id',
@@ -37,7 +37,7 @@ jest.mock('@clerk/clerk-expo', () => ({
 }));
 
 import { useUser as useContextUser } from '@/contexts/UserContext';
-import { useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useUser as useClerkUser } from '@clerk/expo';
 
 const mockUseContextUser = useContextUser as jest.MockedFunction<typeof useContextUser>;
 const mockClerkUseUser = useClerkUser as jest.MockedFunction<typeof useClerkUser>;

@@ -1,7 +1,7 @@
 import { ActivityLevel, Sex } from '@/api';
 import { useUser } from '@/contexts/UserContext';
 import { cmToFeetAndInches, kgToLbs } from '@/utils/units';
-import { useUser as useClerkUser } from '@clerk/clerk-expo';
+import { useUser as useClerkUser } from '@clerk/expo';
 import { useMemo } from 'react';
 
 interface FormattedUserProfile {

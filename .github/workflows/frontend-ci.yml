@@ -28,12 +28,12 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.13.1"
+          node-version: "24.14.1"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.30.0
+          version: 10.33.0
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -86,7 +86,7 @@ jobs:
           node-version: "24.13.1"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
           version: 10.30.0
 
@@ -125,7 +125,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "24.13.1"
+          node-version: "24.14.1"
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -134,12 +134,12 @@ jobs:
           java-version: "17"
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
         with:
-          version: 10.30.0
+          version: 10.33.0
 
       - name: Get pnpm store directory
         id: pnpm-cache

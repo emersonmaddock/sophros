@@ -1,6 +1,6 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth, useUserProfileModal } from '@clerk/expo';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import {
@@ -38,6 +38,7 @@ const versionDisplay = gitHash ? `v${appVersion} (${gitHash})` : `v${appVersion}
 
 export default function ProfilePage() {
   const { signOut } = useAuth();
+  const { presentUserProfile } = useUserProfileModal();
   const router = useRouter();
   const { profile, backendUser, loading, clerkUser } = useUserProfile();
 
@@ -101,6 +102,7 @@ export default function ProfilePage() {
     {
       label: 'Account Settings',
       icon: Settings,
+      onPress: presentUserProfile,
     },
   ];
 

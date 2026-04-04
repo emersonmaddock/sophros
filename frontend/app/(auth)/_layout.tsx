@@ -1,14 +1,16 @@
 import { useUser } from '@/contexts/UserContext';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function AuthRoutesLayout() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
   const { isOnboarded, loading } = useUser();
 
-  // Show loading while checking user status
-  if (isSignedIn && loading) {
+  // Wait for Clerk to finish loading before rendering anything.
+  // The native AuthView accesses Clerk.shared on init, which crashes
+  // if Clerk.configure() hasn't completed yet.
+  if (!isLoaded || (isSignedIn && loading)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />

@@ -3,6 +3,7 @@ import {
   readUserTargetsApiV1UsersMeTargetsGet,
   updateUserMeApiV1UsersMePut,
 } from '@/api/sdk.gen';
+import { useUser as useClerkUser } from '@clerk/expo';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UserUpdate } from '../../api/types.gen';
 
@@ -58,8 +59,9 @@ export function getErrorStatus(error: unknown): number | undefined {
  */
 export const userKeys = {
   all: ['user'] as const,
+  me: (clerkId?: string) => ['user', clerkId] as const,
   detail: (userId?: string) => [...userKeys.all, userId] as const,
-  targets: ['userTargets'] as const,
+  targets: (clerkId?: string) => ['userTargets', clerkId] as const,
 };
 
 /**
@@ -67,8 +69,10 @@ export const userKeys = {
  * Automatically caches and deduplicates requests.
  */
 export function useUserQuery(enabled: boolean = true) {
+  const { user: clerkUser } = useClerkUser();
+
   return useQuery({
-    queryKey: userKeys.all,
+    queryKey: userKeys.me(clerkUser?.id),
     queryFn: async () => {
       const response = await readUserMeApiV1UsersMeGet();
       if (response.data) {
@@ -97,8 +101,10 @@ export function useUserQuery(enabled: boolean = true) {
  * Targets change rarely — only when user profile changes.
  */
 export function useUserTargetsQuery() {
+  const { user: clerkUser } = useClerkUser();
+
   return useQuery({
-    queryKey: userKeys.targets,
+    queryKey: userKeys.targets(clerkUser?.id),
     queryFn: async () => {
       const response = await readUserTargetsApiV1UsersMeTargetsGet();
       if (response.data) {
@@ -120,6 +126,7 @@ export function useUserTargetsQuery() {
  * Automatically invalidates and refetches user data on success.
  */
 export function useUpdateUserMutation() {
+  const { user: clerkUser } = useClerkUser();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -140,9 +147,9 @@ export function useUpdateUserMutation() {
     },
     onSuccess: (updatedUser) => {
       // Optimistically update the cache with new data
-      queryClient.setQueryData(userKeys.all, updatedUser);
+      queryClient.setQueryData(userKeys.me(clerkUser?.id), updatedUser);
       // Invalidate to trigger a background refetch
-      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.me(clerkUser?.id) });
     },
     onError: (error) => {
       console.error('[useUpdateUserMutation] Error:', error);

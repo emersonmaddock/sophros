@@ -38,6 +38,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   newArchEnabled: true,
   ios: {
     supportsTablet: true,
+    bundleIdentifier: 'com.sophros.app',
+    buildNumber: '1',
   },
   android: {
     package: 'com.sophros.app',
@@ -63,6 +65,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     favicon: './assets/images/favicon.png',
   },
   plugins: [
+    '@clerk/expo',
     'expo-router',
     '@react-native-community/datetimepicker',
     [

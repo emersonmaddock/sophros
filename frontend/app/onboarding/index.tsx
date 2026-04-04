@@ -1,5 +1,5 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/expo';
 import { Redirect, router } from 'expo-router';
 import { Activity, Heart, TrendingUp } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
