@@ -68,7 +68,7 @@ class MealPlanService:
 
         Uses ±30% calorie tolerance. Results are shuffled locally for variety
         instead of using sort="random" on every API call.
-        
+
         Args:
             meal_type: Type of meal (breakfast, main course, etc.)
             slot_calories: Target calorie count
@@ -100,8 +100,10 @@ class MealPlanService:
         # Filter by prep time if specified (for breakfast quick meals)
         if max_prep_time is not None:
             results = [
-                r for r in results
-                if r.get("readyInMinutes") is None or r.get("readyInMinutes") <= max_prep_time
+                r
+                for r in results
+                if r.get("readyInMinutes") is None
+                or r.get("readyInMinutes") <= max_prep_time
             ]
 
         random.shuffle(results)
@@ -151,7 +153,7 @@ class MealPlanService:
 
         slot.plan = MealOption(main_recipe=main_recipe, alternatives=alternatives)
         slot.prep_time_minutes = main_recipe.preparation_time_minutes or 30
-        
+
         # Enforce breakfast prep time limit (should never exceed 20 min)
         if slot.slot_name == MealSlot.BREAKFAST and slot.prep_time_minutes > 20:
             slot.prep_time_minutes = 20
@@ -300,7 +302,11 @@ class MealPlanService:
 
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
-                MealType.BREAKFAST, breakfast_cals, constraints, count=25, max_prep_time=20
+                MealType.BREAKFAST,
+                breakfast_cals,
+                constraints,
+                count=25,
+                max_prep_time=20,
             ),
             self._fetch_recipe_pool(
                 MealType.MAIN_COURSE, main_cals, constraints, count=50
@@ -365,13 +371,13 @@ class MealPlanService:
                 continue
 
             current_slot: MealSlotTarget = item["slot"]
-            
+
             # *** NEW: Skip breakfast entirely from leftover pairing ***
             # Breakfast should always be fresh (same-day only)
             if item["is_breakfast"]:
                 item["is_assigned"] = True
                 continue
-            
+
             if current_slot.time is None:
                 item["is_assigned"] = True
                 continue

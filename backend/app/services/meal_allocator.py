@@ -255,11 +255,11 @@ class MealAllocator:
     ) -> dict[str, bool]:
         """
         Check if each meal's ideal window has at least one free 30-min slot.
-        
+
         Returns:
             {meal_name: is_available} where is_available=False means the entire
             window is blocked by busy times.
-        
+
         Defined windows:
             - Breakfast: wake + 0.5h to wake + 2h
             - Lunch: wake + 4.5h to wake + 7.5h

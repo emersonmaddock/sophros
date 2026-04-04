@@ -1,4 +1,5 @@
 from datetime import time
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,11 +20,11 @@ from app.schemas.user import (
     BusyTimeValidationResult,
     UserCreate,
     UserRead,
-    UserUpdate,
     UserSchedule,
+    UserUpdate,
 )
-from app.services.nutrient_calculator import NutrientCalculator
 from app.services.meal_allocator import MealAllocator
+from app.services.nutrient_calculator import NutrientCalculator
 
 router = APIRouter()
 
@@ -116,33 +117,38 @@ async def validate_busy_times(
     """
     Validate that busy times don't prevent meal scheduling.
     Returns list of conflicting meals or success.
-    
+
     Call this before updating the user profile to give feedback.
     """
     try:
-        # Create a user schedule - all times are already time objects (auto-deserialized by Pydantic)
+        # Create schedule - all times auto-deserialized by Pydantic
         schedule = UserSchedule(
             busy_times=busy_times,
             wake_up_time=wake_up_time,
             sleep_time=sleep_time,
         )
-        
+
         # Check availability for all days
         conflicting_meals = set()
         for day in Day:
-            availability = MealAllocator.check_meal_window_availability(schedule, day)
+            availability = MealAllocator.check_meal_window_availability(
+                schedule, day
+            )
             for meal, is_available in availability.items():
                 if not is_available:
                     conflicting_meals.add(meal)
-        
+
         if conflicting_meals:
             meal_list = list(conflicting_meals)
             return BusyTimeValidationResult(
                 is_valid=False,
                 conflicting_meals=meal_list,
-                message=f"Busy times prevent scheduling of: {', '.join(meal_list)}. Please adjust your schedule.",
+                message=(
+                    f"Busy times prevent scheduling of: {', '.join(meal_list)}. "
+                    "Please adjust your schedule."
+                ),
             )
-        
+
         return BusyTimeValidationResult(
             is_valid=True,
             conflicting_meals=[],
@@ -152,7 +158,7 @@ async def validate_busy_times(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid schedule data: {str(e)}",
-        )
+        ) from e
 
 
 @router.put("/me", response_model=UserRead)
@@ -172,31 +178,38 @@ async def update_user_me(
     # Validate busy times if they are being updated
     if "busy_times" in update_data and update_data.get("busy_times"):
         new_busy_times = update_data.get("busy_times") or []
-        
-        # Get wake/sleep times - use updated values or current values (already time objects)
+
+        # Get wake/sleep times - already time objects
         wake_time = update_data.get("wake_up_time") or current_user.wake_up_time
-        sleep_time_obj = update_data.get("sleep_time") or current_user.sleep_time
-        
-        # Create schedule for validation (busy_times are already BusyTime objects)
+        sleep_time_obj = (
+            update_data.get("sleep_time") or current_user.sleep_time
+        )
+
+        # Create schedule for validation
         schedule = UserSchedule(
             busy_times=new_busy_times,
             wake_up_time=wake_time,
             sleep_time=sleep_time_obj,
         )
-        
+
         # Check availability
         conflicting_meals = set()
         for day in Day:
-            availability = MealAllocator.check_meal_window_availability(schedule, day)
+            availability = MealAllocator.check_meal_window_availability(
+                schedule, day
+            )
             for meal, is_available in availability.items():
                 if not is_available:
                     conflicting_meals.add(meal)
-        
+
         if conflicting_meals:
             meal_list = list(conflicting_meals)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Busy times prevent scheduling of: {', '.join(meal_list)}. Please adjust your schedule.",
+                detail=(
+                    f"Busy times prevent scheduling of: {', '.join(meal_list)}. "
+                    "Please adjust your schedule."
+                ),
             )
 
     # Handle busy_times (relational table, collection assignment)
