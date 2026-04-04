@@ -66,9 +66,16 @@ class MealAllocator:
             if user_schedule:
                 meal_time = cls._find_time_for_slot(slot_enum, user_schedule, day)
 
-            # If still no time, or scheduler failed, use fixed default
+            # If still no time, or scheduler failed, validate and use fixed default
             if meal_time is None:
-                meal_time = cls.DEFAULT_TIMES.get(slot_enum)
+                default_time = cls.DEFAULT_TIMES.get(slot_enum)
+                # Validate default time against sleep/wake times
+                if user_schedule and default_time:
+                    if cls._is_time_in_wake_period(default_time, user_schedule):
+                        meal_time = default_time
+                    # else: meal_time remains None (entire window blocked)
+                else:
+                    meal_time = default_time
 
             slots_output.append(
                 MealSlotTarget(
@@ -167,11 +174,25 @@ class MealAllocator:
         meal_times: list[time],
     ) -> time | None:
         """
-        Finds an available window for exercise, avoiding proximity to meals.
+        Finds an available window for exercise, avoiding proximity to meals
+        and respecting the user's sleep and wake times.
         """
-        # Standard exercise window (e.g. 6am to 9pm)
-        start_bound = _time_to_mins(time(6, 0))
-        end_bound = _time_to_mins(time(21, 0))
+        wake_mins = _time_to_mins(user_schedule.wake_up_time)
+        sleep_mins = _time_to_mins(user_schedule.sleep_time)
+
+        # Standard exercise window bounds (6am to 9pm)
+        default_start = _time_to_mins(time(6, 0))
+        default_end = _time_to_mins(time(21, 0))
+
+        # Clamp to user's actual wake/sleep times
+        if sleep_mins > wake_mins:
+            # Normal case: sleep after wake
+            start_bound = max(default_start, wake_mins)
+            end_bound = min(default_end, sleep_mins)
+        else:
+            # Midnight-crossing case: sleep before wake
+            start_bound = max(default_start, wake_mins)
+            end_bound = default_end  # Assumed before midnight
 
         busy_intervals = []
         for busy in user_schedule.busy_times:
@@ -209,3 +230,95 @@ class MealAllocator:
                 current_time += 15  # Check every 15 mins
 
         return None
+
+    @classmethod
+    def _is_time_in_wake_period(cls, test_time: time, schedule: UserSchedule) -> bool:
+        """
+        Check if a time falls within the user's wake/sleep period.
+        Handles midnight-crossing sleep schedules.
+        """
+        wake_mins = _time_to_mins(schedule.wake_up_time)
+        sleep_mins = _time_to_mins(schedule.sleep_time)
+        test_mins = _time_to_mins(test_time)
+
+        # Normal case: sleep after wake (e.g. wake 7am, sleep 11pm)
+        if sleep_mins > wake_mins:
+            return wake_mins <= test_mins < sleep_mins
+
+        # Midnight-crossing case: sleep before wake (e.g. wake 6am, sleep 12am)
+        # Valid times are: >= wake_mins OR < sleep_mins
+        return test_mins >= wake_mins or test_mins < sleep_mins
+
+    @classmethod
+    def check_meal_window_availability(
+        cls, user_schedule: UserSchedule, day: Day
+    ) -> dict[str, bool]:
+        """
+        Check if each meal's ideal window has at least one free 30-min slot.
+        
+        Returns:
+            {meal_name: is_available} where is_available=False means the entire
+            window is blocked by busy times.
+        
+        Defined windows:
+            - Breakfast: wake + 0.5h to wake + 2h
+            - Lunch: wake + 4.5h to wake + 7.5h
+            - Dinner: wake + 9.5h to min(wake + 13h, sleep - 3h)
+        """
+        wake_mins = _time_to_mins(user_schedule.wake_up_time)
+        sleep_mins = _time_to_mins(user_schedule.sleep_time)
+
+        # Define meal windows relative to wake time (in minutes)
+        meal_windows = {
+            MealSlot.BREAKFAST: (
+                wake_mins + int(0.5 * 60),  # wake + 30 min
+                wake_mins + int(2 * 60),    # wake + 2 hours
+            ),
+            MealSlot.LUNCH: (
+                wake_mins + int(4.5 * 60),  # wake + 4.5 hours
+                wake_mins + int(7.5 * 60),  # wake + 7.5 hours
+            ),
+            MealSlot.DINNER: (
+                wake_mins + int(9.5 * 60),  # wake + 9.5 hours
+                min(
+                    wake_mins + int(13 * 60),  # wake + 13 hours
+                    sleep_mins - int(3 * 60),  # sleep - 3 hours
+                ),
+            ),
+        }
+
+        # Parse busy times for the day
+        busy_intervals = []
+        for busy in user_schedule.busy_times:
+            if busy.day.lower() == day.lower() or busy.day.lower() == "everyday":
+                busy_intervals.append(
+                    (_time_to_mins(busy.start), _time_to_mins(busy.end))
+                )
+        busy_intervals.sort(key=lambda x: x[0])
+
+        result = {}
+        for meal_slot, (window_start, window_end) in meal_windows.items():
+            # Try to find a 30-min free slot in this window
+            available = False
+            current_time = window_start
+
+            while current_time + 30 <= window_end:
+                slot_end = current_time + 30
+                conflict = False
+
+                for b_start, b_end in busy_intervals:
+                    if current_time < b_end and slot_end > b_start:
+                        conflict = True
+                        current_time = max(current_time, b_end)
+                        break
+
+                if not conflict:
+                    available = True
+                    break
+
+                if current_time == window_start:
+                    current_time += 15  # Fallback increment
+
+            result[meal_slot.value] = available
+
+        return result
