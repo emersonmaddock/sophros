@@ -61,23 +61,32 @@ class MealPlanService:
         slot_calories: int,
         constraints: DietaryConstraints,
         count: int,
+        max_prep_time: int | None = None,
     ) -> list[dict]:
         """
         Fetch a pool of recipes for a given meal type and calorie target.
 
         Uses ±30% calorie tolerance. Results are shuffled locally for variety
         instead of using sort="random" on every API call.
+
+        Args:
+            meal_type: Type of meal (breakfast, main course, etc.)
+            slot_calories: Target calorie count
+            constraints: Dietary constraints
+            count: Number of recipes to fetch
+            max_prep_time: Optional max prep time in minutes (e.g., 20 for breakfast)
         """
         tolerance = 0.30
         min_cals = int(slot_calories * (1 - tolerance))
         max_cals = int(slot_calories * (1 + tolerance))
 
         logger.info(
-            "Fetching recipe pool: type=%s, %d-%d cal, count=%d",
+            "Fetching recipe pool: type=%s, %d-%d cal, count=%d, max_prep=%s",
             meal_type,
             min_cals,
             max_cals,
             count,
+            max_prep_time,
         )
 
         results = await self.spoonacular_client.search_recipes(
@@ -87,6 +96,15 @@ class MealPlanService:
             constraints=constraints,
             number=count,
         )
+
+        # Filter by prep time if specified (for breakfast quick meals)
+        if max_prep_time is not None:
+            results = [
+                r
+                for r in results
+                if (ready_in := r.get("readyInMinutes")) is None
+                or ready_in <= max_prep_time
+            ]
 
         random.shuffle(results)
         return results
@@ -136,11 +154,16 @@ class MealPlanService:
         slot.plan = MealOption(main_recipe=main_recipe, alternatives=alternatives)
         slot.prep_time_minutes = main_recipe.preparation_time_minutes or 30
 
+        # Enforce breakfast prep time limit (should never exceed 20 min)
+        if slot.slot_name == MealSlot.BREAKFAST and slot.prep_time_minutes > 20:
+            slot.prep_time_minutes = 20
+
         logger.info(
-            "Assigned %s: primary=%s, %d alternatives",
+            "Assigned %s: primary=%s, %d alternatives, prep_time=%d min",
             slot.slot_name,
             main_recipe.title,
             len(alternatives),
+            slot.prep_time_minutes,
         )
 
         return slot
@@ -279,7 +302,11 @@ class MealPlanService:
 
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
-                MealType.BREAKFAST, breakfast_cals, constraints, count=25
+                MealType.BREAKFAST,
+                breakfast_cals,
+                constraints,
+                count=25,
+                max_prep_time=20,
             ),
             self._fetch_recipe_pool(
                 MealType.MAIN_COURSE, main_cals, constraints, count=50
@@ -321,10 +348,11 @@ class MealPlanService:
 
     def _apply_adaptive_leftovers(self, daily_plans: list[DailyMealPlan], user: User):
         """
-        Refined Leftover Logic:
-        1. Categories: Breakfasts stay separate. Lunch/Dinner are interchangeable.
-        2. Maximized Efficiency: Every 'Cook' event creates exactly 2 portions.
-        3. Priority: Pairs 'Free' cook windows with 'Busy' (time is None) slots first.
+        Leftover Logic (LUNCH & DINNER ONLY):
+        1. Breakfast: Always fresh, never leftovers, uses short prep times
+        2. Lunch/Dinner: Can create leftovers for the next day
+        3. Maximized Efficiency: Every 'Cook' event creates exactly 2 portions
+        4. Priority: Pairs 'Free' cook windows with 'Busy' (time is None) slots first
         """
         all_slots: list[dict[str, Any]] = []
         for plan in daily_plans:
@@ -343,12 +371,19 @@ class MealPlanService:
                 continue
 
             current_slot: MealSlotTarget = item["slot"]
+
+            # *** NEW: Skip breakfast entirely from leftover pairing ***
+            # Breakfast should always be fresh (same-day only)
+            if item["is_breakfast"]:
+                item["is_assigned"] = True
+                continue
+
             if current_slot.time is None:
                 item["is_assigned"] = True
                 continue
 
-            # This is a "COOK" slot. Find a "LEFTOVER" partner.
-            # Priority 1: Busy slots of the same category
+            # This is a "COOK" slot for LUNCH or DINNER. Find a "LEFTOVER" partner.
+            # Priority 1: Busy slots of the same category (lunch or dinner)
             found_partner = False
             for j in range(i + 1, len(all_slots)):
                 partner = all_slots[j]
@@ -356,14 +391,15 @@ class MealPlanService:
                     continue
                 if partner["day"] == item["day"]:
                     continue
-                if partner["is_breakfast"] != item["is_breakfast"]:
+                # Both should be lunch/dinner (not breakfast)
+                if partner["is_breakfast"]:
                     continue
                 if partner["slot"].time is None:
                     self._pair_slots(item, partner)
                     found_partner = True
                     break
 
-            # Priority 2: Next available of same category
+            # Priority 2: Next available of same meal type (lunch/dinner)
             if not found_partner:
                 for j in range(i + 1, len(all_slots)):
                     partner = all_slots[j]
@@ -371,7 +407,8 @@ class MealPlanService:
                         continue
                     if partner["day"] == item["day"]:
                         continue
-                    if partner["is_breakfast"] != item["is_breakfast"]:
+                    # Both should be lunch/dinner (not breakfast)
+                    if partner["is_breakfast"]:
                         continue
                     self._pair_slots(item, partner)
                     found_partner = True
