@@ -25,6 +25,9 @@ module.exports = defineConfig([
       '@typescript-eslint': tseslint,
     },
     rules: {
+      // TypeScript handles module resolution; this rule produces false positives for native packages
+      'import/no-unresolved': 'off',
+
       // TypeScript specific rules
       '@typescript-eslint/no-unused-vars': [
         'warn',

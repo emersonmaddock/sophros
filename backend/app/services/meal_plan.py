@@ -102,8 +102,8 @@ class MealPlanService:
             results = [
                 r
                 for r in results
-                if r.get("readyInMinutes") is None
-                or r.get("readyInMinutes") <= max_prep_time
+                if (ready_in := r.get("readyInMinutes")) is None
+                or ready_in <= max_prep_time
             ]
 
         random.shuffle(results)

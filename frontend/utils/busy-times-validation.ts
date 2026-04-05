@@ -12,7 +12,7 @@ function getMealWindows(wakeUpTime: string, sleepTime: string): Record<string, [
   return {
     Breakfast: [
       wakeMins + Math.round(0.5 * 60), // wake + 30 min
-      wakeMins + Math.round(2 * 60),   // wake + 2 hours
+      wakeMins + Math.round(2 * 60), // wake + 2 hours
     ],
     Lunch: [
       wakeMins + Math.round(4.5 * 60), // wake + 4.5 hours
@@ -21,8 +21,8 @@ function getMealWindows(wakeUpTime: string, sleepTime: string): Record<string, [
     Dinner: [
       wakeMins + Math.round(9.5 * 60), // wake + 9.5 hours
       Math.min(
-        wakeMins + Math.round(13 * 60),  // wake + 13 hours
-        sleepMins - Math.round(3 * 60),  // sleep - 3 hours
+        wakeMins + Math.round(13 * 60), // wake + 13 hours
+        sleepMins - Math.round(3 * 60) // sleep - 3 hours
       ),
     ],
   };
@@ -35,7 +35,7 @@ function getMealWindows(wakeUpTime: string, sleepTime: string): Record<string, [
 function isMealWindowAvailable(
   windowStart: number,
   windowEnd: number,
-  busyIntervals: Array<[number, number]>,
+  busyIntervals: Array<[number, number]>
 ): boolean {
   const duration = 30;
   let currentTime = windowStart;
@@ -72,7 +72,7 @@ function isMealWindowAvailable(
 export function validateBusyTimes(
   wakeUpTime: string | undefined,
   sleepTime: string | undefined,
-  busyTimes: Array<{ start: string; end: string }> | undefined,
+  busyTimes: Array<{ start: string; end: string }> | undefined
 ): string | null {
   if (!wakeUpTime || !sleepTime || !busyTimes || busyTimes.length === 0) {
     return null; // Can't validate without complete data
@@ -109,7 +109,7 @@ export function validateBusyTimes(
 export function getBusyTimesWarning(
   wakeUpTime: string | undefined,
   sleepTime: string | undefined,
-  busyTimes: Array<{ start: string; end: string }> | undefined,
+  busyTimes: Array<{ start: string; end: string }> | undefined
 ): string | null {
   return validateBusyTimes(wakeUpTime, sleepTime, busyTimes);
 }

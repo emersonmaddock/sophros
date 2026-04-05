@@ -180,9 +180,9 @@ async def update_user_me(
         new_busy_times = update_data.get("busy_times") or []
 
         # Get wake/sleep times - already time objects
-        wake_time = update_data.get("wake_up_time") or current_user.wake_up_time
+        wake_time = update_data.get("wake_up_time") or current_user.wake_up_time or time(7, 0)
         sleep_time_obj = (
-            update_data.get("sleep_time") or current_user.sleep_time
+            update_data.get("sleep_time") or current_user.sleep_time or time(23, 0)
         )
 
         # Create schedule for validation
