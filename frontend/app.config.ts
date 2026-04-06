@@ -51,7 +51,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
     permissions: [
-      'CAMERA',
       'READ_EXTERNAL_STORAGE',
       'WRITE_EXTERNAL_STORAGE',
       'ACCESS_NETWORK_STATE',

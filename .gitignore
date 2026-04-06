@@ -2,3 +2,5 @@
 
 .expo/
 .worktrees/
+
+*.keystore
