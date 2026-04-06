@@ -7,20 +7,23 @@ import { getSleepWarning } from '@/utils/sleep-validation';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step5Screen() {
-  const { data, updateField, loading, error: apiError, submit } = useOnboarding();
+  const { data, updateField, errors, isSection5Complete } = useOnboarding();
   const [imperialTargetWeight, setImperialTargetWeight] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
+
+  const canContinue = isSection5Complete();
 
   const handleTargetWeightChange = (value: string) => {
     if (!data.showImperial) {
@@ -44,12 +47,18 @@ export default function Step5Screen() {
       (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
-  const handleSubmit = async () => {
-    const success = await submit();
-    if (success) {
-      router.replace('/onboarding/done');
-    } else if (apiError) {
-      Alert.alert('Error', apiError);
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 7); // At least 1 week from now
+
+  const handleDateChange = (_event: unknown, selectedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      updateField('targetDate', `${year}-${month}-${day}`);
     }
   };
 
@@ -64,9 +73,9 @@ export default function Step5Screen() {
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '100%' }]} />
+              <View style={[styles.progressFill, { width: '83%' }]} />
             </View>
-            <Text style={styles.progressText}>Step 5 of 5</Text>
+            <Text style={styles.progressText}>Step 5 of 6</Text>
           </View>
 
           <View style={styles.header}>
@@ -80,10 +89,38 @@ export default function Step5Screen() {
                 label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'})`}
                 value={displayTargetWeight}
                 onChangeText={handleTargetWeightChange}
-                placeholder="Leave blank to maintain current weight"
+                placeholder="Enter your target weight"
                 keyboardType="decimal-pad"
                 unit={data.showImperial ? 'lbs' : 'kg'}
+                error={errors.targetWeight}
               />
+            </View>
+
+            <View style={styles.dateField}>
+              <Text style={styles.fieldLabel}>Target Date</Text>
+              <Text style={styles.fieldDescription}>When do you want to reach your goal?</Text>
+              {Platform.OS === 'android' && (
+                <TouchableOpacity
+                  style={styles.dateButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={data.targetDate ? styles.dateButtonText : styles.dateButtonPlaceholder}>
+                    {data.targetDate || 'Select a date'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {showDatePicker && (
+                <DateTimePicker
+                  value={data.targetDate ? new Date(data.targetDate) : minDate}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  minimumDate={minDate}
+                  onChange={handleDateChange}
+                />
+              )}
+              {errors.targetDate && (
+                <Text style={styles.errorText}>{errors.targetDate}</Text>
+              )}
             </View>
 
             <TimePickerInput
@@ -110,16 +147,12 @@ export default function Step5Screen() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
+            style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+            onPress={() => router.push('/onboarding/step6')}
+            disabled={!canContinue}
             activeOpacity={0.8}
           >
-            {loading ? (
-              <ActivityIndicator color={Colors.light.surface} />
-            ) : (
-              <Text style={styles.submitButtonText}>Complete Profile</Text>
-            )}
+            <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -178,6 +211,39 @@ const styles = StyleSheet.create({
   content: {
     gap: 24,
   },
+  dateField: {
+    gap: 4,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  fieldDescription: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    marginBottom: 4,
+  },
+  dateButton: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: Colors.light.text,
+  },
+  dateButtonPlaceholder: {
+    fontSize: 16,
+    color: Colors.light.textMuted,
+  },
+  errorText: {
+    fontSize: 13,
+    color: Colors.light.error,
+    marginTop: 4,
+  },
   buttonContainer: {
     padding: 20,
     paddingBottom: 30,
@@ -186,18 +252,18 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.light.background,
     ...Shadows.card,
   },
-  submitButton: {
+  continueButton: {
     backgroundColor: Colors.light.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     ...Shadows.card,
   },
-  submitButtonDisabled: {
+  continueButtonDisabled: {
     backgroundColor: Colors.light.textMuted,
     opacity: 0.5,
   },
-  submitButtonText: {
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.surface,

@@ -90,6 +90,8 @@ describe('useOnboarding', () => {
     expect(result.current.errors.height).toBeDefined();
     expect(result.current.errors.gender).toBeDefined();
     expect(result.current.errors.activityLevel).toBeDefined();
+    expect(result.current.errors.targetWeight).toBeDefined();
+    expect(result.current.errors.targetDate).toBeDefined();
   });
 
   it('validate() with valid values returns true and no errors', () => {
@@ -100,6 +102,8 @@ describe('useOnboarding', () => {
       result.current.updateField('height', VALID_HEIGHT);
       result.current.updateField('gender', 'male');
       result.current.updateField('activityLevel', 'moderate');
+      result.current.updateField('targetWeight', '65');
+      result.current.updateField('targetDate', '2026-12-31');
     });
     let isValid: boolean;
     act(() => {
@@ -177,6 +181,8 @@ describe('useOnboarding', () => {
       result.current.updateField('weight', VALID_WEIGHT);
       result.current.updateField('height', VALID_HEIGHT);
       result.current.updateField('activityLevel', 'moderate');
+      result.current.updateField('targetWeight', '65');
+      result.current.updateField('targetDate', '2026-12-31');
     });
 
     expect(result.current.canSubmit()).toBe(true);
@@ -194,6 +200,8 @@ describe('useOnboarding', () => {
       result.current.updateField('weight', VALID_WEIGHT);
       result.current.updateField('height', VALID_HEIGHT);
       result.current.updateField('activityLevel', 'moderate');
+      result.current.updateField('targetWeight', '65');
+      result.current.updateField('targetDate', '2026-12-31');
     });
 
     let submitResult: boolean;
@@ -239,6 +247,8 @@ describe('useOnboarding', () => {
       result.current.updateField('weight', VALID_WEIGHT);
       result.current.updateField('height', VALID_HEIGHT);
       result.current.updateField('activityLevel', 'moderate');
+      result.current.updateField('targetWeight', '65');
+      result.current.updateField('targetDate', '2026-12-31');
     });
 
     let success: boolean;

@@ -51,7 +51,7 @@ describe('Step1Screen (Onboarding)', () => {
 
   it('shows the step progress indicator', () => {
     renderStep1();
-    expect(screen.getByText('Step 1 of 5')).toBeTruthy();
+    expect(screen.getByText('Step 1 of 6')).toBeTruthy();
   });
 
   it('Continue button is disabled when age and gender are empty', () => {
