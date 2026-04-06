@@ -333,9 +333,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    ...Shadows.card,
   },
   continueButton: {
     backgroundColor: Colors.light.primary,
