@@ -100,11 +100,10 @@ export default function Step5Screen() {
               <Text style={styles.fieldLabel}>Target Date</Text>
               <Text style={styles.fieldDescription}>When do you want to reach your goal?</Text>
               {Platform.OS === 'android' && (
-                <TouchableOpacity
-                  style={styles.dateButton}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Text style={data.targetDate ? styles.dateButtonText : styles.dateButtonPlaceholder}>
+                <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
+                  <Text
+                    style={data.targetDate ? styles.dateButtonText : styles.dateButtonPlaceholder}
+                  >
                     {data.targetDate || 'Select a date'}
                   </Text>
                 </TouchableOpacity>
@@ -118,9 +117,7 @@ export default function Step5Screen() {
                   onChange={handleDateChange}
                 />
               )}
-              {errors.targetDate && (
-                <Text style={styles.errorText}>{errors.targetDate}</Text>
-              )}
+              {errors.targetDate && <Text style={styles.errorText}>{errors.targetDate}</Text>}
             </View>
 
             <TimePickerInput

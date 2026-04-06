@@ -212,9 +212,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
 
   const isSection5Complete = () => {
     const targetWeightKg = parseFloat(data.targetWeight);
-    return (
-      !isNaN(targetWeightKg) && targetWeightKg > 0 && data.targetDate !== ''
-    );
+    return !isNaN(targetWeightKg) && targetWeightKg > 0 && data.targetDate !== '';
   };
 
   const isSection6Complete = () => {
