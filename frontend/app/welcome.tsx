@@ -6,7 +6,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
 export default function WelcomeScreen() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) {
+    return null;
+  }
 
   if (isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
@@ -70,9 +74,7 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
     textAlign: 'center',
   },
-  buttonContainer: {
-    gap: 12,
-  },
+  buttonContainer: {},
   button: {
     backgroundColor: Colors.light.primary,
     borderRadius: 12,
