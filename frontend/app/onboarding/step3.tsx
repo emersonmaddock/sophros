@@ -23,7 +23,7 @@ export default function Step3Screen() {
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: '50%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 3 of 5</Text>
+          <Text style={styles.progressText}>Step 3 of 6</Text>
         </View>
 
         <View style={styles.header}>

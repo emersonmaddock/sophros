@@ -6,7 +6,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function WelcomeScreen() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, signOut } = useAuth();
 
   if (!isSignedIn) {
     return <Redirect href={'/(auth)/sign-in'} />;
@@ -65,6 +65,13 @@ export default function WelcomeScreen() {
           activeOpacity={0.8}
         >
           <Text style={styles.continueButtonText}>Get Started</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.signOutButton}
+          onPress={() => signOut()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.signOutButtonText}>Sign Out</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -149,5 +156,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.surface,
+  },
+  signOutButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  signOutButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
   },
 });
