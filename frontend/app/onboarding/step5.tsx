@@ -20,7 +20,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step5Screen() {
-  const { data, updateField, isSection5Complete, loading, error: apiError, submit } = useOnboarding();
+  const {
+    data,
+    updateField,
+    isSection5Complete,
+    loading,
+    error: apiError,
+    submit,
+  } = useOnboarding();
   const [imperialTargetWeight, setImperialTargetWeight] = useState('');
 
   const handleTargetWeightChange = (value: string) => {

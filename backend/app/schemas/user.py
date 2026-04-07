@@ -28,6 +28,7 @@ class UserSchedule(BaseModel):
 
 class BusyTimeValidationResult(BaseModel):
     """Result of validating busy times against meal windows."""
+
     is_valid: bool
     conflicting_meals: list[str] = Field(
         default_factory=list,

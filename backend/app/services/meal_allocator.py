@@ -272,7 +272,7 @@ class MealAllocator:
         meal_windows = {
             MealSlot.BREAKFAST: (
                 wake_mins + int(0.5 * 60),  # wake + 30 min
-                wake_mins + int(2 * 60),    # wake + 2 hours
+                wake_mins + int(2 * 60),  # wake + 2 hours
             ),
             MealSlot.LUNCH: (
                 wake_mins + int(4.5 * 60),  # wake + 4.5 hours

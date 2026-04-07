@@ -131,9 +131,7 @@ async def validate_busy_times(
         # Check availability for all days
         conflicting_meals = set()
         for day in Day:
-            availability = MealAllocator.check_meal_window_availability(
-                schedule, day
-            )
+            availability = MealAllocator.check_meal_window_availability(schedule, day)
             for meal, is_available in availability.items():
                 if not is_available:
                     conflicting_meals.add(meal)
@@ -180,7 +178,9 @@ async def update_user_me(
         new_busy_times = update_data.get("busy_times") or []
 
         # Get wake/sleep times - already time objects
-        wake_time = update_data.get("wake_up_time") or current_user.wake_up_time or time(7, 0)
+        wake_time = (
+            update_data.get("wake_up_time") or current_user.wake_up_time or time(7, 0)
+        )
         sleep_time_obj = (
             update_data.get("sleep_time") or current_user.sleep_time or time(23, 0)
         )
@@ -195,9 +195,7 @@ async def update_user_me(
         # Check availability
         conflicting_meals = set()
         for day in Day:
-            availability = MealAllocator.check_meal_window_availability(
-                schedule, day
-            )
+            availability = MealAllocator.check_meal_window_availability(schedule, day)
             for meal, is_available in availability.items():
                 if not is_available:
                     conflicting_meals.add(meal)

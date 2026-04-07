@@ -314,10 +314,12 @@ class MealPlanService:
         )
 
         if not breakfast_pool:
-            raise ValueError("No breakfast recipes found matching your dietary preferences.")
+            raise ValueError(
+                "No breakfast recipes found matching your dietary preferences."
+            )
 
         # Breakfast rotates through 3 recipes across all 7 days (allows repeats)
-        breakfast_rotation = breakfast_pool[:min(3, len(breakfast_pool))]
+        breakfast_rotation = breakfast_pool[: min(3, len(breakfast_pool))]
         breakfast_idx = 0
 
         # Step 5: Assign recipes from pools, respecting leftovers
@@ -339,16 +341,22 @@ class MealPlanService:
 
                 if slot.slot_name == MealSlot.BREAKFAST:
                     # Cycle through the 3 breakfast recipes (repeats allowed)
-                    recipe_data = breakfast_rotation[breakfast_idx % len(breakfast_rotation)]
+                    recipe_data = breakfast_rotation[
+                        breakfast_idx % len(breakfast_rotation)
+                    ]
                     breakfast_idx += 1
                     recipe = self._convert_to_recipe(recipe_data)
                     slot.plan = MealOption(main_recipe=recipe)
-                    slot.prep_time_minutes = min(recipe.preparation_time_minutes or 15, 20)
+                    slot.prep_time_minutes = min(
+                        recipe.preparation_time_minutes or 15, 20
+                    )
                 else:
                     self._assign_slot_recipes(slot, main_pool, used_ids)
                     # Store in manifest for potential leftover lookups
                     if slot.plan and slot.plan.main_recipe:
-                        recipe_manifest[(plan.day, slot.slot_name)] = slot.plan.main_recipe
+                        recipe_manifest[(plan.day, slot.slot_name)] = (
+                            slot.plan.main_recipe
+                        )
 
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
         return WeeklyMealPlan(
