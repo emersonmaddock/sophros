@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     JSON,
@@ -13,6 +16,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
+
+if TYPE_CHECKING:
+    from app.models.planned_event import PlannedEvent  # noqa: F401
 
 
 class SavedMealPlan(Base):
@@ -30,4 +36,9 @@ class SavedMealPlan(Base):
         DateTime, server_default=func.now(), onupdate=func.now()
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="saved_meal_plans")  # type: ignore[name-defined] # noqa: F821
+    user: Mapped[User] = relationship("User", back_populates="saved_meal_plans")  # type: ignore[name-defined] # noqa: F821
+    events: Mapped[list[PlannedEvent]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+        "PlannedEvent",
+        back_populates="meal_plan",
+        cascade="all, delete-orphan",
+    )

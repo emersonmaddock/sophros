@@ -19,6 +19,12 @@ from app.models.dietary import (  # noqa: F401 — registers models with Base.me
     UserExcludeCuisine,
     UserIncludeCuisine,
 )
+from app.models.planned_event import (  # noqa: F401
+    MealDetail,
+    PlannedEvent,
+    SleepDetail,
+    WorkoutDetail,
+)
 from app.models.saved_meal_plan import SavedMealPlan  # noqa: F401
 from app.models.schedule import ScheduleItem  # noqa: F401
 from app.models.user import User
