@@ -1,11 +1,13 @@
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db
 from app.domain.enums import Day
+from app.models.planned_event import MealDetail, PlannedEvent, WorkoutDetail, SleepDetail
 from app.models.saved_meal_plan import SavedMealPlan
 from app.models.user import User as DBUser
 from app.schemas.meal_plan import (
@@ -16,6 +18,7 @@ from app.schemas.meal_plan import (
 )
 from app.schemas.user import UserRead
 from app.services.meal_plan import MealPlanService
+from app.services.meal_plan_crud import assemble_week_response, decompose_weekly_plan
 
 router = APIRouter()
 
@@ -98,6 +101,10 @@ async def save_meal_plan(
 
     if existing:
         existing.plan_data = body.plan_data.model_dump(mode="json")
+        # Remove old relational events before re-decomposing
+        await db.execute(
+            delete(PlannedEvent).where(PlannedEvent.meal_plan_id == existing.id)
+        )
         db.add(existing)
     else:
         existing = SavedMealPlan(
@@ -106,10 +113,27 @@ async def save_meal_plan(
             plan_data=body.plan_data.model_dump(mode="json"),
         )
         db.add(existing)
+        await db.flush()  # assign existing.id so we can reference it
+
+    # Decompose the weekly plan into normalised event + detail rows
+    events = decompose_weekly_plan(body.plan_data, existing.id)
+    db.add_all(events)
 
     await db.commit()
-    await db.refresh(existing)
-    return existing
+
+    # Re-fetch with eager-loaded events for the response
+    stmt = (
+        select(SavedMealPlan)
+        .where(SavedMealPlan.id == existing.id)
+        .options(
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.meal_detail),
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.workout_detail),
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.sleep_detail),
+        )
+    )
+    result = await db.execute(stmt)
+    refreshed = result.scalar_one()
+    return assemble_week_response(refreshed)
 
 
 @router.get("/week", response_model=SavedMealPlanResponse | None)
@@ -119,12 +143,23 @@ async def get_week_plan(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a saved meal plan for a specific week, or null if none exists."""
-    stmt = select(SavedMealPlan).where(
-        SavedMealPlan.user_id == current_user.id,
-        SavedMealPlan.week_start_date == week_start_date,
+    stmt = (
+        select(SavedMealPlan)
+        .where(
+            SavedMealPlan.user_id == current_user.id,
+            SavedMealPlan.week_start_date == week_start_date,
+        )
+        .options(
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.meal_detail),
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.workout_detail),
+            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.sleep_detail),
+        )
     )
     result = await db.execute(stmt)
-    return result.scalar_one_or_none()
+    plan = result.scalar_one_or_none()
+    if plan is None:
+        return None
+    return assemble_week_response(plan)
 
 
 @router.get("/planned-weeks", response_model=list[date])
