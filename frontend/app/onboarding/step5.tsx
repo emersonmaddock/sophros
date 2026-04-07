@@ -6,10 +6,8 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { kgToLbs, lbsToKg } from '@/utils/units';
 import { getSleepWarning } from '@/utils/sleep-validation';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
@@ -20,15 +18,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step5Screen() {
-  const {
-    data,
-    updateField,
-    isSection5Complete,
-    loading,
-    error: apiError,
-    submit,
-  } = useOnboarding();
+  const { data, updateField, errors, isSection5Complete } = useOnboarding();
   const [imperialTargetWeight, setImperialTargetWeight] = useState('');
+
+  const canContinue = isSection5Complete();
 
   const handleTargetWeightChange = (value: string) => {
     if (!data.showImperial) {
@@ -52,17 +45,11 @@ export default function Step5Screen() {
       (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
-  const canSubmit = isSection5Complete();
-
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
-    const success = await submit();
-    if (success) {
-      router.replace('/onboarding/done');
-    } else if (apiError) {
-      Alert.alert('Error', apiError);
-    }
-  };
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7); // At least 1 week from now
+    return d;
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -75,9 +62,9 @@ export default function Step5Screen() {
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '100%' }]} />
+              <View style={[styles.progressFill, { width: '83%' }]} />
             </View>
-            <Text style={styles.progressText}>Step 5 of 5</Text>
+            <Text style={styles.progressText}>Step 5 of 6</Text>
           </View>
 
           <View style={styles.header}>
@@ -91,9 +78,10 @@ export default function Step5Screen() {
                 label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'}) *`}
                 value={displayTargetWeight}
                 onChangeText={handleTargetWeightChange}
-                placeholder={data.showImperial ? 'e.g. 160' : 'e.g. 72'}
+                placeholder="Enter your target weight"
                 keyboardType="decimal-pad"
                 unit={data.showImperial ? 'lbs' : 'kg'}
+                error={errors.targetWeight}
               />
             </View>
 
@@ -107,9 +95,11 @@ export default function Step5Screen() {
             />
 
             <DatePickerInput
-              label="Goal Date *"
+              label="Target Date"
               value={data.targetDate}
               onChange={(v) => updateField('targetDate', v)}
+              minimumDate={minDate}
+              error={errors.targetDate}
             />
 
             <TimePickerInput
@@ -136,16 +126,12 @@ export default function Step5Screen() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.submitButton, (!canSubmit || loading) && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={!canSubmit || loading}
+            style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
+            onPress={() => router.push('/onboarding/step6')}
+            disabled={!canContinue}
             activeOpacity={0.8}
           >
-            {loading ? (
-              <ActivityIndicator color={Colors.light.surface} />
-            ) : (
-              <Text style={styles.submitButtonText}>Complete Profile</Text>
-            )}
+            <Text style={styles.continueButtonText}>Continue</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -208,22 +194,19 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    ...Shadows.card,
   },
-  submitButton: {
+  continueButton: {
     backgroundColor: Colors.light.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     ...Shadows.card,
   },
-  submitButtonDisabled: {
+  continueButtonDisabled: {
     backgroundColor: Colors.light.textMuted,
     opacity: 0.5,
   },
-  submitButtonText: {
+  continueButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.surface,

@@ -1,8 +1,8 @@
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
-  Modal,
   Platform,
   StyleProp,
   StyleSheet,
@@ -17,6 +17,8 @@ interface DatePickerInputProps {
   value: string;
   onChange: (v: string) => void;
   style?: StyleProp<ViewStyle>;
+  minimumDate?: Date;
+  error?: string;
 }
 
 function parseValue(value: string | null | undefined): Date {
@@ -25,7 +27,6 @@ function parseValue(value: string | null | undefined): Date {
     today.setHours(0, 0, 0, 0);
     return today;
   }
-  // format YYYY-MM-DD
   const [year, month, day] = value.split('-').map(Number);
   const d = new Date(year, month - 1, day);
   return isNaN(d.getTime()) ? new Date() : d;
@@ -45,28 +46,41 @@ function displayDate(value: string): string {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-export function DatePickerInput({ label, value, onChange, style }: DatePickerInputProps) {
+export function DatePickerInput({
+  label,
+  value,
+  onChange,
+  style,
+  minimumDate,
+  error,
+}: DatePickerInputProps) {
   const currentDate = parseValue(value);
-  const [showPicker, setShowPicker] = useState(false);
-  const [tempDate, setTempDate] = useState(currentDate);
+  const [showAndroid, setShowAndroid] = useState(false);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   const open = () => {
-    setTempDate(parseValue(value));
-    setShowPicker(true);
-  };
-
-  const confirm = () => {
-    setShowPicker(false);
-    onChange(formatOutput(tempDate));
-  };
-
-  const cancel = () => {
-    setShowPicker(false);
+    if (Platform.OS === 'android') {
+      setShowAndroid(true);
+      return;
+    }
+    bottomSheetRef.current?.present();
   };
 
   const clear = () => {
     onChange('');
   };
+
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   return (
     <View style={style}>
@@ -83,39 +97,34 @@ export function DatePickerInput({ label, value, onChange, style }: DatePickerInp
           </TouchableOpacity>
         ) : null}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
-      {Platform.OS === 'ios' && showPicker && (
-        <Modal transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerHeader}>
-                <TouchableOpacity onPress={cancel}>
-                  <Text style={styles.pickerHeaderCancel}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={confirm}>
-                  <Text style={styles.pickerHeaderDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={tempDate}
-                mode="date"
-                display="spinner"
-                textColor="black"
-                themeVariant="light"
-                onChange={(_, date) => setTempDate(date ?? tempDate)}
-              />
-            </View>
+      <BottomSheetModal ref={bottomSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+        <BottomSheetView style={styles.sheetContent}>
+          <View style={styles.pickerWrapper}>
+            <DateTimePicker
+              value={currentDate}
+              mode="date"
+              display="spinner"
+              textColor="black"
+              themeVariant="light"
+              minimumDate={minimumDate}
+              onChange={(_, date) => {
+                if (date) onChange(formatOutput(date));
+              }}
+            />
           </View>
-        </Modal>
-      )}
+        </BottomSheetView>
+      </BottomSheetModal>
 
-      {Platform.OS === 'android' && showPicker && (
+      {Platform.OS === 'android' && showAndroid && (
         <DateTimePicker
           value={currentDate}
           mode="date"
           display="default"
+          minimumDate={minimumDate}
           onChange={(_, date) => {
-            setShowPicker(false);
+            setShowAndroid(false);
             if (date) onChange(formatOutput(date));
           }}
         />
@@ -168,32 +177,15 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
     lineHeight: 22,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  pickerContainer: {
-    backgroundColor: Colors.light.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  sheetContent: {
     paddingBottom: 30,
   },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  pickerWrapper: {
+    alignItems: 'center',
   },
-  pickerHeaderCancel: {
-    fontSize: 16,
-    color: Colors.light.textMuted,
-  },
-  pickerHeaderDone: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.primary,
+  errorText: {
+    fontSize: 13,
+    color: Colors.light.error,
+    marginTop: 4,
   },
 });

@@ -14,12 +14,16 @@ export default function Step3Screen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: '50%' }]} />
           </View>
-          <Text style={styles.progressText}>Step 3 of 5</Text>
+          <Text style={styles.progressText}>Step 3 of 6</Text>
         </View>
 
         <View style={styles.header}>
@@ -63,9 +67,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
+  scrollView: {
+    flex: 1,
+  },
   scrollContent: {
     padding: 20,
-    paddingBottom: 100,
+    paddingBottom: 20,
   },
   progressContainer: {
     marginBottom: 24,
@@ -107,16 +114,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    ...Shadows.card,
   },
   continueButton: {
     backgroundColor: Colors.light.primary,

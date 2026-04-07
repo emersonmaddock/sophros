@@ -1,8 +1,9 @@
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors, Layout } from '@/constants/theme';
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
-import { PlusCircle, X } from 'lucide-react-native';
-import React from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PlusCircle } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type AlternativesModalProps = {
   visible: boolean;
@@ -21,6 +22,29 @@ export function AlternativesModal({
   onSelect,
   onAddManual,
 }: AlternativesModalProps) {
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ['80%'], []);
+
+  useEffect(() => {
+    if (visible && item) {
+      bottomSheetRef.current?.present();
+    } else {
+      bottomSheetRef.current?.dismiss();
+    }
+  }, [visible, item]);
+
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
   if (!item) return null;
 
   const handleSelect = (alternative: WeeklyScheduleItem) => {
@@ -35,81 +59,60 @@ export function AlternativesModal({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Swap Item</Text>
-              <Text style={styles.headerSubtitle}>Choose an alternative for {item.time}</Text>
-            </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={Colors.light.text} />
-            </TouchableOpacity>
-          </View>
+    <BottomSheetModal
+      ref={bottomSheetRef}
+      snapPoints={snapPoints}
+      enableDynamicSizing={false}
+      backdropComponent={renderBackdrop}
+      onDismiss={onClose}
+    >
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Swap Item</Text>
+        <Text style={styles.headerSubtitle}>Choose an alternative for {item.time}</Text>
+      </View>
 
-          {/* Current Item */}
-          <View style={styles.currentSection}>
-            <Text style={styles.sectionTitle}>Current</Text>
-            <View style={styles.currentCard}>
-              <Text style={styles.currentTitle}>{item.title}</Text>
-              {item.subtitle && <Text style={styles.currentSubtitle}>{item.subtitle}</Text>}
-            </View>
-          </View>
-
-          {/* Alternatives */}
-          <ScrollView style={styles.alternativesContainer}>
-            <Text style={styles.sectionTitle}>Alternatives</Text>
-            {alternatives.map((alt, index) => (
-              <TouchableOpacity
-                key={alt.id || index}
-                style={styles.alternativeCard}
-                onPress={() => handleSelect(alt)}
-              >
-                <View style={styles.alternativeContent}>
-                  <Text style={styles.alternativeTitle}>{alt.title}</Text>
-                  {alt.subtitle && <Text style={styles.alternativeSubtitle}>{alt.subtitle}</Text>}
-                  <Text style={styles.alternativeDuration}>{alt.duration}</Text>
-                </View>
-                <View style={styles.selectButton}>
-                  <Text style={styles.selectButtonText}>Select</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-
-            {onAddManual && (item.type === 'meal' || item.type === 'workout') && (
-              <TouchableOpacity style={styles.addManualButton} onPress={handleAddManual}>
-                <PlusCircle size={18} color={Colors.light.primary} />
-                <Text style={styles.addManualText}>
-                  Add my own {item.type === 'meal' ? 'meal' : 'workout'} manually
-                </Text>
-              </TouchableOpacity>
-            )}
-          </ScrollView>
+      <View style={styles.currentSection}>
+        <Text style={styles.sectionTitle}>Current</Text>
+        <View style={styles.currentCard}>
+          <Text style={styles.currentTitle}>{item.title}</Text>
+          {item.subtitle && <Text style={styles.currentSubtitle}>{item.subtitle}</Text>}
         </View>
       </View>
-    </Modal>
+
+      <BottomSheetScrollView contentContainerStyle={styles.alternativesContainer}>
+        <Text style={styles.sectionTitle}>Alternatives</Text>
+        {alternatives.map((alt, index) => (
+          <TouchableOpacity
+            key={alt.id || index}
+            style={styles.alternativeCard}
+            onPress={() => handleSelect(alt)}
+          >
+            <View style={styles.alternativeContent}>
+              <Text style={styles.alternativeTitle}>{alt.title}</Text>
+              {alt.subtitle && <Text style={styles.alternativeSubtitle}>{alt.subtitle}</Text>}
+              <Text style={styles.alternativeDuration}>{alt.duration}</Text>
+            </View>
+            <View style={styles.selectButton}>
+              <Text style={styles.selectButtonText}>Select</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        {onAddManual && (item.type === 'meal' || item.type === 'workout') && (
+          <TouchableOpacity style={styles.addManualButton} onPress={handleAddManual}>
+            <PlusCircle size={18} color={Colors.light.primary} />
+            <Text style={styles.addManualText}>
+              Add my own {item.type === 'meal' ? 'meal' : 'workout'} manually
+            </Text>
+          </TouchableOpacity>
+        )}
+      </BottomSheetScrollView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContainer: {
-    backgroundColor: Colors.light.background,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-    paddingBottom: 40,
-  },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -123,14 +126,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
     marginTop: 2,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.light.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   currentSection: {
     padding: 20,
@@ -163,6 +158,7 @@ const styles = StyleSheet.create({
   },
   alternativesContainer: {
     paddingHorizontal: 20,
+    paddingBottom: 40,
   },
   alternativeCard: {
     backgroundColor: Colors.light.surface,

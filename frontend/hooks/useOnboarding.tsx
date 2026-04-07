@@ -1,4 +1,11 @@
-import type { ActivityLevel, PregnancyStatus, Sex, UserCreate } from '@/api/types.gen';
+import type {
+  ActivityLevel,
+  Allergy,
+  Cuisine,
+  PregnancyStatus,
+  Sex,
+  UserCreate,
+} from '@/api/types.gen';
 import { VALIDATION_RULES } from '@/constants/onboarding';
 import { useUser } from '@/contexts/UserContext';
 import { createUser } from '@/lib/api-client';
@@ -18,6 +25,14 @@ export interface OnboardingData {
   targetBodyFat: string; // percentage
   wakeUpTime: string; // HH:MM
   sleepTime: string; // HH:MM
+  allergies: Allergy[];
+  includeCuisine: Cuisine[];
+  excludeCuisine: Cuisine[];
+  isGlutenFree: boolean;
+  isKetogenic: boolean;
+  isVegetarian: boolean;
+  isVegan: boolean;
+  isPescatarian: boolean;
 }
 
 interface ValidationErrors {
@@ -26,6 +41,8 @@ interface ValidationErrors {
   height?: string;
   gender?: string;
   activityLevel?: string;
+  targetWeight?: string;
+  targetDate?: string;
 }
 
 interface OnboardingContextType {
@@ -41,6 +58,7 @@ interface OnboardingContextType {
   isSection3Complete: () => boolean;
   isSection4Complete: () => boolean;
   isSection5Complete: () => boolean;
+  isSection6Complete: () => boolean;
   canSubmit: () => boolean;
 }
 
@@ -64,6 +82,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     targetBodyFat: '',
     wakeUpTime: '07:00',
     sleepTime: '23:00',
+    allergies: [],
+    includeCuisine: [],
+    excludeCuisine: [],
+    isGlutenFree: false,
+    isKetogenic: false,
+    isVegetarian: false,
+    isVegan: false,
+    isPescatarian: false,
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({});
@@ -147,6 +173,15 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       newErrors.activityLevel = 'Activity level is required';
     }
 
+    const targetWeightKg = parseFloat(data.targetWeight);
+    if (!data.targetWeight || isNaN(targetWeightKg) || targetWeightKg <= 0) {
+      newErrors.targetWeight = 'Target weight is required';
+    }
+
+    if (!data.targetDate) {
+      newErrors.targetDate = 'Target date is required';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -183,6 +218,12 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     if (!data.targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(data.targetDate)) return false;
     const bodyFat = parseFloat(data.targetBodyFat);
     if (!data.targetBodyFat || isNaN(bodyFat) || bodyFat < 3 || bodyFat > 60) return false;
+    const targetWeightKg = parseFloat(data.targetWeight);
+    return !isNaN(targetWeightKg) && targetWeightKg > 0 && data.targetDate !== '';
+  };
+
+  const isSection6Complete = () => {
+    // All dietary fields are optional
     return true;
   };
 
@@ -236,6 +277,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       payload.target_weight = targetWeightKg;
       payload.target_date = data.targetDate;
       payload.target_body_fat = parseFloat(data.targetBodyFat);
+      // Include target weight (now required)
+      payload.target_weight = parseFloat(data.targetWeight);
+
+      // Include target date (now required)
+      payload.target_date = data.targetDate;
 
       // Include wake/sleep times
       if (data.wakeUpTime) {
@@ -244,6 +290,22 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       if (data.sleepTime) {
         payload.sleep_time = `${data.sleepTime}:00`;
       }
+
+      // Include dietary preferences
+      if (data.allergies.length > 0) {
+        payload.allergies = data.allergies;
+      }
+      if (data.includeCuisine.length > 0) {
+        payload.include_cuisine = data.includeCuisine;
+      }
+      if (data.excludeCuisine.length > 0) {
+        payload.exclude_cuisine = data.excludeCuisine;
+      }
+      payload.is_gluten_free = data.isGlutenFree;
+      payload.is_ketogenic = data.isKetogenic;
+      payload.is_vegetarian = data.isVegetarian;
+      payload.is_vegan = data.isVegan;
+      payload.is_pescatarian = data.isPescatarian;
 
       await createUser(payload, token);
 
@@ -273,6 +335,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     isSection3Complete,
     isSection4Complete,
     isSection5Complete,
+    isSection6Complete,
     canSubmit,
   };
 
