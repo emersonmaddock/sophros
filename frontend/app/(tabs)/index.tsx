@@ -29,7 +29,7 @@ const JS_DAY_TO_API_DAY: Record<number, Day> = {
   6: 'Saturday',
 };
 
-export default async function DashboardPage() {
+export default function DashboardPage() {
   const router = useRouter();
 
   const { user: clerkUser } = useClerkUser();
