@@ -41,7 +41,7 @@ describe('WelcomeScreen', () => {
     expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-in');
   });
 
-  it('redirects to auth if already signed in', () => {
+  it('redirects to main app if already signed in', () => {
     (useAuth as jest.Mock).mockReturnValue({ isSignedIn: true, isLoaded: true });
 
     const { UNSAFE_getByType } = render(<WelcomeScreen />);

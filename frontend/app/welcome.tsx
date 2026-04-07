@@ -13,7 +13,7 @@ export default function WelcomeScreen() {
   }
 
   if (isSignedIn) {
-    return <Redirect href="/(auth)/sign-in" />;
+    return <Redirect href="/(tabs)" />;
   }
 
   return (
