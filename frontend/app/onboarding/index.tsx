@@ -32,16 +32,13 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContainer}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.logoText}>Welcome to Sophros!</Text>
             <Text style={styles.subtitle}>
-              Let&apos;s set up your personalized health profile to get you started on your
-              wellness journey.
+              Let&apos;s set up your personalized health profile to get you started on your wellness
+              journey.
             </Text>
           </View>
 
