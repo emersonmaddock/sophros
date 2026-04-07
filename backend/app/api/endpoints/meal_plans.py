@@ -12,13 +12,22 @@ from app.models.saved_meal_plan import SavedMealPlan
 from app.models.user import User as DBUser
 from app.schemas.meal_plan import (
     DailyMealPlan,
+    DayTotalsResponse,
+    PlannedEventCreate,
+    PlannedEventResponse,
+    PlannedEventUpdate,
     SavedMealPlanResponse,
     SaveMealPlanRequest,
     WeeklyMealPlan,
 )
 from app.schemas.user import UserRead
 from app.services.meal_plan import MealPlanService
-from app.services.meal_plan_crud import assemble_week_response, decompose_weekly_plan
+from app.services.meal_plan_crud import (
+    assemble_week_response,
+    build_day_totals,
+    decompose_weekly_plan,
+    event_to_response,
+)
 
 router = APIRouter()
 
@@ -175,3 +184,200 @@ async def get_planned_weeks(
     )
     result = await db.execute(stmt)
     return result.scalars().all()
+
+
+# ---------------------------------------------------------------------------
+# Helper functions for CRUD endpoints
+# ---------------------------------------------------------------------------
+
+
+async def _get_user_plan(db: AsyncSession, plan_id: int, user_id: str) -> SavedMealPlan:
+    """Get a meal plan, verifying it belongs to the user."""
+    stmt = select(SavedMealPlan).where(
+        SavedMealPlan.id == plan_id,
+        SavedMealPlan.user_id == user_id,
+    )
+    result = await db.execute(stmt)
+    plan = result.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Meal plan not found")
+    return plan
+
+
+async def _get_user_event(db: AsyncSession, event_id: int, user_id: str) -> PlannedEvent:
+    """Get an event, verifying it belongs to the user's plan."""
+    stmt = (
+        select(PlannedEvent)
+        .join(SavedMealPlan)
+        .where(PlannedEvent.id == event_id, SavedMealPlan.user_id == user_id)
+        .options(
+            selectinload(PlannedEvent.meal_detail),
+            selectinload(PlannedEvent.workout_detail),
+            selectinload(PlannedEvent.sleep_detail),
+        )
+    )
+    result = await db.execute(stmt)
+    event = result.scalar_one_or_none()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    return event
+
+
+async def _get_day_totals(db: AsyncSession, plan_id: int, day: str, user_id: str) -> dict:
+    """Get all events for a day with computed totals."""
+    stmt = (
+        select(PlannedEvent)
+        .join(SavedMealPlan)
+        .where(
+            PlannedEvent.meal_plan_id == plan_id,
+            PlannedEvent.day == day,
+            SavedMealPlan.user_id == user_id,
+        )
+        .options(
+            selectinload(PlannedEvent.meal_detail),
+            selectinload(PlannedEvent.workout_detail),
+            selectinload(PlannedEvent.sleep_detail),
+        )
+    )
+    result = await db.execute(stmt)
+    events = list(result.scalars().all())
+    return build_day_totals(events, day)
+
+
+# ---------------------------------------------------------------------------
+# CRUD endpoints for individual planned events
+# ---------------------------------------------------------------------------
+
+
+@router.post("/{plan_id}/events", response_model=DayTotalsResponse)
+async def add_event(
+    plan_id: int,
+    body: PlannedEventCreate,
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Add a new event to a saved meal plan."""
+    await _get_user_plan(db, plan_id, current_user.id)
+
+    event = PlannedEvent(
+        meal_plan_id=plan_id,
+        day=body.day,
+        event_type=body.event_type,
+        time=body.time,
+        title=body.title,
+        duration_minutes=body.duration_minutes,
+    )
+
+    if body.event_type == "meal":
+        event.meal_detail = MealDetail(
+            slot_name=body.slot_name or "Lunch",
+            calories=body.calories,
+            protein=body.protein,
+            carbohydrates=body.carbohydrates,
+            fat=body.fat,
+            prep_time_minutes=body.prep_time_minutes,
+            recipe_id=body.recipe_id,
+            recipe_description=body.recipe_description,
+            recipe_ingredients=body.recipe_ingredients,
+            recipe_tags=body.recipe_tags,
+            recipe_warnings=body.recipe_warnings,
+            recipe_source_url=body.recipe_source_url,
+            recipe_image_url=body.recipe_image_url,
+        )
+    elif body.event_type == "workout":
+        event.workout_detail = WorkoutDetail(
+            exercise_category=body.exercise_category or "Cardio",
+            calories_burned=body.calories_burned,
+            muscle_gain_estimate_kg=body.muscle_gain_estimate_kg,
+        )
+    elif body.event_type == "sleep":
+        event.sleep_detail = SleepDetail(target_hours=body.target_hours)
+
+    db.add(event)
+    await db.commit()
+
+    return await _get_day_totals(db, plan_id, body.day, current_user.id)
+
+
+@router.put("/events/{event_id}", response_model=DayTotalsResponse)
+async def update_event(
+    event_id: int,
+    body: PlannedEventUpdate,
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update an existing planned event."""
+    event = await _get_user_event(db, event_id, current_user.id)
+
+    # Update base fields
+    if body.title is not None:
+        event.title = body.title
+    if body.time is not None:
+        event.time = body.time
+    if body.duration_minutes is not None:
+        event.duration_minutes = body.duration_minutes
+    if body.completed is not None:
+        event.completed = body.completed
+
+    # Update meal detail fields
+    if event.meal_detail and event.event_type == "meal":
+        md = event.meal_detail
+        if body.calories is not None:
+            md.calories = body.calories
+        if body.protein is not None:
+            md.protein = body.protein
+        if body.carbohydrates is not None:
+            md.carbohydrates = body.carbohydrates
+        if body.fat is not None:
+            md.fat = body.fat
+        if body.slot_name is not None:
+            md.slot_name = body.slot_name
+
+    # Update workout detail fields
+    if event.workout_detail and event.event_type == "workout":
+        if body.exercise_category is not None:
+            event.workout_detail.exercise_category = body.exercise_category
+        if body.calories_burned is not None:
+            event.workout_detail.calories_burned = body.calories_burned
+
+    # Update sleep detail fields
+    if event.sleep_detail and event.event_type == "sleep":
+        if body.target_hours is not None:
+            event.sleep_detail.target_hours = body.target_hours
+
+    db.add(event)
+    await db.commit()
+
+    return await _get_day_totals(db, event.meal_plan_id, event.day, current_user.id)
+
+
+@router.delete("/events/{event_id}", response_model=DayTotalsResponse)
+async def delete_event(
+    event_id: int,
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a planned event."""
+    event = await _get_user_event(db, event_id, current_user.id)
+    plan_id = event.meal_plan_id
+    day = event.day
+
+    await db.delete(event)
+    await db.commit()
+
+    return await _get_day_totals(db, plan_id, day, current_user.id)
+
+
+@router.post("/events/{event_id}/complete", response_model=PlannedEventResponse)
+async def complete_event(
+    event_id: int,
+    current_user: DBUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark an event as completed."""
+    event = await _get_user_event(db, event_id, current_user.id)
+    event.completed = True
+    db.add(event)
+    await db.commit()
+    await db.refresh(event)
+    return event_to_response(event)

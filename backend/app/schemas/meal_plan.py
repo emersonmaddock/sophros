@@ -63,3 +63,84 @@ class SavedMealPlanResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class PlannedEventCreate(BaseModel):
+    day: Day
+    event_type: str  # 'meal' | 'workout' | 'sleep'
+    time: timeofday | None = None
+    title: str
+    duration_minutes: int | None = None
+    # Meal fields
+    slot_name: MealSlot | None = None
+    calories: int = 0
+    protein: int = 0
+    carbohydrates: int = 0
+    fat: int = 0
+    prep_time_minutes: int = 0
+    recipe_id: str | None = None
+    recipe_description: str | None = None
+    recipe_ingredients: list[str] | None = None
+    recipe_tags: list[str] | None = None
+    recipe_warnings: list[str] | None = None
+    recipe_source_url: str | None = None
+    recipe_image_url: str | None = None
+    # Workout fields
+    exercise_category: str | None = None
+    calories_burned: int | None = None
+    muscle_gain_estimate_kg: float | None = None
+    # Sleep fields
+    target_hours: float | None = None
+
+
+class PlannedEventUpdate(BaseModel):
+    title: str | None = None
+    time: timeofday | None = None
+    duration_minutes: int | None = None
+    completed: bool | None = None
+    # Meal fields
+    calories: int | None = None
+    protein: int | None = None
+    carbohydrates: int | None = None
+    fat: int | None = None
+    slot_name: MealSlot | None = None
+    # Workout fields
+    exercise_category: str | None = None
+    calories_burned: int | None = None
+    # Sleep fields
+    target_hours: float | None = None
+
+
+class PlannedEventResponse(BaseModel):
+    id: int
+    meal_plan_id: int
+    day: Day
+    event_type: str
+    time: timeofday | None = None
+    title: str
+    duration_minutes: int | None = None
+    completed: bool = False
+    # Meal detail (if type='meal')
+    slot_name: MealSlot | None = None
+    calories: int | None = None
+    protein: int | None = None
+    carbohydrates: int | None = None
+    fat: int | None = None
+    recipe_id: str | None = None
+    # Workout detail (if type='workout')
+    exercise_category: str | None = None
+    calories_burned: int | None = None
+    muscle_gain_estimate_kg: float | None = None
+    # Sleep detail (if type='sleep')
+    target_hours: float | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class DayTotalsResponse(BaseModel):
+    day: Day
+    events: list[PlannedEventResponse]
+    total_calories: int
+    total_protein: int
+    total_carbs: int
+    total_fat: int

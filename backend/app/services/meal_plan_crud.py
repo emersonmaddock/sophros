@@ -137,6 +137,54 @@ def compute_day_totals(
 # ---------------------------------------------------------------------------
 
 
+def event_to_response(event: PlannedEvent) -> dict:
+    """Convert a PlannedEvent + details to a PlannedEventResponse dict."""
+    data = {
+        "id": event.id,
+        "meal_plan_id": event.meal_plan_id,
+        "day": event.day,
+        "event_type": event.event_type,
+        "time": event.time,
+        "title": event.title,
+        "duration_minutes": event.duration_minutes,
+        "completed": event.completed,
+    }
+    if event.meal_detail:
+        md = event.meal_detail
+        data.update({
+            "slot_name": md.slot_name,
+            "calories": md.calories,
+            "protein": md.protein,
+            "carbohydrates": md.carbohydrates,
+            "fat": md.fat,
+            "recipe_id": md.recipe_id,
+        })
+    if event.workout_detail:
+        wd = event.workout_detail
+        data.update({
+            "exercise_category": wd.exercise_category,
+            "calories_burned": wd.calories_burned,
+            "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg,
+        })
+    if event.sleep_detail:
+        data.update({"target_hours": event.sleep_detail.target_hours})
+    return data
+
+
+def build_day_totals(events: list[PlannedEvent], day: str) -> dict:
+    """Build a DayTotalsResponse dict for a specific day."""
+    day_events = [e for e in events if e.day == day]
+    cal, pro, carb, f = compute_day_totals(day_events)
+    return {
+        "day": day,
+        "events": [event_to_response(e) for e in day_events],
+        "total_calories": cal,
+        "total_protein": pro,
+        "total_carbs": carb,
+        "total_fat": f,
+    }
+
+
 def _meal_detail_to_recipe(md: MealDetail) -> dict | None:
     """Reconstruct a ``Recipe`` dict from a ``MealDetail`` row."""
     if not md.recipe_id:

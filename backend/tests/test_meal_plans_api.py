@@ -213,3 +213,145 @@ async def test_save_get_roundtrip_totals(client: AsyncClient):
     assert monday["total_carbs"] == 75
     assert monday["total_fat"] == 20
     assert data["plan_data"]["total_weekly_calories"] == 600
+
+
+@pytest.mark.asyncio
+async def test_add_event(client: AsyncClient):
+    """POST /{plan_id}/events creates a new meal event."""
+    save_resp = await client.post(
+        f"{BASE}/save",
+        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
+    )
+    plan_id = save_resp.json()["id"]
+
+    response = await client.post(
+        f"{BASE}/{plan_id}/events",
+        json={
+            "day": "Monday",
+            "event_type": "meal",
+            "time": "12:00:00",
+            "title": "Custom Lunch",
+            "slot_name": "Lunch",
+            "calories": 500,
+            "protein": 30,
+            "carbohydrates": 60,
+            "fat": 15,
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["day"] == "Monday"
+    assert len(data["events"]) == 2  # original breakfast + new lunch
+    # Totals should include both meals
+    assert data["total_calories"] == 1100  # 600 + 500
+    assert data["total_protein"] == 60  # 30 + 30
+
+
+@pytest.mark.asyncio
+async def test_update_event_macros(client: AsyncClient):
+    """PUT /events/{id} updates macros and recalculates totals."""
+    save_resp = await client.post(
+        f"{BASE}/save",
+        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
+    )
+    plan_id = save_resp.json()["id"]
+
+    # Add an event so we know its ID
+    add_resp = await client.post(
+        f"{BASE}/{plan_id}/events",
+        json={
+            "day": "Monday",
+            "event_type": "meal",
+            "time": "12:00:00",
+            "title": "Lunch",
+            "slot_name": "Lunch",
+            "calories": 500,
+            "protein": 30,
+            "carbohydrates": 60,
+            "fat": 15,
+        },
+    )
+    events = add_resp.json()["events"]
+    lunch_event = next(e for e in events if e["title"] == "Lunch")
+
+    # Update the lunch macros
+    response = await client.put(
+        f"{BASE}/events/{lunch_event['id']}",
+        json={"calories": 400, "protein": 25},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    # Totals should reflect updated values
+    assert data["total_calories"] == 1000  # 600 + 400
+    assert data["total_protein"] == 55  # 30 + 25
+
+
+@pytest.mark.asyncio
+async def test_delete_event(client: AsyncClient):
+    """DELETE /events/{id} removes event and recalculates totals."""
+    save_resp = await client.post(
+        f"{BASE}/save",
+        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
+    )
+    plan_id = save_resp.json()["id"]
+
+    # Add an event
+    add_resp = await client.post(
+        f"{BASE}/{plan_id}/events",
+        json={
+            "day": "Monday",
+            "event_type": "meal",
+            "time": "12:00:00",
+            "title": "Lunch",
+            "slot_name": "Lunch",
+            "calories": 500,
+            "protein": 30,
+            "carbohydrates": 60,
+            "fat": 15,
+        },
+    )
+    events = add_resp.json()["events"]
+    lunch_id = next(e for e in events if e["title"] == "Lunch")["id"]
+
+    response = await client.delete(f"{BASE}/events/{lunch_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["events"]) == 1  # Only breakfast remains
+    assert data["total_calories"] == 600
+
+
+@pytest.mark.asyncio
+async def test_complete_event(client: AsyncClient):
+    """POST /events/{id}/complete marks event as completed."""
+    save_resp = await client.post(
+        f"{BASE}/save",
+        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
+    )
+    plan_id = save_resp.json()["id"]
+
+    add_resp = await client.post(
+        f"{BASE}/{plan_id}/events",
+        json={
+            "day": "Monday",
+            "event_type": "meal",
+            "time": "08:00:00",
+            "title": "Breakfast",
+            "slot_name": "Breakfast",
+            "calories": 400,
+        },
+    )
+    event_id = add_resp.json()["events"][-1]["id"]
+
+    response = await client.post(f"{BASE}/events/{event_id}/complete")
+    assert response.status_code == 200
+    assert response.json()["completed"] is True
+
+
+@pytest.mark.asyncio
+async def test_event_ownership_validation(client: AsyncClient):
+    """Events from other users return 404."""
+    response = await client.put(
+        f"{BASE}/events/99999",
+        json={"title": "Hacked"},
+    )
+    assert response.status_code == 404
