@@ -32,43 +32,44 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.container}>
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <Text style={styles.logoText}>Welcome to Sophros!</Text>
-              <Text style={styles.subtitle}>
-                Let&apos;s set up your personalized health profile to get you started on your
-                wellness journey.
-              </Text>
-            </View>
-
-            <View style={styles.benefitsContainer}>
-              {benefits.map((benefit, index) => (
-                <View key={index} style={styles.benefitCard}>
-                  <View style={styles.iconBox}>
-                    <benefit.icon size={24} color={Colors.light.primary} />
-                  </View>
-                  <View style={styles.benefitContent}>
-                    <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                    <Text style={styles.benefitDescription}>{benefit.description}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContainer}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.logoText}>Welcome to Sophros!</Text>
+            <Text style={styles.subtitle}>
+              Let&apos;s set up your personalized health profile to get you started on your
+              wellness journey.
+            </Text>
           </View>
 
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={() => router.push('/onboarding/step1')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.continueButtonText}>Get Started</Text>
-            </TouchableOpacity>
+          <View style={styles.benefitsContainer}>
+            {benefits.map((benefit, index) => (
+              <View key={index} style={styles.benefitCard}>
+                <View style={styles.iconBox}>
+                  <benefit.icon size={24} color={Colors.light.primary} />
+                </View>
+                <View style={styles.benefitContent}>
+                  <Text style={styles.benefitTitle}>{benefit.title}</Text>
+                  <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                </View>
+              </View>
+            ))}
           </View>
         </View>
       </ScrollView>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.continueButton}
+          onPress={() => router.push('/onboarding/step1')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.continueButtonText}>Get Started</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -78,18 +79,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.light.background,
   },
-  scrollContainer: {
-    flexGrow: 1,
-  },
-  container: {
+  scrollView: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    justifyContent: 'space-between',
+  },
+  scrollContainer: {
+    padding: 20,
+    paddingBottom: 20,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
   },
   header: {
     marginBottom: 40,
@@ -139,8 +137,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    gap: 12,
-    marginTop: 24,
+    padding: 20,
+    paddingBottom: 30,
+    backgroundColor: Colors.light.background,
   },
   continueButton: {
     backgroundColor: Colors.light.primary,
