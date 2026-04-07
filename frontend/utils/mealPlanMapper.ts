@@ -129,6 +129,10 @@ export function mapDailyPlanToScheduleItems(plan: DailyMealPlanOutput): WeeklySc
       calories: recipe?.nutrients.calories || slot.calories,
       recipe: recipe || undefined,
       alternatives,
+      isLeftover: slot.is_leftover ?? false,
+      slotName: slot.slot_name as 'Breakfast' | 'Lunch' | 'Dinner',
+      leftoverFromDay: slot.leftover_from_day ?? undefined,
+      leftoverFromSlot: slot.leftover_from_slot ?? undefined,
     };
   });
 

@@ -822,6 +822,18 @@ export type WeeklyMealPlanInput = {
    * Total Weekly Calories
    */
   total_weekly_calories: number;
+  /**
+   * Breakfast Alternatives
+   */
+  breakfast_alternatives?: Array<Recipe>;
+  /**
+   * Lunch Alternatives
+   */
+  lunch_alternatives?: Array<Recipe>;
+  /**
+   * Dinner Alternatives
+   */
+  dinner_alternatives?: Array<Recipe>;
 };
 
 /**
@@ -836,6 +848,18 @@ export type WeeklyMealPlanOutput = {
    * Total Weekly Calories
    */
   total_weekly_calories: number;
+  /**
+   * Breakfast Alternatives
+   */
+  breakfast_alternatives?: Array<Recipe>;
+  /**
+   * Lunch Alternatives
+   */
+  lunch_alternatives?: Array<Recipe>;
+  /**
+   * Dinner Alternatives
+   */
+  dinner_alternatives?: Array<Recipe>;
 };
 
 export type CreateUserApiV1UsersPostData = {

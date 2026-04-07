@@ -14,6 +14,10 @@ export type WeeklyScheduleItem = {
   targetHours?: number;
   alternatives?: WeeklyScheduleItem[];
   recipe?: Recipe;
+  isLeftover?: boolean;
+  slotName?: 'Breakfast' | 'Lunch' | 'Dinner';
+  leftoverFromDay?: string;
+  leftoverFromSlot?: string;
 };
 
 export type DaySchedule = {

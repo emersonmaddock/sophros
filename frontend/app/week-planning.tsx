@@ -2,6 +2,7 @@ import type {
   DailyMealPlanOutput,
   Day,
   MealSlotTargetOutput,
+  Recipe,
   WeeklyMealPlanOutput,
 } from '@/api/types.gen';
 import { AlternativesModal } from '@/components/AlternativesModal';
@@ -80,11 +81,42 @@ export default function WeekPlanningScreen() {
   const [editMode, setEditMode] = useState<'edit' | 'add'>('edit');
   const [addItemType, setAddItemType] = useState<ItemType>('meal');
 
+  // Global alternative pools — persist across swaps until plan is confirmed.
+  // When a user swaps meal A for alternative B: B leaves the pool, A enters it.
+  // This allows swapping back at any point during drafting.
+  type AltPool = {
+    breakfast: WeeklyScheduleItem[];
+    lunch: WeeklyScheduleItem[];
+    dinner: WeeklyScheduleItem[];
+  };
+  const [altPool, setAltPool] = useState<AltPool>({ breakfast: [], lunch: [], dinner: [] });
+
   const generateWeekMutation = useGenerateWeekPlanMutation();
   const saveMutation = useSaveMealPlanMutation();
   const { data: cachedPlan } = useWeeklyMealPlanOutputQuery();
 
   const { backendUser, loading: profileLoading } = useUserProfile();
+
+  const recipeToAltItem = (
+    recipe: Recipe,
+    slotName: 'Breakfast' | 'Lunch' | 'Dinner'
+  ): WeeklyScheduleItem => ({
+    id: recipe.id,
+    time: '',
+    title: recipe.title,
+    subtitle: `${recipe.nutrients.calories} cal · ${recipe.nutrients.protein}g protein`,
+    duration: recipe.preparation_time_minutes ? `${recipe.preparation_time_minutes} min` : '30 min',
+    type: 'meal',
+    calories: recipe.nutrients.calories,
+    recipe,
+    slotName,
+  });
+
+  const initAltPool = (data: WeeklyMealPlanOutput): AltPool => ({
+    breakfast: (data.breakfast_alternatives ?? []).map((r) => recipeToAltItem(r, 'Breakfast')),
+    lunch: (data.lunch_alternatives ?? []).map((r) => recipeToAltItem(r, 'Lunch')),
+    dinner: (data.dinner_alternatives ?? []).map((r) => recipeToAltItem(r, 'Dinner')),
+  });
 
   useEffect(() => {
     // If profile is still loading, wait
@@ -99,6 +131,7 @@ export default function WeekPlanningScreen() {
     if (cachedPlan) {
       setRawPlan(cachedPlan);
       setWeekPlan(weeklyPlanToDaySchedules(cachedPlan, weekStart));
+      setAltPool(initAltPool(cachedPlan));
       return;
     }
 
@@ -107,6 +140,7 @@ export default function WeekPlanningScreen() {
       onSuccess: (data) => {
         setRawPlan(data);
         setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
+        setAltPool(initAltPool(data));
       },
       onError: (error) => {
         Alert.alert('Error', 'Failed to generate meal plan. Please try again.');
@@ -120,6 +154,7 @@ export default function WeekPlanningScreen() {
       onSuccess: (data) => {
         setRawPlan(data);
         setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
+        setAltPool(initAltPool(data));
       },
       onError: () => {
         Alert.alert('Error', 'Failed to regenerate meal plan.');
@@ -154,27 +189,66 @@ export default function WeekPlanningScreen() {
   };
 
   const handleSwap = (item: WeeklyScheduleItem) => {
+    const slotKey = (item.slotName?.toLowerCase() ?? 'lunch') as keyof AltPool;
     setSelectedItem(item);
-    setAlternatives(item.alternatives || []);
+    setAlternatives(altPool[slotKey] ?? []);
     setSwapModalVisible(true);
   };
 
   const handleSelectAlternative = (alternative: WeeklyScheduleItem) => {
     if (!selectedItem) return;
 
-    const dayName = DAY_ORDER[selectedDayIndex];
+    const cookDay = DAY_ORDER[selectedDayIndex];
+    const cookSlotName = selectedItem.slotName;
+    const slotKey = (cookSlotName?.toLowerCase() ?? 'lunch') as keyof AltPool;
 
+    // Mutate the alt pool: remove the chosen alternative, add the displaced primary
+    setAltPool((prev) => {
+      const oldPrimary: WeeklyScheduleItem = {
+        ...selectedItem,
+        id: selectedItem.recipe?.id ?? selectedItem.id,
+        slotName: cookSlotName,
+      };
+      return {
+        ...prev,
+        [slotKey]: [...prev[slotKey].filter((a) => a.id !== alternative.id), oldPrimary],
+      };
+    });
+
+    // Update weekPlan display
     setWeekPlan((prevPlan) =>
       prevPlan.map((day, dayIdx) => {
-        if (dayIdx === selectedDayIndex) {
-          return {
-            ...day,
-            items: day.items.map((item) =>
-              item.id === selectedItem.id ? { ...alternative, id: item.id } : item
-            ),
-          };
-        }
-        return day;
+        return {
+          ...day,
+          items: day.items.map((item) => {
+            // Swap the cook slot
+            if (dayIdx === selectedDayIndex && item.id === selectedItem.id) {
+              return {
+                ...alternative,
+                id: item.id,
+                time: item.time,
+                duration: item.duration,
+                isLeftover: false,
+                slotName: cookSlotName,
+              };
+            }
+            // Sync any leftover that pairs with this cook slot
+            if (
+              item.isLeftover &&
+              item.leftoverFromDay === cookDay &&
+              item.leftoverFromSlot === cookSlotName
+            ) {
+              return {
+                ...item,
+                title: alternative.title,
+                subtitle: alternative.subtitle,
+                recipe: alternative.recipe,
+                calories: alternative.calories,
+              };
+            }
+            return item;
+          }),
+        };
       })
     );
 
@@ -184,24 +258,30 @@ export default function WeekPlanningScreen() {
         if (!prev) return prev;
         return {
           ...prev,
-          daily_plans: prev.daily_plans.map((dp: DailyMealPlanOutput) => {
-            if (dp.day !== dayName) return dp;
-            return {
-              ...dp,
-              slots: dp.slots.map((slot: MealSlotTargetOutput) => {
-                const currentRecipeId = slot.plan?.main_recipe?.id;
-                if (currentRecipeId !== selectedItem.id) return slot;
+          daily_plans: prev.daily_plans.map((dp: DailyMealPlanOutput) => ({
+            ...dp,
+            slots: dp.slots.map((slot: MealSlotTargetOutput) => {
+              // Update the cook slot
+              if (dp.day === cookDay && slot.plan?.main_recipe?.id === selectedItem.id) {
                 return {
                   ...slot,
-                  plan: {
-                    ...slot.plan,
-                    main_recipe: alternative.recipe ?? null,
-                    alternatives: [],
-                  },
+                  plan: { ...slot.plan, main_recipe: alternative.recipe ?? null },
                 };
-              }),
-            };
-          }),
+              }
+              // Sync paired leftover slot
+              if (
+                slot.is_leftover &&
+                slot.leftover_from_day === cookDay &&
+                slot.leftover_from_slot === cookSlotName
+              ) {
+                return {
+                  ...slot,
+                  plan: { ...slot.plan, main_recipe: alternative.recipe ?? null },
+                };
+              }
+              return slot;
+            }),
+          })),
         };
       });
     }

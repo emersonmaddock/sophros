@@ -93,18 +93,10 @@ class MealPlanService:
             type=meal_type,
             min_calories=min_cals,
             max_calories=max_cals,
+            max_ready_time=max_prep_time,
             constraints=constraints,
             number=count,
         )
-
-        # Filter by prep time if specified (for breakfast quick meals)
-        if max_prep_time is not None:
-            results = [
-                r
-                for r in results
-                if (ready_in := r.get("readyInMinutes")) is None
-                or ready_in <= max_prep_time
-            ]
 
         random.shuffle(results)
         return results
@@ -305,11 +297,11 @@ class MealPlanService:
                 MealType.BREAKFAST,
                 breakfast_cals,
                 constraints,
-                count=15,
+                count=6,
                 max_prep_time=30,
             ),
             self._fetch_recipe_pool(
-                MealType.MAIN_COURSE, main_cals, constraints, count=50
+                MealType.MAIN_COURSE, main_cals, constraints, count=20
             ),
         )
 
@@ -318,12 +310,22 @@ class MealPlanService:
                 "No breakfast recipes found matching your dietary preferences."
             )
 
-        # Breakfast rotates through 3 recipes across all 7 days (allows repeats)
+        # First 3 breakfast recipes rotate across all 7 days (allows repeats)
+        # Next 3 are reserved as alternatives for swapping
         breakfast_rotation = breakfast_pool[: min(3, len(breakfast_pool))]
+        breakfast_alt_pool = breakfast_pool[
+            len(breakfast_rotation) : len(breakfast_rotation) + 3
+        ]
         breakfast_idx = 0
 
         # Step 5: Assign recipes from pools, respecting leftovers
         used_ids: set[int] = set()
+        # Reserve breakfast IDs (rotation + alternatives) so main pool won't reuse them
+        for item in (*breakfast_alt_pool, *breakfast_rotation):
+            rid = item.get("id")
+            if isinstance(rid, int):
+                used_ids.add(rid)
+
         recipe_manifest: dict[tuple[Day, MealSlot], Recipe] = {}
 
         for plan in daily_plans:
@@ -358,9 +360,33 @@ class MealPlanService:
                             slot.plan.main_recipe
                         )
 
+        # Build global alternatives pools (recipes not used in the plan)
+        breakfast_alternatives = [
+            self._convert_to_recipe(r) for r in breakfast_alt_pool
+        ]
+
+        lunch_alternatives: list[Recipe] = []
+        dinner_alternatives: list[Recipe] = []
+        for item in main_pool:
+            rid = item.get("id")
+            if not isinstance(rid, int) or rid in used_ids:
+                continue
+            if len(lunch_alternatives) < 3:
+                lunch_alternatives.append(self._convert_to_recipe(item))
+                used_ids.add(rid)
+            elif len(dinner_alternatives) < 3:
+                dinner_alternatives.append(self._convert_to_recipe(item))
+                used_ids.add(rid)
+            if len(lunch_alternatives) >= 3 and len(dinner_alternatives) >= 3:
+                break
+
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
         return WeeklyMealPlan(
-            daily_plans=daily_plans, total_weekly_calories=total_weekly_cals
+            daily_plans=daily_plans,
+            total_weekly_calories=total_weekly_cals,
+            breakfast_alternatives=breakfast_alternatives,
+            lunch_alternatives=lunch_alternatives,
+            dinner_alternatives=dinner_alternatives,
         )
 
     def _apply_adaptive_leftovers(self, daily_plans: list[DailyMealPlan], user: User):
