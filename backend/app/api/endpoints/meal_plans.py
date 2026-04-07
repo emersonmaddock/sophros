@@ -7,7 +7,12 @@ from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db
 from app.domain.enums import Day
-from app.models.planned_event import MealDetail, PlannedEvent, WorkoutDetail, SleepDetail
+from app.models.planned_event import (
+    MealDetail,
+    PlannedEvent,
+    SleepDetail,
+    WorkoutDetail,
+)
 from app.models.saved_meal_plan import SavedMealPlan
 from app.models.user import User as DBUser
 from app.schemas.meal_plan import (
@@ -136,7 +141,9 @@ async def save_meal_plan(
         .where(SavedMealPlan.id == existing.id)
         .options(
             selectinload(SavedMealPlan.events).selectinload(PlannedEvent.meal_detail),
-            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.workout_detail),
+            selectinload(SavedMealPlan.events).selectinload(
+                PlannedEvent.workout_detail
+            ),
             selectinload(SavedMealPlan.events).selectinload(PlannedEvent.sleep_detail),
         )
     )
@@ -160,7 +167,9 @@ async def get_week_plan(
         )
         .options(
             selectinload(SavedMealPlan.events).selectinload(PlannedEvent.meal_detail),
-            selectinload(SavedMealPlan.events).selectinload(PlannedEvent.workout_detail),
+            selectinload(SavedMealPlan.events).selectinload(
+                PlannedEvent.workout_detail
+            ),
             selectinload(SavedMealPlan.events).selectinload(PlannedEvent.sleep_detail),
         )
     )
@@ -204,7 +213,9 @@ async def _get_user_plan(db: AsyncSession, plan_id: int, user_id: str) -> SavedM
     return plan
 
 
-async def _get_user_event(db: AsyncSession, event_id: int, user_id: str) -> PlannedEvent:
+async def _get_user_event(
+    db: AsyncSession, event_id: int, user_id: str
+) -> PlannedEvent:
     """Get an event, verifying it belongs to the user's plan."""
     stmt = (
         select(PlannedEvent)
@@ -223,7 +234,9 @@ async def _get_user_event(db: AsyncSession, event_id: int, user_id: str) -> Plan
     return event
 
 
-async def _get_day_totals(db: AsyncSession, plan_id: int, day: str, user_id: str) -> dict:
+async def _get_day_totals(
+    db: AsyncSession, plan_id: int, day: str, user_id: str
+) -> dict:
     """Get all events for a day with computed totals."""
     stmt = (
         select(PlannedEvent)
@@ -379,5 +392,6 @@ async def complete_event(
     event.completed = True
     db.add(event)
     await db.commit()
-    await db.refresh(event)
+    # Re-fetch with eager-loaded relationships (refresh doesn't load them)
+    event = await _get_user_event(db, event_id, current_user.id)
     return event_to_response(event)

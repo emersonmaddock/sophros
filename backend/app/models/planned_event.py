@@ -100,9 +100,7 @@ class MealDetail(Base):
     recipe_ingredients: Mapped[list | None] = mapped_column(
         JSON, nullable=True
     )  # string[]
-    recipe_tags: Mapped[list | None] = mapped_column(
-        JSON, nullable=True
-    )  # string[]
+    recipe_tags: Mapped[list | None] = mapped_column(JSON, nullable=True)  # string[]
     recipe_warnings: Mapped[list | None] = mapped_column(
         JSON, nullable=True
     )  # string[]
@@ -131,9 +129,7 @@ class WorkoutDetail(Base):
     )
     exercise_category: Mapped[str] = mapped_column(String, nullable=False)
     calories_burned: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    muscle_gain_estimate_kg: Mapped[float | None] = mapped_column(
-        Float, nullable=True
-    )
+    muscle_gain_estimate_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     event: Mapped["PlannedEvent"] = relationship(
         "PlannedEvent", back_populates="workout_detail"

@@ -151,21 +151,25 @@ def event_to_response(event: PlannedEvent) -> dict:
     }
     if event.meal_detail:
         md = event.meal_detail
-        data.update({
-            "slot_name": md.slot_name,
-            "calories": md.calories,
-            "protein": md.protein,
-            "carbohydrates": md.carbohydrates,
-            "fat": md.fat,
-            "recipe_id": md.recipe_id,
-        })
+        data.update(
+            {
+                "slot_name": md.slot_name,
+                "calories": md.calories,
+                "protein": md.protein,
+                "carbohydrates": md.carbohydrates,
+                "fat": md.fat,
+                "recipe_id": md.recipe_id,
+            }
+        )
     if event.workout_detail:
         wd = event.workout_detail
-        data.update({
-            "exercise_category": wd.exercise_category,
-            "calories_burned": wd.calories_burned,
-            "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg,
-        })
+        data.update(
+            {
+                "exercise_category": wd.exercise_category,
+                "calories_burned": wd.calories_burned,
+                "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg,
+            }
+        )
     if event.sleep_detail:
         data.update({"target_hours": event.sleep_detail.target_hours})
     return data

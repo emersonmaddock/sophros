@@ -37,7 +37,7 @@ class SavedMealPlan(Base):
     )
 
     user: Mapped[User] = relationship("User", back_populates="saved_meal_plans")  # type: ignore[name-defined] # noqa: F821
-    events: Mapped[list[PlannedEvent]] = relationship(  # type: ignore[name-defined]  # noqa: F821
+    events: Mapped[list[PlannedEvent]] = relationship(
         "PlannedEvent",
         back_populates="meal_plan",
         cascade="all, delete-orphan",
