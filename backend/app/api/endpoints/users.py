@@ -214,14 +214,14 @@ async def update_user_me(
 
     # Handle busy_times (relational table, collection assignment)
     if "busy_times" in update_data:
-        new_busy_times = update_data.pop("busy_times")
+        update_data.pop("busy_times")
         current_user.user_busy_times = [
             UserBusyTime(
                 day=bt.day,
                 start_time=bt.start,
                 end_time=bt.end,
             )
-            for bt in (new_busy_times or [])
+            for bt in (user_in.busy_times or [])
         ]
 
     # Handle dietary relationship fields (collection assignment)

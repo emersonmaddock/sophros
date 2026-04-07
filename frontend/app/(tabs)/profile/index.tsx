@@ -57,7 +57,7 @@ export default function ProfilePage() {
   };
 
   const handleOpenProfileEditor = () => {
-    router.push('/profile/edit');
+    router.push('/(tabs)/profile/edit');
   };
 
   const allergyCount = backendUser?.allergies?.length ?? 0;
@@ -87,7 +87,7 @@ export default function ProfilePage() {
       label: 'Allergies & Preferences',
       icon: Utensils,
       value: dietarySummary,
-      onPress: () => router.push('/profile/dietary-preferences'),
+      onPress: () => router.push('/(tabs)/profile/dietary-preferences'),
     },
     {
       label: 'Sync Health Data',

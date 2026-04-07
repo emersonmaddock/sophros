@@ -305,13 +305,20 @@ class MealPlanService:
                 MealType.BREAKFAST,
                 breakfast_cals,
                 constraints,
-                count=25,
-                max_prep_time=20,
+                count=15,
+                max_prep_time=30,
             ),
             self._fetch_recipe_pool(
                 MealType.MAIN_COURSE, main_cals, constraints, count=50
             ),
         )
+
+        if not breakfast_pool:
+            raise ValueError("No breakfast recipes found matching your dietary preferences.")
+
+        # Breakfast rotates through 3 recipes across all 7 days (allows repeats)
+        breakfast_rotation = breakfast_pool[:min(3, len(breakfast_pool))]
+        breakfast_idx = 0
 
         # Step 5: Assign recipes from pools, respecting leftovers
         used_ids: set[int] = set()
@@ -330,16 +337,18 @@ class MealPlanService:
                             slot.prep_time_minutes = 5  # Just reheating
                             continue
 
-                pool = (
-                    breakfast_pool
-                    if slot.slot_name == MealSlot.BREAKFAST
-                    else main_pool
-                )
-                self._assign_slot_recipes(slot, pool, used_ids)
-
-                # Store in manifest for potential leftover lookups
-                if slot.plan and slot.plan.main_recipe:
-                    recipe_manifest[(plan.day, slot.slot_name)] = slot.plan.main_recipe
+                if slot.slot_name == MealSlot.BREAKFAST:
+                    # Cycle through the 3 breakfast recipes (repeats allowed)
+                    recipe_data = breakfast_rotation[breakfast_idx % len(breakfast_rotation)]
+                    breakfast_idx += 1
+                    recipe = self._convert_to_recipe(recipe_data)
+                    slot.plan = MealOption(main_recipe=recipe)
+                    slot.prep_time_minutes = min(recipe.preparation_time_minutes or 15, 20)
+                else:
+                    self._assign_slot_recipes(slot, main_pool, used_ids)
+                    # Store in manifest for potential leftover lookups
+                    if slot.plan and slot.plan.main_recipe:
+                        recipe_manifest[(plan.day, slot.slot_name)] = slot.plan.main_recipe
 
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
         return WeeklyMealPlan(

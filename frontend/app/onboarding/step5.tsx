@@ -1,3 +1,4 @@
+import { DatePickerInput } from '@/components/DatePickerInput';
 import { MetricInput } from '@/components/MetricInput';
 import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Shadows } from '@/constants/theme';
@@ -19,7 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step5Screen() {
-  const { data, updateField, loading, error: apiError, submit } = useOnboarding();
+  const { data, updateField, isSection5Complete, loading, error: apiError, submit } = useOnboarding();
   const [imperialTargetWeight, setImperialTargetWeight] = useState('');
 
   const handleTargetWeightChange = (value: string) => {
@@ -44,7 +45,10 @@ export default function Step5Screen() {
       (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
+  const canSubmit = isSection5Complete();
+
   const handleSubmit = async () => {
+    if (!canSubmit) return;
     const success = await submit();
     if (success) {
       router.replace('/onboarding/done');
@@ -77,14 +81,29 @@ export default function Step5Screen() {
           <View style={styles.content}>
             <View>
               <MetricInput
-                label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'})`}
+                label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'}) *`}
                 value={displayTargetWeight}
                 onChangeText={handleTargetWeightChange}
-                placeholder="Leave blank to maintain current weight"
+                placeholder={data.showImperial ? 'e.g. 160' : 'e.g. 72'}
                 keyboardType="decimal-pad"
                 unit={data.showImperial ? 'lbs' : 'kg'}
               />
             </View>
+
+            <MetricInput
+              label="Target Body Fat % *"
+              value={data.targetBodyFat}
+              onChangeText={(v) => updateField('targetBodyFat', v)}
+              placeholder="e.g. 18"
+              keyboardType="decimal-pad"
+              unit="%"
+            />
+
+            <DatePickerInput
+              label="Goal Date *"
+              value={data.targetDate}
+              onChange={(v) => updateField('targetDate', v)}
+            />
 
             <TimePickerInput
               label="Wake Up Time"
@@ -110,9 +129,9 @@ export default function Step5Screen() {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            style={[styles.submitButton, (!canSubmit || loading) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
-            disabled={loading}
+            disabled={!canSubmit || loading}
             activeOpacity={0.8}
           >
             {loading ? (

@@ -480,7 +480,7 @@ export default function EditProfileScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/profile')}
             activeOpacity={0.8}
           >
             <ArrowLeft size={20} color={Colors.light.text} />

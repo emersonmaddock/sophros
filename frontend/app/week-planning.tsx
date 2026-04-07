@@ -316,7 +316,7 @@ export default function WeekPlanningScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { marginTop: 12 }]}
-            onPress={() => router.push('/profile/edit')}
+            onPress={() => router.push('/(tabs)/profile')}
           >
             <Text style={styles.retryButtonText}>Go to Profile Settings</Text>
           </TouchableOpacity>
