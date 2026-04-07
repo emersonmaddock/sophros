@@ -1,9 +1,9 @@
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Alert,
-  Modal,
   Platform,
   StyleProp,
   StyleSheet,
@@ -41,7 +41,6 @@ function parseValue(value: string, format: '24h' | '12h'): Date {
       }
     }
   } else {
-    // "h:mm AM/PM"
     const match = value.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
     if (match) {
       let h = parseInt(match[1], 10);
@@ -80,12 +79,15 @@ export function TimePickerInput({
   maxTime,
 }: TimePickerInputProps) {
   const currentDate = parseValue(value, format);
-  const [showPicker, setShowPicker] = useState(false);
-  const [tempDate, setTempDate] = useState(currentDate);
+  const [showAndroid, setShowAndroid] = useState(false);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
 
   const open = () => {
-    setTempDate(parseValue(value, format));
-    setShowPicker(true);
+    if (Platform.OS === 'android') {
+      setShowAndroid(true);
+      return;
+    }
+    bottomSheetRef.current?.present();
   };
 
   const minDate = React.useMemo(
@@ -97,9 +99,9 @@ export function TimePickerInput({
     [maxTime, format]
   );
 
-  const confirm = () => {
-    setShowPicker(false);
-    const result = formatOutput(tempDate, format);
+  const handleChange = (_: unknown, date?: Date) => {
+    if (!date) return;
+    const result = formatOutput(date, format);
 
     if (minTime || maxTime) {
       const resultMins = timeToMins(result);
@@ -116,9 +118,17 @@ export function TimePickerInput({
     onChange(result);
   };
 
-  const cancel = () => {
-    setShowPicker(false);
-  };
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   return (
     <View style={style}>
@@ -129,49 +139,31 @@ export function TimePickerInput({
         </Text>
       </TouchableOpacity>
 
-      {Platform.OS === 'ios' && showPicker && (
-        <Modal transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.pickerContainer}>
-              <View style={styles.pickerHeader}>
-                <TouchableOpacity onPress={cancel}>
-                  <Text style={styles.pickerHeaderCancel}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={confirm}>
-                  <Text style={styles.pickerHeaderDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={tempDate}
-                mode="time"
-                display="spinner"
-                textColor="black"
-                themeVariant="light"
-                minimumDate={minDate}
-                maximumDate={maxDate}
-                onChange={(_, date) => {
-                  if (
-                    date &&
-                    (date.getHours() !== tempDate.getHours() ||
-                      date.getMinutes() !== tempDate.getMinutes())
-                  ) {
-                    setTempDate(date);
-                  }
-                }}
-              />
-            </View>
+      <BottomSheetModal ref={bottomSheetRef} enableDynamicSizing backdropComponent={renderBackdrop}>
+        <BottomSheetView style={styles.sheetContent}>
+          <View style={styles.pickerWrapper}>
+            <DateTimePicker
+              value={currentDate}
+              mode="time"
+              display="spinner"
+              textColor="black"
+              themeVariant="light"
+              minimumDate={minDate}
+              maximumDate={maxDate}
+              onChange={handleChange}
+            />
           </View>
-        </Modal>
-      )}
+        </BottomSheetView>
+      </BottomSheetModal>
 
-      {Platform.OS === 'android' && showPicker && (
+      {Platform.OS === 'android' && showAndroid && (
         <DateTimePicker
           value={currentDate}
           mode="time"
           is24Hour={false}
           display="default"
           onChange={(_, date) => {
-            setShowPicker(false);
+            setShowAndroid(false);
             if (date) onChange(formatOutput(date, format));
           }}
         />
@@ -203,34 +195,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.light.textMuted,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  pickerContainer: {
-    backgroundColor: Colors.light.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+  sheetContent: {
     paddingBottom: 30,
+  },
+  pickerWrapper: {
     alignItems: 'center',
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-    alignSelf: 'stretch',
-  },
-  pickerHeaderCancel: {
-    fontSize: 16,
-    color: Colors.light.textMuted,
-  },
-  pickerHeaderDone: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.primary,
   },
 });
