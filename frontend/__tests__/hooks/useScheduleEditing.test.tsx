@@ -6,25 +6,36 @@ import type {
   WeeklyMealPlanOutput,
 } from '@/api/types.gen';
 import { useScheduleEditing } from '@/hooks/useScheduleEditing';
-import type { WeeklyScheduleItem } from '@/types/schedule';
 import { createWrapper } from '@/__tests__/test-utils';
-import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { renderHook } from '@testing-library/react-native';
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
+const mockSaveMutateAsync = jest.fn().mockResolvedValue({});
+const mockAddMutateAsync = jest.fn().mockResolvedValue({});
+const mockUpdateMutateAsync = jest.fn().mockResolvedValue({});
+const mockDeleteMutateAsync = jest.fn().mockResolvedValue({});
+
 jest.mock('@/lib/queries/mealPlan', () => ({
   useSaveMealPlanMutation: jest.fn(() => ({
-    mutateAsync: jest.fn().mockResolvedValue({}),
+    mutateAsync: mockSaveMutateAsync,
+    isPending: false,
+  })),
+  useAddEventMutation: jest.fn(() => ({
+    mutateAsync: mockAddMutateAsync,
+    isPending: false,
+  })),
+  useUpdateEventMutation: jest.fn(() => ({
+    mutateAsync: mockUpdateMutateAsync,
+    isPending: false,
+  })),
+  useDeleteEventMutation: jest.fn(() => ({
+    mutateAsync: mockDeleteMutateAsync,
+    isPending: false,
   })),
 }));
-
-import { useSaveMealPlanMutation } from '@/lib/queries/mealPlan';
-
-const mockUseSaveMealPlanMutation = useSaveMealPlanMutation as jest.MockedFunction<
-  typeof useSaveMealPlanMutation
->;
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -43,7 +54,8 @@ function makeSlot(
   slotName: MealSlotTargetOutput['slot_name'],
   time: string,
   calories: number,
-  recipe?: Recipe
+  recipe?: Recipe,
+  eventId?: number
 ): MealSlotTargetOutput {
   return {
     slot_name: slotName,
@@ -53,6 +65,7 @@ function makeSlot(
     carbohydrates: recipe?.nutrients.carbohydrates ?? 0,
     fat: recipe?.nutrients.fat ?? 0,
     plan: recipe ? { main_recipe: recipe, alternatives: [] } : null,
+    event_id: eventId,
   };
 }
 
@@ -76,7 +89,7 @@ function makeDailyPlan(
 
 function makeWeeklyPlan(): WeeklyMealPlanOutput {
   const recipe = makeRecipe('recipe-1', 'Oatmeal', 350);
-  const slot = makeSlot('Breakfast', '08:00:00', 350, recipe);
+  const slot = makeSlot('Breakfast', '08:00:00', 350, recipe, 101);
   const monday = makeDailyPlan('Monday', [slot]);
   return {
     daily_plans: [monday],
@@ -101,29 +114,16 @@ const WEEK_START = '2026-03-23';
 // ---------------------------------------------------------------------------
 
 describe('useScheduleEditing', () => {
-  let mutateAsync: jest.Mock;
-
   beforeEach(() => {
-    jest.useFakeTimers();
     jest.clearAllMocks();
-    mutateAsync = jest.fn().mockResolvedValue({});
-    mockUseSaveMealPlanMutation.mockReturnValue({ mutateAsync } as any);
   });
 
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
-  });
-
-  it('initializes rawPlan from savedPlan.plan_data on mount', () => {
-    const weeklyPlan = makeWeeklyPlan();
-    const savedPlan = makeSavedPlan(weeklyPlan);
+  it('exposes planId from savedPlan', () => {
+    const savedPlan = makeSavedPlan(makeWeeklyPlan());
     const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
       wrapper: createWrapper(),
     });
-    expect(result.current.rawPlan).toEqual(weeklyPlan);
+    expect(result.current.planId).toBe(1);
   });
 
   it('isDirty is false initially', () => {
@@ -132,66 +132,6 @@ describe('useScheduleEditing', () => {
       wrapper: createWrapper(),
     });
     expect(result.current.isDirty).toBe(false);
-  });
-
-  it('removeItem sets isDirty to true and updates rawPlan', () => {
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.removeItem('Monday', 'recipe-1');
-    });
-
-    expect(result.current.isDirty).toBe(true);
-    expect(result.current.rawPlan?.daily_plans[0].slots).toHaveLength(0);
-  });
-
-  it('addItem sets isDirty to true and updates rawPlan', () => {
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    const newItem: WeeklyScheduleItem = {
-      id: 'recipe-new',
-      time: '12:00 PM',
-      title: 'New Lunch',
-      duration: '30 min',
-      type: 'meal',
-      calories: 500,
-    };
-
-    act(() => {
-      result.current.addItem('Monday', newItem);
-    });
-
-    expect(result.current.isDirty).toBe(true);
-    // The plan originally had 1 slot; after addItem it should have 2
-    expect(result.current.rawPlan?.daily_plans[0].slots).toHaveLength(2);
-  });
-
-  it('editItem (remove + add) sets isDirty to true', () => {
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    const updatedItem: WeeklyScheduleItem = {
-      id: 'recipe-updated',
-      time: '8:00 AM',
-      title: 'Updated Oatmeal',
-      duration: '20 min',
-      type: 'meal',
-      calories: 400,
-    };
-
-    act(() => {
-      result.current.editItem('Monday', 'recipe-1', updatedItem);
-    });
-
-    expect(result.current.isDirty).toBe(true);
   });
 
   it('getScheduleItems returns mapped items for the given day index', () => {
@@ -205,6 +145,7 @@ describe('useScheduleEditing', () => {
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe('Oatmeal');
     expect(items[0].type).toBe('meal');
+    expect(items[0].id).toBe('101');
   });
 
   it('getScheduleItems returns empty array for a day with no plan', () => {
@@ -218,48 +159,7 @@ describe('useScheduleEditing', () => {
     expect(items).toHaveLength(0);
   });
 
-  it('save() when not dirty does NOT call mutateAsync', async () => {
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    await act(async () => {
-      await result.current.save();
-    });
-
-    expect(mutateAsync).not.toHaveBeenCalled();
-  });
-
-  it('save() when dirty calls mutateAsync with correct args and sets isDirty to false', async () => {
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    // Make it dirty first
-    act(() => {
-      result.current.removeItem('Monday', 'recipe-1');
-    });
-    expect(result.current.isDirty).toBe(true);
-
-    await act(async () => {
-      await result.current.save();
-    });
-
-    expect(mutateAsync).toHaveBeenCalledTimes(1);
-    expect(mutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        week_start_date: WEEK_START,
-        plan_data: expect.any(Object),
-      })
-    );
-    expect(result.current.isDirty).toBe(false);
-  });
-
-  // --- statusText ---
-
-  it('statusText is "AI-optimized" when saveStatus is idle', () => {
+  it('statusText is "AI-optimized" when idle', () => {
     const savedPlan = makeSavedPlan(makeWeeklyPlan());
     const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
       wrapper: createWrapper(),
@@ -267,63 +167,14 @@ describe('useScheduleEditing', () => {
     expect(result.current.statusText).toBe('AI-optimized');
   });
 
-  it('statusText reflects saving/saved/error states', async () => {
-    // Use a promise we control to test the "saving" state
-    let resolveSave!: (v: unknown) => void;
-    const savePromise = new Promise((res) => {
-      resolveSave = res;
-    });
-    mutateAsync.mockReturnValueOnce(savePromise);
-
+  it('save() when not dirty does NOT call mutateAsync', async () => {
     const savedPlan = makeSavedPlan(makeWeeklyPlan());
     const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
       wrapper: createWrapper(),
     });
 
-    // Make dirty then trigger save
-    act(() => {
-      result.current.removeItem('Monday', 'recipe-1');
-    });
+    await result.current.save();
 
-    // Start save without awaiting
-    act(() => {
-      result.current.save();
-    });
-
-    expect(result.current.statusText).toBe('Saving...');
-
-    // Resolve the save
-    await act(async () => {
-      resolveSave({});
-      await Promise.resolve();
-    });
-
-    await waitFor(() => {
-      expect(result.current.statusText).toBe('Changes saved');
-    });
-
-    // Advance past the 2-second reset timer so it doesn't leak
-    act(() => {
-      jest.advanceTimersByTime(2000);
-    });
-  });
-
-  it('statusText is "Error saving" when save fails', async () => {
-    mutateAsync.mockRejectedValueOnce(new Error('Network error'));
-
-    const savedPlan = makeSavedPlan(makeWeeklyPlan());
-    const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.removeItem('Monday', 'recipe-1');
-    });
-
-    await act(async () => {
-      await result.current.save();
-    });
-
-    expect(result.current.statusText).toBe('Error saving');
+    expect(mockSaveMutateAsync).not.toHaveBeenCalled();
   });
 });

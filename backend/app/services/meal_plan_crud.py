@@ -235,6 +235,7 @@ def _event_to_meal_slot(ev: PlannedEvent) -> dict:
         "leftover_from_day": md.leftover_from_day,
         "leftover_from_slot": md.leftover_from_slot,
         "prep_time_minutes": md.prep_time_minutes,
+        "event_id": ev.id,
     }
 
 
@@ -248,6 +249,7 @@ def _event_to_exercise(ev: PlannedEvent) -> dict:
         "time": ev.time.isoformat() if ev.time else None,
         "calories_burned": wd.calories_burned,
         "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg,
+        "event_id": ev.id,
     }
 
 

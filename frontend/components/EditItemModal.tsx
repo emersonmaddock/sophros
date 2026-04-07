@@ -34,20 +34,32 @@ export function EditItemModal({
 }: EditItemModalProps) {
   const [time, setTime] = useState(item?.time || '7:00 AM');
   const [title, setTitle] = useState(item?.title || '');
-  const [subtitle, setSubtitle] = useState(item?.subtitle || '');
   const [duration, setDuration] = useState(item?.duration || '30 min');
   const [calories, setCalories] = useState(item?.calories?.toString() || '');
+  const [protein, setProtein] = useState(item?.protein?.toString() || '');
+  const [carbs, setCarbs] = useState(item?.carbs?.toString() || '');
+  const [fat, setFat] = useState(item?.fat?.toString() || '');
   const [workoutType, setWorkoutType] = useState(item?.workoutType || '');
   const [targetHours, setTargetHours] = useState(item?.targetHours?.toString() || '8');
 
   const currentType = item?.type || itemType;
 
   const handleSave = () => {
+    const cal = calories ? parseInt(calories) : undefined;
+    const pro = protein ? parseInt(protein) : undefined;
+    const carb = carbs ? parseInt(carbs) : undefined;
+    const f = fat ? parseInt(fat) : undefined;
+
+    // Auto-generate subtitle from macros
+    const subtitleParts: string[] = [];
+    if (cal) subtitleParts.push(`${cal} cal`);
+    if (pro) subtitleParts.push(`${pro}g protein`);
+    const autoSubtitle = subtitleParts.join(' · ') || undefined;
+
     const baseItem = {
       id: item?.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       time,
       title,
-      subtitle: subtitle || undefined,
       duration,
       type: currentType,
     };
@@ -57,7 +69,11 @@ export function EditItemModal({
     if (currentType === 'meal') {
       updatedItem = {
         ...baseItem,
-        calories: calories ? parseInt(calories) : undefined,
+        subtitle: autoSubtitle,
+        calories: cal,
+        protein: pro,
+        carbs: carb,
+        fat: f,
       };
     } else if (currentType === 'workout') {
       updatedItem = {
@@ -80,13 +96,22 @@ export function EditItemModal({
     if (visible) {
       setTime(item?.time || '7:00 AM');
       setTitle(item?.title || '');
-      setSubtitle(item?.subtitle || '');
       setDuration(item?.duration || '30 min');
       setCalories(item?.calories?.toString() || '');
+      setProtein(item?.protein?.toString() || '');
+      setCarbs(item?.carbs?.toString() || '');
+      setFat(item?.fat?.toString() || '');
       setWorkoutType(item?.workoutType || '');
       setTargetHours(item?.targetHours?.toString() || '8');
     }
   }, [visible, item]);
+
+  const typeColor =
+    currentType === 'meal'
+      ? Colors.light.secondary
+      : currentType === 'workout'
+        ? Colors.light.primary
+        : Colors.light.charts.carbs;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -96,7 +121,7 @@ export function EditItemModal({
       >
         <View style={styles.modalContainer}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: typeColor }]}>
             <View>
               <Text style={styles.headerTitle}>{mode === 'edit' ? 'Edit Item' : 'Add Item'}</Text>
               <Text style={styles.headerSubtitle}>
@@ -137,27 +162,54 @@ export function EditItemModal({
 
             {currentType === 'meal' && (
               <>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Description</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={subtitle}
-                    onChangeText={setSubtitle}
-                    placeholder="e.g., with berries and granola"
-                    placeholderTextColor={Colors.light.textMuted}
-                  />
+                <View style={styles.macroRow}>
+                  <View style={[styles.field, styles.macroField]}>
+                    <Text style={styles.label}>Calories</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={calories}
+                      onChangeText={setCalories}
+                      placeholder="380"
+                      keyboardType="numeric"
+                      placeholderTextColor={Colors.light.textMuted}
+                    />
+                  </View>
+                  <View style={[styles.field, styles.macroField]}>
+                    <Text style={styles.label}>Protein (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={protein}
+                      onChangeText={setProtein}
+                      placeholder="25"
+                      keyboardType="numeric"
+                      placeholderTextColor={Colors.light.textMuted}
+                    />
+                  </View>
                 </View>
 
-                <View style={styles.field}>
-                  <Text style={styles.label}>Calories</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={calories}
-                    onChangeText={setCalories}
-                    placeholder="e.g., 380"
-                    keyboardType="numeric"
-                    placeholderTextColor={Colors.light.textMuted}
-                  />
+                <View style={styles.macroRow}>
+                  <View style={[styles.field, styles.macroField]}>
+                    <Text style={styles.label}>Carbs (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={carbs}
+                      onChangeText={setCarbs}
+                      placeholder="45"
+                      keyboardType="numeric"
+                      placeholderTextColor={Colors.light.textMuted}
+                    />
+                  </View>
+                  <View style={[styles.field, styles.macroField]}>
+                    <Text style={styles.label}>Fat (g)</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={fat}
+                      onChangeText={setFat}
+                      placeholder="15"
+                      keyboardType="numeric"
+                      placeholderTextColor={Colors.light.textMuted}
+                    />
+                  </View>
                 </View>
               </>
             )}
@@ -234,7 +286,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     padding: 20,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: '#E5E7EB',
   },
   headerTitle: {
@@ -275,6 +327,13 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  macroRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  macroField: {
+    flex: 1,
   },
   actions: {
     flexDirection: 'row',

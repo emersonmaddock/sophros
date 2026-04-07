@@ -25,6 +25,7 @@ class MealSlotTarget(BaseModel):
     leftover_from_day: Day | None = None
     leftover_from_slot: MealSlot | None = None
     prep_time_minutes: int = 0
+    event_id: int | None = None
 
 
 class MealDistributionConfig(BaseModel):

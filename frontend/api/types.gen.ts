@@ -209,6 +209,10 @@ export type ExerciseRecommendation = {
    * Muscle Gain Estimate Kg
    */
   muscle_gain_estimate_kg?: number;
+  /**
+   * Event Id
+   */
+  event_id?: number | null;
 };
 
 /**
@@ -284,6 +288,10 @@ export type MealSlotTargetInput = {
    * Prep Time Minutes
    */
   prep_time_minutes?: number;
+  /**
+   * Event Id
+   */
+  event_id?: number | null;
 };
 
 /**
@@ -322,6 +330,10 @@ export type MealSlotTargetOutput = {
    * Prep Time Minutes
    */
   prep_time_minutes?: number;
+  /**
+   * Event Id
+   */
+  event_id?: number | null;
 };
 
 /**

@@ -96,7 +96,7 @@ export default function DashboardPage() {
       }));
   }, [todayPlan, currentHour]);
 
-  // Derive macro data from today's plan totals vs DRI targets
+  // Derive macro data from past/completed meals only
   const macroData = useMemo(() => {
     const pct = (actual: number, target: number | undefined) =>
       target ? Math.min(100, Math.round((actual / target) * 100)) : 0;
@@ -106,62 +106,90 @@ export default function DashboardPage() {
     const carbTarget = targets?.carbohydrates.target;
     const fatTarget = targets?.fat.target;
 
-    if (!todayPlan) {
-      return {
-        calories: {
-          value: '--',
-          percentage: 0,
-          label: 'Calories',
-          subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
-        },
-        protein: {
-          value: '--',
-          percentage: 0,
-          label: 'Protein',
-          subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
-        },
-        carbs: {
-          value: '--',
-          percentage: 0,
-          label: 'Carbs',
-          subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
-        },
-        fats: {
-          value: '--',
-          percentage: 0,
-          label: 'Fat',
-          subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
-        },
-      };
-    }
-
-    return {
+    const empty = {
       calories: {
-        value: `${todayPlan.total_calories}`,
-        percentage: pct(todayPlan.total_calories, calTarget),
+        value: '--',
+        percentage: 0,
         label: 'Calories',
         subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
       },
       protein: {
-        value: `${todayPlan.total_protein}g`,
-        percentage: pct(todayPlan.total_protein, proTarget),
+        value: '--',
+        percentage: 0,
         label: 'Protein',
         subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
       },
       carbs: {
-        value: `${todayPlan.total_carbs}g`,
-        percentage: pct(todayPlan.total_carbs, carbTarget),
+        value: '--',
+        percentage: 0,
         label: 'Carbs',
         subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
       },
       fats: {
-        value: `${todayPlan.total_fat}g`,
-        percentage: pct(todayPlan.total_fat, fatTarget),
+        value: '--',
+        percentage: 0,
         label: 'Fat',
         subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
       },
     };
-  }, [todayPlan, targets]);
+
+    if (!todayPlan) return empty;
+
+    const nowMinutes = currentHour * 60 + today.getMinutes();
+
+    // Sum only past meal slots (whose scheduled time has passed)
+    let cal = 0;
+    let pro = 0;
+    let carb = 0;
+    let f = 0;
+
+    for (const slot of todayPlan.slots) {
+      if (slot.time) {
+        const [h, m] = slot.time.split(':').map(Number);
+        if (h * 60 + (m || 0) > nowMinutes) continue;
+      }
+      const recipe = slot.plan?.main_recipe;
+      cal += recipe?.nutrients.calories ?? slot.calories;
+      pro += recipe?.nutrients.protein ?? slot.protein;
+      carb += recipe?.nutrients.carbohydrates ?? slot.carbohydrates;
+      f += recipe?.nutrients.fat ?? slot.fat;
+    }
+
+    // Subtract exercise calories if exercise time has passed
+    if (todayPlan.exercise?.time) {
+      const [eh, em] = todayPlan.exercise.time.split(':').map(Number);
+      if (eh * 60 + (em || 0) <= nowMinutes) {
+        cal -= todayPlan.exercise.calories_burned || 0;
+      }
+    }
+
+    return {
+      calories: {
+        value: `${cal}`,
+        percentage: pct(cal, calTarget),
+        label: 'Calories',
+        subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
+      },
+      protein: {
+        value: `${pro}g`,
+        percentage: pct(pro, proTarget),
+        label: 'Protein',
+        subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
+      },
+      carbs: {
+        value: `${carb}g`,
+        percentage: pct(carb, carbTarget),
+        label: 'Carbs',
+        subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
+      },
+      fats: {
+        value: `${f}g`,
+        percentage: pct(f, fatTarget),
+        label: 'Fat',
+        subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
+      },
+    };
+  }, [todayPlan, targets, currentHour]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Determine greeting based on time of day
   const greeting =
