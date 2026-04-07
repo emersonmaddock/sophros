@@ -485,7 +485,8 @@ export default function WeekPlanningScreen() {
 
   type ScheduleRow =
     | { kind: 'item'; item: WeeklyScheduleItem; sortKey: number }
-    | { kind: 'busy'; bt: BusyTime; sortKey: number };
+    | { kind: 'busy'; bt: BusyTime; sortKey: number }
+    | { kind: 'wake' | 'sleep'; label: string; sortKey: number };
 
   const sortedRows: ScheduleRow[] = [
     ...selectedDay.items.map(
@@ -494,6 +495,24 @@ export default function WeekPlanningScreen() {
     ...(backendUser?.busy_times ?? [])
       .filter((bt) => bt.day === DAY_ORDER[selectedDayIndex])
       .map((bt): ScheduleRow => ({ kind: 'busy', bt, sortKey: busyTimeToMinutes(bt.start) })),
+    ...(backendUser?.wake_up_time
+      ? [
+          {
+            kind: 'wake' as const,
+            label: formatBusyTime(backendUser.wake_up_time),
+            sortKey: busyTimeToMinutes(backendUser.wake_up_time),
+          },
+        ]
+      : []),
+    ...(backendUser?.sleep_time
+      ? [
+          {
+            kind: 'sleep' as const,
+            label: formatBusyTime(backendUser.sleep_time),
+            sortKey: busyTimeToMinutes(backendUser.sleep_time),
+          },
+        ]
+      : []),
   ].sort((a, b) => a.sortKey - b.sortKey);
 
   return (
@@ -552,26 +571,50 @@ export default function WeekPlanningScreen() {
           <Text style={styles.itemCount}>{selectedDay.items.length} items</Text>
         </View>
 
-        {sortedRows.map((row, i) =>
-          row.kind === 'item' ? (
-            <ScheduleItemCard
-              key={row.item.id}
-              item={row.item}
-              onSwap={handleSwap}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <View key={`busy-${i}`} style={styles.busyCard}>
-              <View style={styles.busyIndicator} />
-              <View>
-                <Text style={styles.busyLabel}>Busy</Text>
-                <Text style={styles.busyTime}>
-                  {formatBusyTime(row.bt.start)} – {formatBusyTime(row.bt.end)}
-                </Text>
+        {sortedRows.map((row, i) => {
+          if (row.kind === 'item') {
+            return (
+              <ScheduleItemCard
+                key={row.item.id}
+                item={row.item}
+                onSwap={handleSwap}
+                onDelete={handleDelete}
+              />
+            );
+          }
+          if (row.kind === 'busy') {
+            return (
+              <View key={`busy-${i}`} style={styles.busyCard}>
+                <View style={styles.busyIndicator} />
+                <View>
+                  <Text style={styles.busyLabel}>Busy</Text>
+                  <Text style={styles.busyTime}>
+                    {formatBusyTime(row.bt.start)} – {formatBusyTime(row.bt.end)}
+                  </Text>
+                </View>
               </View>
+            );
+          }
+          return (
+            <View key={`${row.kind}-${i}`} style={styles.timeMarkerRow}>
+              <View
+                style={[styles.timeMarkerLine, row.kind === 'sleep' && styles.timeMarkerLineSleep]}
+              />
+              <Text
+                style={[
+                  styles.timeMarkerLabel,
+                  row.kind === 'sleep' && styles.timeMarkerLabelSleep,
+                ]}
+              >
+                {row.kind === 'wake' ? '☀️' : '🌙'} {row.kind === 'wake' ? 'Wake Up' : 'Bedtime'} ·{' '}
+                {row.label}
+              </Text>
+              <View
+                style={[styles.timeMarkerLine, row.kind === 'sleep' && styles.timeMarkerLineSleep]}
+              />
             </View>
-          )
-        )}
+          );
+        })}
 
         {/* Confirm & Save Button */}
         <TouchableOpacity
@@ -787,6 +830,28 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  timeMarkerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 6,
+  },
+  timeMarkerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#FCD34D',
+  },
+  timeMarkerLineSleep: {
+    backgroundColor: '#A5B4FC',
+  },
+  timeMarkerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  timeMarkerLabelSleep: {
+    color: '#4338CA',
   },
   busyCard: {
     flexDirection: 'row',

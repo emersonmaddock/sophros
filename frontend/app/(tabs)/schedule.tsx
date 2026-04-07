@@ -2,6 +2,7 @@ import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors } from '@/constants/theme';
 import { useScheduleEditing } from '@/hooks/useScheduleEditing';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import type { Day } from '@/api/types.gen';
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
@@ -69,9 +70,25 @@ export default function SchedulePage() {
   const [editModalMode, setEditModalMode] = useState<'edit' | 'add'>('edit');
   const [editModalItemType, setEditModalItemType] = useState<ItemType>('meal');
 
+  const { backendUser } = useUserProfile();
+
   const today = new Date();
   const todayDayOfWeek = today.getDay();
   const currentHour = today.getHours();
+
+  const apiTimeToMins = (t: string | undefined): number => {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const apiTimeToDisplay = (t: string | undefined): string => {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
 
   // Compute which day index to default to
   // For current week, default to today; for other weeks, default to Monday (index 0)
@@ -212,6 +229,42 @@ export default function SchedulePage() {
     setSelectedDayIndex(0); // Reset to Monday when changing weeks
   };
 
+  const itemTimeToMins = (timeStr: string): number => {
+    const [timePart, period] = timeStr.split(' ');
+    const [h, m] = timePart.split(':').map(Number);
+    let hours = h % 12;
+    if (period === 'PM') hours += 12;
+    return hours * 60 + (m || 0);
+  };
+
+  type TimelineRow =
+    | { kind: 'item'; item: ScheduleItem; sortKey: number }
+    | { kind: 'wake' | 'sleep'; label: string; sortKey: number };
+
+  const timelineRows: TimelineRow[] = [
+    ...scheduleItems.map(
+      (item): TimelineRow => ({ kind: 'item', item, sortKey: itemTimeToMins(item.time) })
+    ),
+    ...(backendUser?.wake_up_time
+      ? [
+          {
+            kind: 'wake' as const,
+            label: apiTimeToDisplay(backendUser.wake_up_time),
+            sortKey: apiTimeToMins(backendUser.wake_up_time),
+          },
+        ]
+      : []),
+    ...(backendUser?.sleep_time
+      ? [
+          {
+            kind: 'sleep' as const,
+            label: apiTimeToDisplay(backendUser.sleep_time),
+            sortKey: apiTimeToMins(backendUser.sleep_time),
+          },
+        ]
+      : []),
+  ].sort((a, b) => a.sortKey - b.sortKey);
+
   const getBorderColor = (type: string) => {
     switch (type) {
       case 'meal':
@@ -294,55 +347,79 @@ export default function SchedulePage() {
           </View>
         ) : scheduleItems.length > 0 ? (
           <View style={styles.timeline}>
-            {scheduleItems.map((item, i) => (
-              <View key={item.id || i} style={styles.timelineItem}>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.itemTime}>{item.time}</Text>
-                </View>
+            {timelineRows.map((row, i) => {
+              if (row.kind === 'wake' || row.kind === 'sleep') {
+                return (
+                  <View key={`${row.kind}-${i}`} style={styles.timeMarkerRow}>
+                    <View
+                      style={[
+                        styles.timeMarkerLine,
+                        row.kind === 'sleep' && styles.timeMarkerLineSleep,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.timeMarkerLabel,
+                        row.kind === 'sleep' && styles.timeMarkerLabelSleep,
+                      ]}
+                    >
+                      {row.kind === 'wake' ? '☀️' : '🌙'}{' '}
+                      {row.kind === 'wake' ? 'Wake Up' : 'Bedtime'} · {row.label}
+                    </Text>
+                    <View
+                      style={[
+                        styles.timeMarkerLine,
+                        row.kind === 'sleep' && styles.timeMarkerLineSleep,
+                      ]}
+                    />
+                  </View>
+                );
+              }
+              if (row.kind !== 'item') return null;
+              const item = row.item;
+              return (
+                <View key={item.id || i} style={styles.timelineItem}>
+                  <View style={styles.timeColumn}>
+                    <Text style={styles.itemTime}>{item.time}</Text>
+                  </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.eventCard,
-                    { borderLeftColor: getBorderColor(item.type) },
-                    item.status === 'completed' && { opacity: 0.6 },
-                  ]}
-                  onPress={() => handleItemPress(item)}
-                >
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: 4,
-                    }}
+                  <TouchableOpacity
+                    style={[
+                      styles.eventCard,
+                      { borderLeftColor: getBorderColor(item.type) },
+                      item.status === 'completed' && { opacity: 0.6 },
+                    ]}
+                    onPress={() => handleItemPress(item)}
                   >
                     <View
                       style={{
                         flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                        flex: 1,
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: 4,
                       }}
                     >
-                      <Text style={styles.eventTitle} numberOfLines={1}>
-                        {item.title}
-                        {item.status === 'completed' && ' ✓'}
-                      </Text>
-                      {item.status === 'current' && (
-                        <View style={styles.nowBadge}>
-                          <Text style={styles.nowText}>NOW</Text>
-                        </View>
-                      )}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                        <Text style={styles.eventTitle} numberOfLines={1}>
+                          {item.title}
+                          {item.status === 'completed' && ' ✓'}
+                        </Text>
+                        {item.status === 'current' && (
+                          <View style={styles.nowBadge}>
+                            <Text style={styles.nowText}>NOW</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.durationBadge}>
+                        <Text style={styles.durationText}>{item.duration}</Text>
+                      </View>
                     </View>
-                    <View style={styles.durationBadge}>
-                      <Text style={styles.durationText}>{item.duration}</Text>
-                    </View>
-                  </View>
 
-                  {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
-                </TouchableOpacity>
-              </View>
-            ))}
+                    {item.subtitle && <Text style={styles.eventSubtitle}>{item.subtitle}</Text>}
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -643,5 +720,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  timeMarkerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 6,
+  },
+  timeMarkerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#FCD34D',
+  },
+  timeMarkerLineSleep: {
+    backgroundColor: '#A5B4FC',
+  },
+  timeMarkerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  timeMarkerLabelSleep: {
+    color: '#4338CA',
   },
 });
