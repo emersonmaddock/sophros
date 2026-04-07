@@ -55,6 +55,10 @@ type ScheduleItem = {
   status: 'completed' | 'current' | 'upcoming';
   recipe?: WeeklyScheduleItem['recipe'];
   workoutType?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 };
 
 export default function SchedulePage() {
@@ -125,6 +129,10 @@ export default function SchedulePage() {
         status,
         recipe: item.recipe,
         workoutType: item.workoutType,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
       };
     });
   }, [getScheduleItems, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
@@ -134,7 +142,7 @@ export default function SchedulePage() {
       setSelectedMeal(item);
       setModalVisible(true);
     } else {
-      // Non-meal items open EditItemModal directly
+      // Non-meal items or meals without recipe open EditItemModal directly
       setEditModalItem({
         id: item.id,
         time: item.time,
@@ -143,6 +151,10 @@ export default function SchedulePage() {
         duration: item.duration,
         type: item.type,
         workoutType: item.workoutType,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
       });
       setEditModalMode('edit');
       setEditModalItemType(item.type);

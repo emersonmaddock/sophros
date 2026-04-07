@@ -256,8 +256,8 @@ def _event_to_exercise(ev: PlannedEvent) -> dict:
         "category": wd.exercise_category,
         "duration_minutes": ev.duration_minutes,
         "time": ev.time.isoformat() if ev.time else None,
-        "calories_burned": wd.calories_burned,
-        "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg,
+        "calories_burned": wd.calories_burned or 0,
+        "muscle_gain_estimate_kg": wd.muscle_gain_estimate_kg or 0.0,
         "event_id": ev.id,
     }
 
