@@ -157,6 +157,33 @@ export type Day =
   | 'Sunday';
 
 /**
+ * DayTotalsResponse
+ */
+export type DayTotalsResponse = {
+  day: Day;
+  /**
+   * Events
+   */
+  events: Array<PlannedEventResponse>;
+  /**
+   * Total Calories
+   */
+  total_calories: number;
+  /**
+   * Total Protein
+   */
+  total_protein: number;
+  /**
+   * Total Carbs
+   */
+  total_carbs: number;
+  /**
+   * Total Fat
+   */
+  total_fat: number;
+};
+
+/**
  * ExerciseCategory
  */
 export type ExerciseCategory = 'Cardio' | 'Weight Lifting';
@@ -317,6 +344,217 @@ export type NutrientRange = {
    * Unit
    */
   unit?: string;
+};
+
+/**
+ * PlannedEventCreate
+ */
+export type PlannedEventCreate = {
+  day: Day;
+  /**
+   * Event Type
+   */
+  event_type: string;
+  /**
+   * Time
+   */
+  time?: string | null;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes?: number | null;
+  slot_name?: MealSlot | null;
+  /**
+   * Calories
+   */
+  calories?: number;
+  /**
+   * Protein
+   */
+  protein?: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates?: number;
+  /**
+   * Fat
+   */
+  fat?: number;
+  /**
+   * Prep Time Minutes
+   */
+  prep_time_minutes?: number;
+  /**
+   * Recipe Id
+   */
+  recipe_id?: string | null;
+  /**
+   * Recipe Description
+   */
+  recipe_description?: string | null;
+  /**
+   * Recipe Ingredients
+   */
+  recipe_ingredients?: Array<string> | null;
+  /**
+   * Recipe Tags
+   */
+  recipe_tags?: Array<string> | null;
+  /**
+   * Recipe Warnings
+   */
+  recipe_warnings?: Array<string> | null;
+  /**
+   * Recipe Source Url
+   */
+  recipe_source_url?: string | null;
+  /**
+   * Recipe Image Url
+   */
+  recipe_image_url?: string | null;
+  /**
+   * Exercise Category
+   */
+  exercise_category?: string | null;
+  /**
+   * Calories Burned
+   */
+  calories_burned?: number | null;
+  /**
+   * Muscle Gain Estimate Kg
+   */
+  muscle_gain_estimate_kg?: number | null;
+  /**
+   * Target Hours
+   */
+  target_hours?: number | null;
+};
+
+/**
+ * PlannedEventResponse
+ */
+export type PlannedEventResponse = {
+  /**
+   * Id
+   */
+  id: number;
+  /**
+   * Meal Plan Id
+   */
+  meal_plan_id: number;
+  day: Day;
+  /**
+   * Event Type
+   */
+  event_type: string;
+  /**
+   * Time
+   */
+  time?: string | null;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes?: number | null;
+  /**
+   * Completed
+   */
+  completed?: boolean;
+  slot_name?: MealSlot | null;
+  /**
+   * Calories
+   */
+  calories?: number | null;
+  /**
+   * Protein
+   */
+  protein?: number | null;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates?: number | null;
+  /**
+   * Fat
+   */
+  fat?: number | null;
+  /**
+   * Recipe Id
+   */
+  recipe_id?: string | null;
+  /**
+   * Exercise Category
+   */
+  exercise_category?: string | null;
+  /**
+   * Calories Burned
+   */
+  calories_burned?: number | null;
+  /**
+   * Muscle Gain Estimate Kg
+   */
+  muscle_gain_estimate_kg?: number | null;
+  /**
+   * Target Hours
+   */
+  target_hours?: number | null;
+};
+
+/**
+ * PlannedEventUpdate
+ */
+export type PlannedEventUpdate = {
+  /**
+   * Title
+   */
+  title?: string | null;
+  /**
+   * Time
+   */
+  time?: string | null;
+  /**
+   * Duration Minutes
+   */
+  duration_minutes?: number | null;
+  /**
+   * Completed
+   */
+  completed?: boolean | null;
+  /**
+   * Calories
+   */
+  calories?: number | null;
+  /**
+   * Protein
+   */
+  protein?: number | null;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates?: number | null;
+  /**
+   * Fat
+   */
+  fat?: number | null;
+  slot_name?: MealSlot | null;
+  /**
+   * Exercise Category
+   */
+  exercise_category?: string | null;
+  /**
+   * Calories Burned
+   */
+  calories_burned?: number | null;
+  /**
+   * Target Hours
+   */
+  target_hours?: number | null;
 };
 
 /**
@@ -1175,6 +1413,134 @@ export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses = {
 
 export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponse =
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses[keyof GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses];
+
+export type AddEventApiV1MealPlansPlanIdEventsPostData = {
+  body: PlannedEventCreate;
+  path: {
+    /**
+     * Plan Id
+     */
+    plan_id: number;
+  };
+  query?: never;
+  url: '/api/v1/meal-plans/{plan_id}/events';
+};
+
+export type AddEventApiV1MealPlansPlanIdEventsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type AddEventApiV1MealPlansPlanIdEventsPostError =
+  AddEventApiV1MealPlansPlanIdEventsPostErrors[keyof AddEventApiV1MealPlansPlanIdEventsPostErrors];
+
+export type AddEventApiV1MealPlansPlanIdEventsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: DayTotalsResponse;
+};
+
+export type AddEventApiV1MealPlansPlanIdEventsPostResponse =
+  AddEventApiV1MealPlansPlanIdEventsPostResponses[keyof AddEventApiV1MealPlansPlanIdEventsPostResponses];
+
+export type DeleteEventApiV1MealPlansEventsEventIdDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: number;
+  };
+  query?: never;
+  url: '/api/v1/meal-plans/events/{event_id}';
+};
+
+export type DeleteEventApiV1MealPlansEventsEventIdDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteEventApiV1MealPlansEventsEventIdDeleteError =
+  DeleteEventApiV1MealPlansEventsEventIdDeleteErrors[keyof DeleteEventApiV1MealPlansEventsEventIdDeleteErrors];
+
+export type DeleteEventApiV1MealPlansEventsEventIdDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: DayTotalsResponse;
+};
+
+export type DeleteEventApiV1MealPlansEventsEventIdDeleteResponse =
+  DeleteEventApiV1MealPlansEventsEventIdDeleteResponses[keyof DeleteEventApiV1MealPlansEventsEventIdDeleteResponses];
+
+export type UpdateEventApiV1MealPlansEventsEventIdPutData = {
+  body: PlannedEventUpdate;
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: number;
+  };
+  query?: never;
+  url: '/api/v1/meal-plans/events/{event_id}';
+};
+
+export type UpdateEventApiV1MealPlansEventsEventIdPutErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpdateEventApiV1MealPlansEventsEventIdPutError =
+  UpdateEventApiV1MealPlansEventsEventIdPutErrors[keyof UpdateEventApiV1MealPlansEventsEventIdPutErrors];
+
+export type UpdateEventApiV1MealPlansEventsEventIdPutResponses = {
+  /**
+   * Successful Response
+   */
+  200: DayTotalsResponse;
+};
+
+export type UpdateEventApiV1MealPlansEventsEventIdPutResponse =
+  UpdateEventApiV1MealPlansEventsEventIdPutResponses[keyof UpdateEventApiV1MealPlansEventsEventIdPutResponses];
+
+export type CompleteEventApiV1MealPlansEventsEventIdCompletePostData = {
+  body?: never;
+  path: {
+    /**
+     * Event Id
+     */
+    event_id: number;
+  };
+  query?: never;
+  url: '/api/v1/meal-plans/events/{event_id}/complete';
+};
+
+export type CompleteEventApiV1MealPlansEventsEventIdCompletePostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type CompleteEventApiV1MealPlansEventsEventIdCompletePostError =
+  CompleteEventApiV1MealPlansEventsEventIdCompletePostErrors[keyof CompleteEventApiV1MealPlansEventsEventIdCompletePostErrors];
+
+export type CompleteEventApiV1MealPlansEventsEventIdCompletePostResponses = {
+  /**
+   * Successful Response
+   */
+  200: PlannedEventResponse;
+};
+
+export type CompleteEventApiV1MealPlansEventsEventIdCompletePostResponse =
+  CompleteEventApiV1MealPlansEventsEventIdCompletePostResponses[keyof CompleteEventApiV1MealPlansEventsEventIdCompletePostResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;
