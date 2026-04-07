@@ -1,13 +1,19 @@
 import {
+  addEventApiV1MealPlansPlanIdEventsPost,
+  completeEventApiV1MealPlansEventsEventIdCompletePost,
+  deleteEventApiV1MealPlansEventsEventIdDelete,
   generateMealPlanApiV1MealPlansGeneratePost,
   generateWeekPlanApiV1MealPlansGenerateWeekPost,
   getPlannedWeeksApiV1MealPlansPlannedWeeksGet,
   getWeekPlanApiV1MealPlansWeekGet,
   saveMealPlanApiV1MealPlansSavePost,
+  updateEventApiV1MealPlansEventsEventIdPut,
 } from '@/api/sdk.gen';
 import type {
   DailyMealPlanOutput,
   Day,
+  PlannedEventCreate,
+  PlannedEventUpdate,
   SaveMealPlanRequest,
   WeeklyMealPlanOutput,
 } from '@/api/types.gen';
@@ -164,6 +170,92 @@ export function useSaveMealPlanMutation() {
         queryKey: mealPlanKeys.savedWeek(variables.week_start_date),
       });
       queryClient.invalidateQueries({ queryKey: mealPlanKeys.plannedWeeks() });
+    },
+  });
+}
+
+/**
+ * Hook to add a new event to a saved meal plan.
+ */
+export function useAddEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ planId, event }: { planId: number; event: PlannedEventCreate }) => {
+      const response = await addEventApiV1MealPlansPlanIdEventsPost({
+        path: { plan_id: planId },
+        body: event,
+      });
+      if (response.error || !response.data) {
+        throw new Error((response.error as any)?.detail || 'Failed to add event');
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mealPlanKeys.all });
+    },
+  });
+}
+
+/**
+ * Hook to update an existing planned event.
+ */
+export function useUpdateEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ eventId, updates }: { eventId: number; updates: PlannedEventUpdate }) => {
+      const response = await updateEventApiV1MealPlansEventsEventIdPut({
+        path: { event_id: eventId },
+        body: updates,
+      });
+      if (response.error || !response.data) {
+        throw new Error((response.error as any)?.detail || 'Failed to update event');
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mealPlanKeys.all });
+    },
+  });
+}
+
+/**
+ * Hook to delete a planned event.
+ */
+export function useDeleteEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await deleteEventApiV1MealPlansEventsEventIdDelete({
+        path: { event_id: eventId },
+      });
+      if (response.error || !response.data) {
+        throw new Error((response.error as any)?.detail || 'Failed to delete event');
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mealPlanKeys.all });
+    },
+  });
+}
+
+/**
+ * Hook to mark an event as completed.
+ */
+export function useCompleteEventMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (eventId: number) => {
+      const response = await completeEventApiV1MealPlansEventsEventIdCompletePost({
+        path: { event_id: eventId },
+      });
+      if (response.error || !response.data) {
+        throw new Error((response.error as any)?.detail || 'Failed to complete event');
+      }
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mealPlanKeys.all });
     },
   });
 }

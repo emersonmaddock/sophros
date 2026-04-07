@@ -1,7 +1,9 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { DurationPickerInput } from '@/components/DurationPickerInput';
 import { TimePickerInput } from '@/components/TimePickerInput';
+import { Dumbbell, Moon, UtensilsCrossed } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -14,6 +16,27 @@ type EditItemModalProps = {
   itemType?: ItemType;
 };
 
+const TYPE_CONFIG = {
+  meal: {
+    label: 'Meal',
+    subtitle: 'Nutrition & schedule',
+    color: Colors.light.secondary,
+    Icon: UtensilsCrossed,
+  },
+  workout: {
+    label: 'Workout',
+    subtitle: 'Exercise details',
+    color: Colors.light.primary,
+    Icon: Dumbbell,
+  },
+  sleep: {
+    label: 'Sleep',
+    subtitle: 'Rest & recovery',
+    color: Colors.light.charts.carbs,
+    Icon: Moon,
+  },
+} as const;
+
 export function EditItemModal({
   visible,
   onClose,
@@ -24,26 +47,57 @@ export function EditItemModal({
 }: EditItemModalProps) {
   const [time, setTime] = useState(item?.time || '7:00 AM');
   const [title, setTitle] = useState(item?.title || '');
-  const [subtitle, setSubtitle] = useState(item?.subtitle || '');
   const [duration, setDuration] = useState(item?.duration || '30 min');
   const [calories, setCalories] = useState(item?.calories?.toString() || '');
+  const [protein, setProtein] = useState(item?.protein?.toString() || '');
+  const [carbs, setCarbs] = useState(item?.carbs?.toString() || '');
+  const [fat, setFat] = useState(item?.fat?.toString() || '');
   const [workoutType, setWorkoutType] = useState(item?.workoutType || '');
+  const [caloriesBurned, setCaloriesBurned] = useState('');
+  const [muscleGain, setMuscleGain] = useState('');
   const [targetHours, setTargetHours] = useState(item?.targetHours?.toString() || '8');
+  const [touched, setTouched] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['90%'], []);
 
   const currentType = item?.type || itemType;
+  const config = TYPE_CONFIG[currentType];
+
+  const errors = useMemo(() => {
+    const e: Record<string, string> = {};
+    if (!title.trim()) e.title = 'Title is required';
+    if (currentType === 'meal') {
+      if (calories && (isNaN(Number(calories)) || Number(calories) < 0))
+        e.calories = 'Must be 0 or more';
+      if (protein && (isNaN(Number(protein)) || Number(protein) < 0))
+        e.protein = 'Must be 0 or more';
+      if (carbs && (isNaN(Number(carbs)) || Number(carbs) < 0)) e.carbs = 'Must be 0 or more';
+      if (fat && (isNaN(Number(fat)) || Number(fat) < 0)) e.fat = 'Must be 0 or more';
+    }
+    if (currentType === 'sleep' && targetHours) {
+      const h = parseFloat(targetHours);
+      if (isNaN(h) || h < 1 || h > 24) e.targetHours = 'Must be 1–24';
+    }
+    return e;
+  }, [title, calories, protein, carbs, fat, targetHours, currentType]);
+
+  const isValid = Object.keys(errors).length === 0;
 
   useEffect(() => {
     if (visible) {
       setTime(item?.time || '7:00 AM');
       setTitle(item?.title || '');
-      setSubtitle(item?.subtitle || '');
       setDuration(item?.duration || '30 min');
       setCalories(item?.calories?.toString() || '');
+      setProtein(item?.protein?.toString() || '');
+      setCarbs(item?.carbs?.toString() || '');
+      setFat(item?.fat?.toString() || '');
       setWorkoutType(item?.workoutType || '');
+      setCaloriesBurned(item?.type === 'workout' ? item?.calories?.toString() || '' : '');
+      setMuscleGain('');
       setTargetHours(item?.targetHours?.toString() || '8');
+      setTouched(false);
       bottomSheetRef.current?.present();
     } else {
       bottomSheetRef.current?.dismiss();
@@ -51,35 +105,41 @@ export function EditItemModal({
   }, [visible, item]);
 
   const handleSave = () => {
-    const baseItem = {
+    setTouched(true);
+    if (!isValid) return;
+
+    const cal = calories ? parseInt(calories) : undefined;
+    const pro = protein ? parseInt(protein) : undefined;
+    const carb = carbs ? parseInt(carbs) : undefined;
+    const f = fat ? parseInt(fat) : undefined;
+
+    const subtitleParts: string[] = [];
+    if (cal) subtitleParts.push(`${cal} cal`);
+    if (pro) subtitleParts.push(`${pro}g protein`);
+    const autoSubtitle = subtitleParts.join(' · ') || undefined;
+
+    const baseItem: WeeklyScheduleItem = {
       id: item?.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       time,
       title,
-      subtitle: subtitle || undefined,
       duration,
       type: currentType,
     };
 
-    let updatedItem: WeeklyScheduleItem = baseItem;
-
     if (currentType === 'meal') {
-      updatedItem = {
-        ...baseItem,
-        calories: calories ? parseInt(calories) : undefined,
-      };
+      baseItem.subtitle = autoSubtitle;
+      baseItem.calories = cal;
+      baseItem.protein = pro;
+      baseItem.carbs = carb;
+      baseItem.fat = f;
     } else if (currentType === 'workout') {
-      updatedItem = {
-        ...baseItem,
-        workoutType: workoutType || title,
-      };
+      baseItem.workoutType = workoutType || title;
+      baseItem.calories = caloriesBurned ? parseInt(caloriesBurned) : undefined;
     } else if (currentType === 'sleep') {
-      updatedItem = {
-        ...baseItem,
-        targetHours: targetHours ? parseFloat(targetHours) : 8,
-      };
+      baseItem.targetHours = targetHours ? parseFloat(targetHours) : 8;
     }
 
-    onSave(updatedItem);
+    onSave(baseItem);
     onClose();
   };
 
@@ -95,6 +155,16 @@ export function EditItemModal({
     []
   );
 
+  const renderError = (field: string) => {
+    if (!touched || !errors[field]) return null;
+    return <Text style={styles.errorText}>{errors[field]}</Text>;
+  };
+
+  const inputStyle = (field: string) => [
+    styles.input,
+    touched && errors[field] && styles.inputError,
+  ];
+
   return (
     <BottomSheetModal
       ref={bottomSheetRef}
@@ -106,15 +176,20 @@ export function EditItemModal({
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
     >
+      <View style={[styles.headerStrip, { backgroundColor: config.color }]} />
+
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{mode === 'edit' ? 'Edit Item' : 'Add Item'}</Text>
-        <Text style={styles.headerSubtitle}>
-          {currentType === 'meal'
-            ? 'Meal details'
-            : currentType === 'workout'
-              ? 'Workout details'
-              : 'Sleep details'}
-        </Text>
+        <View style={styles.headerLeft}>
+          <View style={[styles.iconCircle, { backgroundColor: config.color + '18' }]}>
+            <config.Icon size={20} color={config.color} />
+          </View>
+          <View>
+            <Text style={styles.headerTitle}>
+              {mode === 'edit' ? 'Edit' : 'Add'} {config.label}
+            </Text>
+            <Text style={styles.headerSubtitle}>{config.subtitle}</Text>
+          </View>
+        </View>
       </View>
 
       <BottomSheetScrollView contentContainerStyle={styles.form}>
@@ -125,7 +200,7 @@ export function EditItemModal({
         <View style={styles.field}>
           <Text style={styles.label}>Title</Text>
           <TextInput
-            style={styles.input}
+            style={inputStyle('title')}
             value={title}
             onChangeText={setTitle}
             placeholder={
@@ -137,71 +212,123 @@ export function EditItemModal({
             }
             placeholderTextColor={Colors.light.textMuted}
           />
+          {renderError('title')}
         </View>
 
         {currentType === 'meal' && (
           <>
-            <View style={styles.field}>
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={styles.input}
-                value={subtitle}
-                onChangeText={setSubtitle}
-                placeholder="e.g., with berries and granola"
-                placeholderTextColor={Colors.light.textMuted}
-              />
+            <Text style={styles.sectionLabel}>Nutrition</Text>
+            <View style={styles.macroRow}>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Calories</Text>
+                <TextInput
+                  style={inputStyle('calories')}
+                  value={calories}
+                  onChangeText={setCalories}
+                  placeholder="380"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('calories')}
+              </View>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Protein (g)</Text>
+                <TextInput
+                  style={inputStyle('protein')}
+                  value={protein}
+                  onChangeText={setProtein}
+                  placeholder="25"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('protein')}
+              </View>
             </View>
-
-            <View style={styles.field}>
-              <Text style={styles.label}>Calories</Text>
-              <TextInput
-                style={styles.input}
-                value={calories}
-                onChangeText={setCalories}
-                placeholder="e.g., 380"
-                keyboardType="numeric"
-                placeholderTextColor={Colors.light.textMuted}
-              />
+            <View style={styles.macroRow}>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Carbs (g)</Text>
+                <TextInput
+                  style={inputStyle('carbs')}
+                  value={carbs}
+                  onChangeText={setCarbs}
+                  placeholder="45"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('carbs')}
+              </View>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Fat (g)</Text>
+                <TextInput
+                  style={inputStyle('fat')}
+                  value={fat}
+                  onChangeText={setFat}
+                  placeholder="15"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('fat')}
+              </View>
             </View>
           </>
         )}
 
         {currentType === 'workout' && (
-          <View style={styles.field}>
-            <Text style={styles.label}>Workout Type</Text>
-            <TextInput
-              style={styles.input}
-              value={workoutType}
-              onChangeText={setWorkoutType}
-              placeholder="e.g., HIIT, Strength, Yoga"
-              placeholderTextColor={Colors.light.textMuted}
-            />
-          </View>
+          <>
+            <View style={styles.field}>
+              <Text style={styles.label}>Workout Type</Text>
+              <TextInput
+                style={styles.input}
+                value={workoutType}
+                onChangeText={setWorkoutType}
+                placeholder="e.g., HIIT, Strength, Yoga"
+                placeholderTextColor={Colors.light.textMuted}
+              />
+            </View>
+            <View style={styles.macroRow}>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Calories Burned</Text>
+                <TextInput
+                  style={styles.input}
+                  value={caloriesBurned}
+                  onChangeText={setCaloriesBurned}
+                  placeholder="300"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+              </View>
+              <View style={[styles.field, styles.macroField]}>
+                <Text style={styles.macroLabel}>Muscle Gain (g)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={muscleGain}
+                  onChangeText={setMuscleGain}
+                  placeholder="20"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+              </View>
+            </View>
+          </>
         )}
 
         {currentType === 'sleep' && (
           <View style={styles.field}>
             <Text style={styles.label}>Target Hours</Text>
             <TextInput
-              style={styles.input}
+              style={inputStyle('targetHours')}
               value={targetHours}
               onChangeText={setTargetHours}
               placeholder="e.g., 8"
               keyboardType="decimal-pad"
               placeholderTextColor={Colors.light.textMuted}
             />
+            {renderError('targetHours')}
           </View>
         )}
 
         <View style={styles.field}>
-          <Text style={styles.label}>Duration</Text>
-          <TextInput
-            style={styles.input}
-            value={duration}
-            onChangeText={setDuration}
-            placeholder="e.g., 30 min"
-            placeholderTextColor={Colors.light.textMuted}
-          />
+          <DurationPickerInput label="Duration" value={duration} onChange={setDuration} />
         </View>
       </BottomSheetScrollView>
 
@@ -209,7 +336,10 @@ export function EditItemModal({
         <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
           <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+        <TouchableOpacity
+          style={[styles.saveButton, touched && !isValid && styles.saveButtonDisabled]}
+          onPress={handleSave}
+        >
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
       </View>
@@ -218,10 +348,28 @@ export function EditItemModal({
 }
 
 const styles = StyleSheet.create({
+  headerStrip: {
+    height: 4,
+  },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 20,
@@ -229,9 +377,9 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.light.textMuted,
-    marginTop: 2,
+    marginTop: 1,
   },
   form: {
     padding: 20,
@@ -245,6 +393,19 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginBottom: 8,
   },
+  sectionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.light.text,
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  macroLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+    marginBottom: 6,
+  },
   input: {
     backgroundColor: Colors.light.surface,
     borderRadius: 12,
@@ -253,6 +414,21 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  inputError: {
+    borderColor: Colors.light.error,
+  },
+  errorText: {
+    color: Colors.light.error,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  macroField: {
+    flex: 1,
   },
   actions: {
     flexDirection: 'row',
@@ -279,6 +455,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
     fontSize: 16,

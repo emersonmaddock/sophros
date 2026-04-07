@@ -55,6 +55,10 @@ type ScheduleItem = {
   status: 'completed' | 'current' | 'upcoming';
   recipe?: WeeklyScheduleItem['recipe'];
   workoutType?: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 };
 
 export default function SchedulePage() {
@@ -125,6 +129,10 @@ export default function SchedulePage() {
         status,
         recipe: item.recipe,
         workoutType: item.workoutType,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
       };
     });
   }, [getScheduleItems, selectedDayIndex, weekOffset, currentHour, todayMondayIndex]);
@@ -134,7 +142,7 @@ export default function SchedulePage() {
       setSelectedMeal(item);
       setModalVisible(true);
     } else {
-      // Non-meal items open EditItemModal directly
+      // Non-meal items or meals without recipe open EditItemModal directly
       setEditModalItem({
         id: item.id,
         time: item.time,
@@ -143,6 +151,10 @@ export default function SchedulePage() {
         duration: item.duration,
         type: item.type,
         workoutType: item.workoutType,
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
       });
       setEditModalMode('edit');
       setEditModalItemType(item.type);
@@ -152,19 +164,28 @@ export default function SchedulePage() {
 
   const handleMealModify = useCallback(
     (meal: {
+      id: string;
       time: string;
       title?: string;
       subtitle?: string;
       type: string;
+      calories?: number;
+      protein?: number;
+      carbs?: number;
+      fat?: number;
       recipe?: WeeklyScheduleItem['recipe'];
     }) => {
       setEditModalItem({
-        id: meal.recipe?.id?.toString() || `${Date.now()}`,
+        id: meal.id,
         time: meal.time,
         title: meal.title || 'Meal',
         subtitle: meal.subtitle,
         duration: '30 min',
         type: 'meal',
+        calories: meal.calories,
+        protein: meal.protein,
+        carbs: meal.carbs,
+        fat: meal.fat,
         recipe: meal.recipe,
       });
       setEditModalMode('edit');
@@ -175,14 +196,13 @@ export default function SchedulePage() {
   );
 
   const handleMealRemove = useCallback(
-    (meal: { time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
-      const itemId = meal.recipe?.id?.toString() || '';
+    (meal: { id: string; time: string; title?: string; recipe?: WeeklyScheduleItem['recipe'] }) => {
       Alert.alert('Remove Item', `Remove "${meal.title || 'this item'}" from the schedule?`, [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
-          onPress: () => removeItem(selectedDayName, itemId),
+          onPress: () => removeItem(selectedDayName, meal.id),
         },
       ]);
     },

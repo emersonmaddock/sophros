@@ -3,12 +3,21 @@
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
 import type {
+  AddEventApiV1MealPlansPlanIdEventsPostData,
+  AddEventApiV1MealPlansPlanIdEventsPostErrors,
+  AddEventApiV1MealPlansPlanIdEventsPostResponses,
+  CompleteEventApiV1MealPlansEventsEventIdCompletePostData,
+  CompleteEventApiV1MealPlansEventsEventIdCompletePostErrors,
+  CompleteEventApiV1MealPlansEventsEventIdCompletePostResponses,
   CreateScheduleItemApiV1SchedulesPostData,
   CreateScheduleItemApiV1SchedulesPostErrors,
   CreateScheduleItemApiV1SchedulesPostResponses,
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostErrors,
   CreateUserApiV1UsersPostResponses,
+  DeleteEventApiV1MealPlansEventsEventIdDeleteData,
+  DeleteEventApiV1MealPlansEventsEventIdDeleteErrors,
+  DeleteEventApiV1MealPlansEventsEventIdDeleteResponses,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
@@ -37,6 +46,9 @@ import type {
   SaveMealPlanApiV1MealPlansSavePostData,
   SaveMealPlanApiV1MealPlansSavePostErrors,
   SaveMealPlanApiV1MealPlansSavePostResponses,
+  UpdateEventApiV1MealPlansEventsEventIdPutData,
+  UpdateEventApiV1MealPlansEventsEventIdPutErrors,
+  UpdateEventApiV1MealPlansEventsEventIdPutResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
@@ -328,6 +340,88 @@ export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extend
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/planned-weeks',
+    ...options,
+  });
+
+/**
+ * Add Event
+ *
+ * Add a new event to a saved meal plan.
+ */
+export const addEventApiV1MealPlansPlanIdEventsPost = <ThrowOnError extends boolean = false>(
+  options: Options<AddEventApiV1MealPlansPlanIdEventsPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    AddEventApiV1MealPlansPlanIdEventsPostResponses,
+    AddEventApiV1MealPlansPlanIdEventsPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/{plan_id}/events',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete Event
+ *
+ * Delete a planned event.
+ */
+export const deleteEventApiV1MealPlansEventsEventIdDelete = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteEventApiV1MealPlansEventsEventIdDeleteData, ThrowOnError>
+) =>
+  (options.client ?? client).delete<
+    DeleteEventApiV1MealPlansEventsEventIdDeleteResponses,
+    DeleteEventApiV1MealPlansEventsEventIdDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/events/{event_id}',
+    ...options,
+  });
+
+/**
+ * Update Event
+ *
+ * Update an existing planned event.
+ */
+export const updateEventApiV1MealPlansEventsEventIdPut = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateEventApiV1MealPlansEventsEventIdPutData, ThrowOnError>
+) =>
+  (options.client ?? client).put<
+    UpdateEventApiV1MealPlansEventsEventIdPutResponses,
+    UpdateEventApiV1MealPlansEventsEventIdPutErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/events/{event_id}',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Complete Event
+ *
+ * Mark an event as completed.
+ */
+export const completeEventApiV1MealPlansEventsEventIdCompletePost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CompleteEventApiV1MealPlansEventsEventIdCompletePostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    CompleteEventApiV1MealPlansEventsEventIdCompletePostResponses,
+    CompleteEventApiV1MealPlansEventsEventIdCompletePostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/meal-plans/events/{event_id}/complete',
     ...options,
   });
 

@@ -6,10 +6,15 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface MealData {
+  id: string;
   time: string;
   title?: string;
   subtitle?: string;
   type: string;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   recipe?: Recipe;
   [key: string]: unknown;
 }

@@ -12,6 +12,7 @@ class ExerciseRecommendation(BaseModel):
     time: time_type | None = None
     calories_burned: int = 0
     muscle_gain_estimate_kg: float = 0.0
+    event_id: int | None = None
 
 
 class ExercisePlanService:

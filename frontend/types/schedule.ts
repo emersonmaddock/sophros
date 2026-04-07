@@ -10,6 +10,9 @@ export type WeeklyScheduleItem = {
   duration: string;
   type: ItemType;
   calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   workoutType?: string;
   targetHours?: number;
   alternatives?: WeeklyScheduleItem[];
