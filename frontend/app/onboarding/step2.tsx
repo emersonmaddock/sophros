@@ -115,9 +115,9 @@ export default function Step2Screen() {
         >
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: '40%' }]} />
+              <View style={[styles.progressFill, { width: '33%' }]} />
             </View>
-            <Text style={styles.progressText}>Step 2 of 5</Text>
+            <Text style={styles.progressText}>Step 2 of 6</Text>
           </View>
 
           <View style={styles.header}>
@@ -333,9 +333,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 30,
     backgroundColor: Colors.light.background,
-    borderTopWidth: 1,
-    borderTopColor: Colors.light.background,
-    ...Shadows.card,
   },
   continueButton: {
     backgroundColor: Colors.light.primary,

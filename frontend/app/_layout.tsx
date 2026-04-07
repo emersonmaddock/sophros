@@ -1,9 +1,11 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { queryClient } from '@/config/queryClient';
@@ -32,26 +34,34 @@ client.setConfig({
 
 export default function RootLayout() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-        <UserProvider>
-          <OnboardingProvider>
-            <ThemeProvider value={DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="week-planning" options={{ headerShown: false }} />
-                <Stack.Screen name="health-score" options={{ headerShown: false }} />
-                <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
-                <Stack.Screen name="profile/dietary-preferences" options={{ headerShown: false }} />
-              </Stack>
-              <StatusBar style="dark" />
-            </ThemeProvider>
-          </OnboardingProvider>
-        </UserProvider>
-      </ClerkProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+          <UserProvider>
+            <OnboardingProvider>
+              <BottomSheetModalProvider>
+                <ThemeProvider value={DefaultTheme}>
+                  <Stack>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="welcome" options={{ headerShown: false }} />
+                    <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                    <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                    <Stack.Screen name="week-planning" options={{ headerShown: false }} />
+                    <Stack.Screen name="health-score" options={{ headerShown: false }} />
+                    <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
+                    <Stack.Screen
+                      name="profile/dietary-preferences"
+                      options={{ headerShown: false }}
+                    />
+                  </Stack>
+                  <StatusBar style="dark" />
+                </ThemeProvider>
+              </BottomSheetModalProvider>
+            </OnboardingProvider>
+          </UserProvider>
+        </ClerkProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
