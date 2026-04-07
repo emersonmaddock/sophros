@@ -38,7 +38,7 @@ describe('WelcomeScreen', () => {
 
     fireEvent.press(screen.getByText('Get Started'));
 
-    expect(router.push).toHaveBeenCalledWith('/(auth)/sign-in');
+    expect(router.replace).toHaveBeenCalledWith('/(auth)/sign-in');
   });
 
   it('redirects to auth if already signed in', () => {
