@@ -213,6 +213,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 30,
+    alignItems: 'center',
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -221,6 +222,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    alignSelf: 'stretch',
   },
   pickerHeaderCancel: {
     fontSize: 16,

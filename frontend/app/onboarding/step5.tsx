@@ -1,3 +1,4 @@
+import { DatePickerInput } from '@/components/DatePickerInput';
 import { MetricInput } from '@/components/MetricInput';
 import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Shadows } from '@/constants/theme';
@@ -5,23 +6,20 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { kgToLbs, lbsToKg } from '@/utils/units';
 import { getSleepWarning } from '@/utils/sleep-validation';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Step5Screen() {
   const { data, updateField, errors, isSection5Complete } = useOnboarding();
   const [imperialTargetWeight, setImperialTargetWeight] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
 
   const canContinue = isSection5Complete();
 
@@ -47,20 +45,11 @@ export default function Step5Screen() {
       (data.targetWeight ? kgToLbs(parseFloat(data.targetWeight)).toString() : '')
     : data.targetWeight;
 
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 7); // At least 1 week from now
-
-  const handleDateChange = (_event: unknown, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    if (selectedDate) {
-      const year = selectedDate.getFullYear();
-      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-      const day = String(selectedDate.getDate()).padStart(2, '0');
-      updateField('targetDate', `${year}-${month}-${day}`);
-    }
-  };
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7); // At least 1 week from now
+    return d;
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -96,29 +85,13 @@ export default function Step5Screen() {
               />
             </View>
 
-            <View style={styles.dateField}>
-              <Text style={styles.fieldLabel}>Target Date</Text>
-              <Text style={styles.fieldDescription}>When do you want to reach your goal?</Text>
-              {Platform.OS === 'android' && (
-                <TouchableOpacity style={styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                  <Text
-                    style={data.targetDate ? styles.dateButtonText : styles.dateButtonPlaceholder}
-                  >
-                    {data.targetDate || 'Select a date'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {showDatePicker && (
-                <DateTimePicker
-                  value={data.targetDate ? new Date(data.targetDate) : minDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  minimumDate={minDate}
-                  onChange={handleDateChange}
-                />
-              )}
-              {errors.targetDate && <Text style={styles.errorText}>{errors.targetDate}</Text>}
-            </View>
+            <DatePickerInput
+              label="Target Date"
+              value={data.targetDate}
+              onChange={(v) => updateField('targetDate', v)}
+              minimumDate={minDate}
+              error={errors.targetDate}
+            />
 
             <TimePickerInput
               label="Wake Up Time"
@@ -207,39 +180,6 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: 24,
-  },
-  dateField: {
-    gap: 4,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
-  fieldDescription: {
-    fontSize: 14,
-    color: Colors.light.textMuted,
-    marginBottom: 4,
-  },
-  dateButton: {
-    backgroundColor: Colors.light.surface,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  dateButtonText: {
-    fontSize: 16,
-    color: Colors.light.text,
-  },
-  dateButtonPlaceholder: {
-    fontSize: 16,
-    color: Colors.light.textMuted,
-  },
-  errorText: {
-    fontSize: 13,
-    color: Colors.light.error,
-    marginTop: 4,
   },
   buttonContainer: {
     padding: 20,

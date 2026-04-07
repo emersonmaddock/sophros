@@ -17,6 +17,8 @@ interface DatePickerInputProps {
   value: string;
   onChange: (v: string) => void;
   style?: StyleProp<ViewStyle>;
+  minimumDate?: Date;
+  error?: string;
 }
 
 function parseValue(value: string | null | undefined): Date {
@@ -42,7 +44,14 @@ function displayDate(value: string): string {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-export function DatePickerInput({ label, value, onChange, style }: DatePickerInputProps) {
+export function DatePickerInput({
+  label,
+  value,
+  onChange,
+  style,
+  minimumDate,
+  error,
+}: DatePickerInputProps) {
   const currentDate = parseValue(value);
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState(currentDate);
@@ -80,6 +89,7 @@ export function DatePickerInput({ label, value, onChange, style }: DatePickerInp
           </TouchableOpacity>
         ) : null}
       </View>
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       {Platform.OS === 'ios' && showPicker && (
         <Modal transparent animationType="slide">
@@ -99,6 +109,7 @@ export function DatePickerInput({ label, value, onChange, style }: DatePickerInp
                 display="spinner"
                 textColor="black"
                 themeVariant="light"
+                minimumDate={minimumDate}
                 onChange={(_, date) => setTempDate(date ?? tempDate)}
               />
             </View>
@@ -111,6 +122,7 @@ export function DatePickerInput({ label, value, onChange, style }: DatePickerInp
           value={currentDate}
           mode="date"
           display="default"
+          minimumDate={minimumDate}
           onChange={(_, date) => {
             setShowPicker(false);
             if (date) onChange(formatOutput(date));
@@ -175,6 +187,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 30,
+    alignItems: 'center',
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -183,6 +196,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
+    alignSelf: 'stretch',
   },
   pickerHeaderCancel: {
     fontSize: 16,
@@ -192,5 +206,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.light.primary,
+  },
+  errorText: {
+    fontSize: 13,
+    color: Colors.light.error,
+    marginTop: 4,
   },
 });
