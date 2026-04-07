@@ -1,10 +1,10 @@
+import type { Day } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
-import type { Day } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
@@ -29,7 +29,7 @@ const JS_DAY_TO_API_DAY: Record<number, Day> = {
   6: 'Saturday',
 };
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const router = useRouter();
 
   const { user: clerkUser } = useClerkUser();
