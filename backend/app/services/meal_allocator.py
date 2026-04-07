@@ -116,15 +116,18 @@ class MealAllocator:
         wake_mins = _time_to_mins(schedule.wake_up_time)
         sleep_mins = _time_to_mins(schedule.sleep_time)
 
+        # Breakfast starts 30 min after waking — more realistic than immediately
+        earliest_start = wake_mins + 30 if slot == MealSlot.BREAKFAST else wake_mins
+
         # Handle typical day (sleep after wake)
         if sleep_mins > wake_mins:
-            actual_start = max(window_start, wake_mins)
+            actual_start = max(window_start, earliest_start)
             actual_end = min(window_end, sleep_mins)
         else:
             # Sleep crosses midnight (e.g., wake 7 AM, sleep 1 AM)
             # For meal planning, we assume meals are between wake and sleep
             # within the same "active day"
-            actual_start = max(window_start, wake_mins)
+            actual_start = max(window_start, earliest_start)
             actual_end = window_end  # window_end is typically before midnight anyway
 
         # Parse busy times for the day

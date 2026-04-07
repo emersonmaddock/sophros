@@ -20,8 +20,9 @@ type EditItemModalProps = {
   onClose: () => void;
   item: WeeklyScheduleItem | null;
   onSave: (updatedItem: WeeklyScheduleItem) => void;
-  mode: 'edit' | 'add';
+  mode: 'edit' | 'add' | 'replace';
   itemType?: ItemType;
+  inheritedTime?: string;
 };
 
 export function EditItemModal({
@@ -31,8 +32,9 @@ export function EditItemModal({
   onSave,
   mode,
   itemType = 'meal',
+  inheritedTime,
 }: EditItemModalProps) {
-  const [time, setTime] = useState(item?.time || '7:00 AM');
+  const [time, setTime] = useState(inheritedTime || item?.time || '7:00 AM');
   const [title, setTitle] = useState(item?.title || '');
   const [subtitle, setSubtitle] = useState(item?.subtitle || '');
   const [duration, setDuration] = useState(item?.duration || '30 min');
@@ -78,7 +80,7 @@ export function EditItemModal({
   // Reset form when modal opens
   React.useEffect(() => {
     if (visible) {
-      setTime(item?.time || '7:00 AM');
+      setTime(inheritedTime || item?.time || '7:00 AM');
       setTitle(item?.title || '');
       setSubtitle(item?.subtitle || '');
       setDuration(item?.duration || '30 min');
@@ -114,9 +116,11 @@ export function EditItemModal({
 
           {/* Form */}
           <ScrollView style={styles.form}>
-            <View style={styles.field}>
-              <TimePickerInput label="Time" value={time} onChange={setTime} format="12h" />
-            </View>
+            {!inheritedTime && (
+              <View style={styles.field}>
+                <TimePickerInput label="Time" value={time} onChange={setTime} format="12h" />
+              </View>
+            )}
 
             <View style={styles.field}>
               <Text style={styles.label}>Title</Text>
