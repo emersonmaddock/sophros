@@ -1,18 +1,6 @@
 name: Generate SBOM
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/sbom.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/sbom.yml"
   workflow_dispatch:
 
 jobs:
