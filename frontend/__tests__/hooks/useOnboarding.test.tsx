@@ -183,6 +183,7 @@ describe('useOnboarding', () => {
       result.current.updateField('activityLevel', 'moderate');
       result.current.updateField('targetWeight', '65');
       result.current.updateField('targetDate', '2026-12-31');
+      result.current.updateField('targetBodyFat', '18');
     });
 
     expect(result.current.canSubmit()).toBe(true);

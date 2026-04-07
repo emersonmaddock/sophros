@@ -164,8 +164,15 @@ async def test_generate_daily_plan_fails_on_empty_results():
 )
 async def test_generate_weekly_plan(mock_exercise):
     """
-    Test that generate_weekly_plan produces plans for all 7 days
-    using only 2 API calls (batch pools) with unique primaries.
+    Test that generate_weekly_plan produces plans for all 7 days using only
+    2 API calls (batch pools).
+
+    Breakfast behaviour (changed): a rotation pool of ≤3 recipes cycles across
+    all 7 days, so breakfast IDs intentionally repeat.  Lunch/dinner non-leftover
+    primaries must still be unique.
+
+    Global alternative pools (breakfast_alternatives, lunch_alternatives,
+    dinner_alternatives) are populated from unused pool recipes.
     """
     user = create_mock_user(
         age=25,
@@ -177,13 +184,13 @@ async def test_generate_weekly_plan(mock_exercise):
 
     mock_client = AsyncMock()
 
-    # Breakfast pool: 25 unique recipes
+    # Breakfast pool: 6 unique recipes (3 rotation + 3 alternatives)
     breakfast_pool = [
         _make_spoonacular_response(i, f"Breakfast {i}", 500 + i * 5, 20, 70, 12)
-        for i in range(1, 26)
+        for i in range(1, 7)
     ]
 
-    # Main course pool: 50 unique recipes
+    # Main course pool: 50 unique recipes (enough for lunches + dinners + alternatives)
     main_pool = [
         _make_spoonacular_response(1000 + i, f"Main {i}", 700 + i * 3, 40, 55, 22)
         for i in range(1, 51)
@@ -216,15 +223,47 @@ async def test_generate_weekly_plan(mock_exercise):
     # Only 2 API calls for the entire week (was 21)
     assert mock_client.search_recipes.await_count == 2
 
-    # Collect all primary recipe IDs (excluding leftover slots which reuse IDs)
-    non_leftover_ids = []
+    # Separate breakfast slots from lunch/dinner slots
+    breakfast_ids = []
+    lunch_dinner_non_leftover_ids = []
     for plan in weekly_plan.daily_plans:
         for slot in plan.slots:
-            if not slot.is_leftover:
-                non_leftover_ids.append(slot.plan.main_recipe.id)
+            if slot.slot_name == MealSlot.BREAKFAST:
+                breakfast_ids.append(slot.plan.main_recipe.id)
+            elif not slot.is_leftover:
+                lunch_dinner_non_leftover_ids.append(slot.plan.main_recipe.id)
 
-    # All non-leftover primaries should be unique
-    assert len(set(non_leftover_ids)) == len(non_leftover_ids), (
-        f"Expected all non-leftover primaries unique, got {len(set(non_leftover_ids))} "
-        f"unique out of {len(non_leftover_ids)}"
+    # Breakfast rotates through ≤3 unique recipes across all 7 days (repeats expected)
+    assert len(breakfast_ids) == 7, "Expected 7 breakfast slots"
+    assert 1 <= len(set(breakfast_ids)) <= 3, (
+        f"Breakfast should rotate through 1–3 unique recipes, "
+        f"got {len(set(breakfast_ids))}"
     )
+
+    # Lunch/dinner non-leftover primaries must all be unique
+    assert len(set(lunch_dinner_non_leftover_ids)) == len(lunch_dinner_non_leftover_ids), (
+        f"Expected all lunch/dinner non-leftover primaries unique, "
+        f"got {len(set(lunch_dinner_non_leftover_ids))} unique "
+        f"out of {len(lunch_dinner_non_leftover_ids)}"
+    )
+
+    # Global alternative pools must be populated and contain no plan primaries
+    plan_ids = set(breakfast_ids) | set(lunch_dinner_non_leftover_ids)
+
+    assert len(weekly_plan.breakfast_alternatives) <= 3
+    for recipe in weekly_plan.breakfast_alternatives:
+        assert recipe.id not in plan_ids, (
+            f"Breakfast alternative {recipe.id} is already used as a primary"
+        )
+
+    assert len(weekly_plan.lunch_alternatives) <= 3
+    for recipe in weekly_plan.lunch_alternatives:
+        assert recipe.id not in plan_ids, (
+            f"Lunch alternative {recipe.id} is already used as a primary"
+        )
+
+    assert len(weekly_plan.dinner_alternatives) <= 3
+    for recipe in weekly_plan.dinner_alternatives:
+        assert recipe.id not in plan_ids, (
+            f"Dinner alternative {recipe.id} is already used as a primary"
+        )
