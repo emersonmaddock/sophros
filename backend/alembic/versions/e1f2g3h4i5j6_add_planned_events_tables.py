@@ -1,7 +1,7 @@
 """add_planned_events_tables
 
 Revision ID: e1f2g3h4i5j6
-Revises: d2efffbda75e
+Revises: a1b2c3d4e5f6
 Create Date: 2026-04-07
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "e1f2g3h4i5j6"
-down_revision: Union[str, Sequence[str], None] = "d2efffbda75e"
+down_revision: Union[str, Sequence[str], None] = "a1b2c3d4e5f6"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

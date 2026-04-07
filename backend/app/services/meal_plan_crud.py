@@ -190,11 +190,16 @@ def build_day_totals(events: list[PlannedEvent], day: str) -> dict:
 
 
 def _meal_detail_to_recipe(md: MealDetail) -> dict | None:
-    """Reconstruct a ``Recipe`` dict from a ``MealDetail`` row."""
-    if not md.recipe_id:
-        return None
+    """Reconstruct a ``Recipe`` dict from a ``MealDetail`` row.
+
+    For custom meals (no Spoonacular recipe_id), we still synthesize a
+    recipe dict so the frontend can display the event title correctly.
+    """
+    # Always produce a recipe dict so the title is preserved in the response.
+    # Use the DB event id as a synthetic recipe id for custom meals.
+    recipe_id = md.recipe_id or f"event-{md.event_id}"
     return {
-        "id": md.recipe_id,
+        "id": recipe_id,
         "title": md.event.title,  # title lives on the PlannedEvent
         "description": md.recipe_description,
         "nutrients": {
