@@ -1,6 +1,8 @@
 import type { Day } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useConfirmations } from '@/contexts/ConfirmationsContext';
+import { useNow } from '@/hooks/useNow';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
@@ -34,21 +36,30 @@ export default function DashboardPage() {
 
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
+  const { confirmations } = useConfirmations();
 
-  const today = new Date();
-  const day = today.getDate();
-  const dayOfWeek = today.toLocaleString('en-US', { weekday: 'long' });
-  const monthName = today.toLocaleString('en-US', { month: 'short' });
-  const currentHour = today.getHours();
+  const now = useNow();
+  const day = now.getDate();
+  const dayOfWeek = now.toLocaleString('en-US', { weekday: 'long' });
+  const monthName = now.toLocaleString('en-US', { month: 'short' });
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
 
   // Compute this week's Monday to fetch the saved plan
   const weekStartStr = useMemo(() => {
-    const d = new Date(today);
+    const d = new Date(now);
     const dow = d.getDay();
     const diff = dow === 0 ? -6 : 1 - dow;
     d.setDate(d.getDate() + diff);
     return d.toISOString().split('T')[0];
-  }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const todayDateStr = useMemo(() => {
+    const y = now.getFullYear();
+    const m = (now.getMonth() + 1).toString().padStart(2, '0');
+    const d = now.getDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
@@ -58,9 +69,9 @@ export default function DashboardPage() {
 
   // Derive today's plan
   const todayPlan = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
+    const todayApiDay = JS_DAY_TO_API_DAY[now.getDay()];
     return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
-  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [savedPlan, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute health score
   const healthScore = useMemo(
@@ -68,23 +79,32 @@ export default function DashboardPage() {
     [todayPlan, targets, user]
   );
 
-  // Derive upcoming meals from the saved plan
+  // Parse a display time string to minutes-from-midnight
+  const parseDisplayMins = (displayTime: string): number => {
+    const [timePart, period] = displayTime.split(' ');
+    const [h, m] = timePart.split(':').map(Number);
+    let hours = h;
+    if (period === 'PM' && h !== 12) hours += 12;
+    if (period === 'AM' && h === 12) hours = 0;
+    return hours * 60 + (m || 0);
+  };
+
+  const nowMins = currentHour * 60 + currentMinute;
+
+  // Derive upcoming meals (items whose time is still in the future and not confirmed missed)
   const upcomingItems = useMemo(() => {
-    if (!todayPlan) {
-      return [];
-    }
+    if (!todayPlan) return [];
 
     const mapped = mapDailyPlanToScheduleItems(todayPlan);
 
-    // Filter to upcoming meals only
     return mapped
       .filter((item) => {
-        const [timePart, period] = item.time.split(' ');
-        const [hours] = timePart.split(':').map(Number);
-        let itemHour = hours;
-        if (period === 'PM' && hours !== 12) itemHour += 12;
-        if (period === 'AM' && hours === 12) itemHour = 0;
-        return itemHour >= currentHour;
+        const conf = confirmations[item.id];
+        // Only honour confirmations that belong to today
+        const isToday = !conf || conf.dateStr === todayDateStr;
+        if (isToday && conf?.status === 'missed') return false;
+        if (isToday && conf?.status === 'done') return false;
+        return parseDisplayMins(item.time) >= nowMins;
       })
       .slice(0, 3)
       .map((item) => ({
@@ -94,9 +114,44 @@ export default function DashboardPage() {
         icon: Utensils,
         color: Colors.light.secondary,
       }));
-  }, [todayPlan, currentHour]);
+  }, [todayPlan, confirmations, nowMins, todayDateStr]);
 
-  // Derive macro data from today's plan totals vs DRI targets
+  // Sum nutrients of confirmed-done items for today only.
+  // Filter by dateStr to avoid counting confirmations from other days
+  // (same recipe ID can appear across multiple days in a rotation).
+  const consumedTotals = useMemo(() => {
+    if (!todayPlan) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
+    let calories = 0;
+    let protein = 0;
+    let carbs = 0;
+    let fat = 0;
+
+    for (const slot of todayPlan.slots) {
+      const recipeId = slot.plan?.main_recipe?.id?.toString();
+      if (!recipeId) continue;
+      const conf = confirmations[recipeId];
+      if (conf?.status !== 'done') continue;
+      if (conf.dateStr !== todayDateStr) continue; // only today's confirmations
+
+      const n = slot.plan?.main_recipe?.nutrients;
+      if (n) {
+        calories += n.calories;
+        protein += n.protein;
+        carbs += n.carbohydrates;
+        fat += n.fat;
+      } else {
+        calories += slot.calories;
+        protein += slot.protein;
+        carbs += slot.carbohydrates;
+        fat += slot.fat;
+      }
+    }
+
+    return { calories, protein, carbs, fat };
+  }, [todayPlan, confirmations, todayDateStr]);
+
+  // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {
     const pct = (actual: number, target: number | undefined) =>
       target ? Math.min(100, Math.round((actual / target) * 100)) : 0;
@@ -135,33 +190,34 @@ export default function DashboardPage() {
       };
     }
 
+    // Always show confirmed-consumed amounts. Progress bar shows consumed vs target.
     return {
       calories: {
-        value: `${todayPlan.total_calories}`,
-        percentage: pct(todayPlan.total_calories, calTarget),
+        value: `${consumedTotals.calories}`,
+        percentage: pct(consumedTotals.calories, calTarget),
         label: 'Calories',
         subtitle: calTarget ? `of ${Math.round(calTarget)}` : undefined,
       },
       protein: {
-        value: `${todayPlan.total_protein}g`,
-        percentage: pct(todayPlan.total_protein, proTarget),
+        value: `${consumedTotals.protein}g`,
+        percentage: pct(consumedTotals.protein, proTarget),
         label: 'Protein',
         subtitle: proTarget ? `of ${Math.round(proTarget)}g` : undefined,
       },
       carbs: {
-        value: `${todayPlan.total_carbs}g`,
-        percentage: pct(todayPlan.total_carbs, carbTarget),
+        value: `${consumedTotals.carbs}g`,
+        percentage: pct(consumedTotals.carbs, carbTarget),
         label: 'Carbs',
         subtitle: carbTarget ? `of ${Math.round(carbTarget)}g` : undefined,
       },
       fats: {
-        value: `${todayPlan.total_fat}g`,
-        percentage: pct(todayPlan.total_fat, fatTarget),
+        value: `${consumedTotals.fat}g`,
+        percentage: pct(consumedTotals.fat, fatTarget),
         label: 'Fat',
         subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
       },
     };
-  }, [todayPlan, targets]);
+  }, [todayPlan, targets, consumedTotals]);
 
   // Determine greeting based on time of day
   const greeting =
