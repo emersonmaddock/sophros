@@ -18,6 +18,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const STORAGE_KEY = 'sleep_wake_prompt_date';
+const SLEEP_LOG_COUNT_KEY = 'sleep_log_count';
 
 function localDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -36,35 +37,26 @@ export function SleepWakePrompt({ onDismiss }: Props) {
   const [sleepTime, setSleepTime] = useState('23:00');
   const [wakeTime, setWakeTime] = useState('07:00');
 
-  const markDone = async () => {
+  const handleDismiss = async () => {
     await AsyncStorage.setItem(STORAGE_KEY, localDateStr(now));
     onDismiss();
   };
 
-  const handleLog = () => {
+  const handleLog = async () => {
+    await AsyncStorage.setItem(STORAGE_KEY, localDateStr(now));
+    // Increment persistent sleep log counter (used for achievements)
+    const raw = await AsyncStorage.getItem(SLEEP_LOG_COUNT_KEY);
+    const count = raw ? parseInt(raw, 10) : 0;
+    await AsyncStorage.setItem(SLEEP_LOG_COUNT_KEY, String(count + 1));
     // Future: post sleepTime + wakeTime to backend user profile
-    markDone();
-  };
-
-  const handleDismiss = () => {
-    markDone();
+    onDismiss();
   };
 
   return (
     <View style={styles.banner}>
-      <View style={styles.bannerHeader}>
-        <View style={styles.bannerTitleRow}>
-          <Moon size={15} color="#4338CA" />
-          <Text style={styles.bannerTitle}>Log your sleep</Text>
-        </View>
-        <TouchableOpacity onPress={handleDismiss} hitSlop={10}>
-          <X size={18} color={Colors.light.textMuted} />
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.bannerSubtitle}>
-        Log last night&apos;s sleep time and this morning&apos;s wake-up time.
-      </Text>
+      <TouchableOpacity onPress={handleDismiss} hitSlop={10} style={styles.closeButton}>
+        <X size={16} color={Colors.light.textMuted} />
+      </TouchableOpacity>
 
       <View style={styles.pickerRow}>
         <View style={styles.pickerWrap}>
@@ -93,6 +85,12 @@ export function SleepWakePrompt({ onDismiss }: Props) {
   );
 }
 
+/** Returns total number of times the user has submitted the sleep log form. */
+export async function getSleepLogCount(): Promise<number> {
+  const raw = await AsyncStorage.getItem(SLEEP_LOG_COUNT_KEY);
+  return raw ? parseInt(raw, 10) : 0;
+}
+
 /**
  * Clears stored sleep data if it is in the future relative to `now`.
  * Call this before shouldShowSleepPrompt() whenever `now` changes so that
@@ -115,31 +113,19 @@ const styles = StyleSheet.create({
   banner: {
     backgroundColor: '#EEF2FF',
     borderRadius: Layout.cardRadius,
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingTop: 28,
+    paddingBottom: 10,
     borderWidth: 1,
     borderColor: '#C7D2FE',
     marginBottom: 16,
-    gap: 10,
+    gap: 8,
   },
-  bannerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  bannerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  bannerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#3730A3',
-  },
-  bannerSubtitle: {
-    fontSize: 13,
-    color: '#4338CA',
-    lineHeight: 18,
+  closeButton: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
+    padding: 4,
   },
   pickerRow: {
     flexDirection: 'row',
@@ -171,7 +157,7 @@ const styles = StyleSheet.create({
   logButton: {
     backgroundColor: '#4F46E5',
     borderRadius: 10,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   logButtonText: {

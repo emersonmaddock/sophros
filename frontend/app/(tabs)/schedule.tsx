@@ -360,9 +360,6 @@ export default function SchedulePage() {
           )}
         </View>
 
-        {/* Sleep/wake daily prompt */}
-        {showSleepPrompt && <SleepWakePrompt onDismiss={() => setShowSleepPrompt(false)} />}
-
         {/* Week Navigation */}
         <View style={styles.weekNav}>
           <TouchableOpacity onPress={() => handleWeekChange(-1)} style={styles.weekNavButton}>
@@ -400,6 +397,11 @@ export default function SchedulePage() {
             );
           })}
         </View>
+
+        {/* Sleep/wake daily prompt — only shown when viewing today */}
+        {showSleepPrompt && isToday && (
+          <SleepWakePrompt onDismiss={() => setShowSleepPrompt(false)} />
+        )}
 
         {/* Timeline */}
         {isLoadingPlan ? (
@@ -478,11 +480,6 @@ export default function SchedulePage() {
                           {item.status === 'current' && (
                             <View style={styles.nowBadge}>
                               <Text style={styles.nowText}>NOW</Text>
-                            </View>
-                          )}
-                          {isPending && (
-                            <View style={styles.pendingBadge}>
-                              <Text style={styles.pendingBadgeText}>Confirm?</Text>
                             </View>
                           )}
                           {isDone && (
