@@ -4,11 +4,3 @@
 .worktrees/
 
 *.keystore
-
-# Claude local tooling and prompts
-.claude/
-**/.claude/
-CLAUDE.md
-**/CLAUDE.md
-claude.md
-**/claude.md
