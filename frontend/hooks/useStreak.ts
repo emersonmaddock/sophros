@@ -57,7 +57,10 @@ export function useStreak(): number {
         newStreak = 1;
       }
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ streak: newStreak, lastDate: today }));
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ streak: newStreak, lastDate: today })
+      );
       setStreak(newStreak);
     }
 
