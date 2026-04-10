@@ -5,6 +5,7 @@ import { TimePickerInput } from '@/components/TimePickerInput';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { getBusyTimesWarning } from '@/utils/busy-times-validation';
 import { getSleepWarning } from '@/utils/sleep-validation';
 import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { useRouter } from 'expo-router';
@@ -415,6 +416,12 @@ export default function EditProfileScreen() {
       }
     }
 
+    // Validate busy times don't prevent meal scheduling
+    const busyTimesWarning = getBusyTimesWarning(form.wakeUpTime, form.sleepTime, form.busyTimes);
+    if (busyTimesWarning) {
+      errors.push(busyTimesWarning);
+    }
+
     const apiBusyTimes = form.busyTimes.map((bt) => ({
       day: bt.day,
       start: `${bt.start}:00`,
@@ -473,7 +480,7 @@ export default function EditProfileScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/profile')}
             activeOpacity={0.8}
           >
             <ArrowLeft size={20} color={Colors.light.text} />
@@ -666,6 +673,14 @@ export default function EditProfileScreen() {
                 <Text style={styles.addButtonText}>+ Add</Text>
               </TouchableOpacity>
             </View>
+
+            {getBusyTimesWarning(form.wakeUpTime, form.sleepTime, form.busyTimes) && (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningText}>
+                  {getBusyTimesWarning(form.wakeUpTime, form.sleepTime, form.busyTimes)}
+                </Text>
+              </View>
+            )}
 
             {form.busyTimes.length === 0 ? (
               <Text style={styles.emptyStateText}>

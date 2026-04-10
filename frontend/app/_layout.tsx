@@ -1,6 +1,6 @@
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
@@ -29,7 +29,6 @@ export const unstable_settings = {
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
 
-// Configure the client with base URL
 client.setConfig({
   baseUrl: API_BASE_URL,
 });

@@ -46,7 +46,7 @@ export function ScheduleItemCard({ item, onSwap, onEdit, onDelete }: ScheduleIte
           <Text style={styles.time}>{item.time}</Text>
         </View>
         <View style={styles.actions}>
-          {onSwap && (
+          {onSwap && item.type === 'meal' && !item.isLeftover && (
             <TouchableOpacity style={styles.actionButton} onPress={() => onSwap(item)}>
               <Repeat size={18} color={Colors.light.primary} />
             </TouchableOpacity>

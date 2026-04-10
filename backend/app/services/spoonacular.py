@@ -43,6 +43,7 @@ class SpoonacularClient:
         max_fat: int | None = None,
         min_carbs: int | None = None,
         max_carbs: int | None = None,
+        max_ready_time: int | None = None,
         constraints: DietaryConstraints | None = None,
         diet: str | None = None,
         intolerances: list[str] | None = None,
@@ -99,6 +100,8 @@ class SpoonacularClient:
             params["minCalories"] = min_calories
         if max_calories is not None:
             params["maxCalories"] = max_calories
+        if max_ready_time is not None:
+            params["maxReadyTime"] = max_ready_time
         if min_protein is not None:
             params["minProtein"] = min_protein
         if max_protein is not None:

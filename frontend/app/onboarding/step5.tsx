@@ -75,7 +75,7 @@ export default function Step5Screen() {
           <View style={styles.content}>
             <View>
               <MetricInput
-                label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'})`}
+                label={`Target Weight (${data.showImperial ? 'lbs' : 'kg'}) *`}
                 value={displayTargetWeight}
                 onChangeText={handleTargetWeightChange}
                 placeholder="Enter your target weight"
@@ -84,6 +84,15 @@ export default function Step5Screen() {
                 error={errors.targetWeight}
               />
             </View>
+
+            <MetricInput
+              label="Target Body Fat % *"
+              value={data.targetBodyFat}
+              onChangeText={(v) => updateField('targetBodyFat', v)}
+              placeholder="e.g. 18"
+              keyboardType="decimal-pad"
+              unit="%"
+            />
 
             <DatePickerInput
               label="Target Date"

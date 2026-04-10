@@ -48,6 +48,9 @@ class DailyMealPlan(BaseModel):
 class WeeklyMealPlan(BaseModel):
     daily_plans: list[DailyMealPlan]
     total_weekly_calories: int
+    breakfast_alternatives: list[Recipe] = Field(default_factory=list)
+    lunch_alternatives: list[Recipe] = Field(default_factory=list)
+    dinner_alternatives: list[Recipe] = Field(default_factory=list)
 
 
 class SaveMealPlanRequest(BaseModel):

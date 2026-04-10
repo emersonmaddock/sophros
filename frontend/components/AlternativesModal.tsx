@@ -1,6 +1,7 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors, Layout } from '@/constants/theme';
-import type { WeeklyScheduleItem } from '@/types/schedule';
+import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { PlusCircle } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -10,6 +11,7 @@ type AlternativesModalProps = {
   item: WeeklyScheduleItem | null;
   alternatives: WeeklyScheduleItem[];
   onSelect: (alternative: WeeklyScheduleItem) => void;
+  onAddManual?: (type: ItemType) => void;
 };
 
 export function AlternativesModal({
@@ -18,6 +20,7 @@ export function AlternativesModal({
   item,
   alternatives,
   onSelect,
+  onAddManual,
 }: AlternativesModalProps) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['80%'], []);
@@ -47,6 +50,12 @@ export function AlternativesModal({
   const handleSelect = (alternative: WeeklyScheduleItem) => {
     onSelect(alternative);
     onClose();
+  };
+
+  const handleAddManual = () => {
+    if (onAddManual && (item.type === 'meal' || item.type === 'workout')) {
+      onAddManual(item.type);
+    }
   };
 
   return (
@@ -88,6 +97,15 @@ export function AlternativesModal({
             </View>
           </TouchableOpacity>
         ))}
+
+        {onAddManual && (item.type === 'meal' || item.type === 'workout') && (
+          <TouchableOpacity style={styles.addManualButton} onPress={handleAddManual}>
+            <PlusCircle size={18} color={Colors.light.primary} />
+            <Text style={styles.addManualText}>
+              Add my own {item.type === 'meal' ? 'meal' : 'workout'} manually
+            </Text>
+          </TouchableOpacity>
+        )}
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
@@ -185,5 +203,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  addManualButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginTop: 4,
+  },
+  addManualText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.light.primary,
   },
 });

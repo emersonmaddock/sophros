@@ -1,7 +1,9 @@
 import type {
+  BusyTime,
   DailyMealPlanOutput,
   Day,
   MealSlotTargetOutput,
+  Recipe,
   WeeklyMealPlanOutput,
 } from '@/api/types.gen';
 import { AlternativesModal } from '@/components/AlternativesModal';
@@ -77,14 +79,45 @@ export default function WeekPlanningScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<WeeklyScheduleItem | null>(null);
   const [alternatives, setAlternatives] = useState<WeeklyScheduleItem[]>([]);
-  const [editMode, setEditMode] = useState<'edit' | 'add'>('edit');
+  const [editMode, setEditMode] = useState<'edit' | 'add' | 'replace'>('edit');
   const [addItemType, setAddItemType] = useState<ItemType>('meal');
+
+  // Global alternative pools — persist across swaps until plan is confirmed.
+  // When a user swaps meal A for alternative B: B leaves the pool, A enters it.
+  // This allows swapping back at any point during drafting.
+  type AltPool = {
+    breakfast: WeeklyScheduleItem[];
+    lunch: WeeklyScheduleItem[];
+    dinner: WeeklyScheduleItem[];
+  };
+  const [altPool, setAltPool] = useState<AltPool>({ breakfast: [], lunch: [], dinner: [] });
 
   const generateWeekMutation = useGenerateWeekPlanMutation();
   const saveMutation = useSaveMealPlanMutation();
   const { data: cachedPlan } = useWeeklyMealPlanOutputQuery();
 
   const { backendUser, loading: profileLoading } = useUserProfile();
+
+  const recipeToAltItem = (
+    recipe: Recipe,
+    slotName: 'Breakfast' | 'Lunch' | 'Dinner'
+  ): WeeklyScheduleItem => ({
+    id: recipe.id,
+    time: '',
+    title: recipe.title,
+    subtitle: `${recipe.nutrients.calories} cal · ${recipe.nutrients.protein}g protein`,
+    duration: recipe.preparation_time_minutes ? `${recipe.preparation_time_minutes} min` : '30 min',
+    type: 'meal',
+    calories: recipe.nutrients.calories,
+    recipe,
+    slotName,
+  });
+
+  const initAltPool = (data: WeeklyMealPlanOutput): AltPool => ({
+    breakfast: (data.breakfast_alternatives ?? []).map((r) => recipeToAltItem(r, 'Breakfast')),
+    lunch: (data.lunch_alternatives ?? []).map((r) => recipeToAltItem(r, 'Lunch')),
+    dinner: (data.dinner_alternatives ?? []).map((r) => recipeToAltItem(r, 'Dinner')),
+  });
 
   useEffect(() => {
     // If profile is still loading, wait
@@ -99,6 +132,7 @@ export default function WeekPlanningScreen() {
     if (cachedPlan) {
       setRawPlan(cachedPlan);
       setWeekPlan(weeklyPlanToDaySchedules(cachedPlan, weekStart));
+      setAltPool(initAltPool(cachedPlan));
       return;
     }
 
@@ -107,12 +141,14 @@ export default function WeekPlanningScreen() {
       onSuccess: (data) => {
         setRawPlan(data);
         setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
+        setAltPool(initAltPool(data));
       },
       onError: (error) => {
         Alert.alert('Error', 'Failed to generate meal plan. Please try again.');
         console.error('[WeekPlanning] Generation error:', error);
       },
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileLoading, backendUser]);
 
   const handleRegenerate = () => {
@@ -120,6 +156,7 @@ export default function WeekPlanningScreen() {
       onSuccess: (data) => {
         setRawPlan(data);
         setWeekPlan(weeklyPlanToDaySchedules(data, weekStart));
+        setAltPool(initAltPool(data));
       },
       onError: () => {
         Alert.alert('Error', 'Failed to regenerate meal plan.');
@@ -154,27 +191,66 @@ export default function WeekPlanningScreen() {
   };
 
   const handleSwap = (item: WeeklyScheduleItem) => {
+    const slotKey = (item.slotName?.toLowerCase() ?? 'lunch') as keyof AltPool;
     setSelectedItem(item);
-    setAlternatives(item.alternatives || []);
+    setAlternatives(altPool[slotKey] ?? []);
     setSwapModalVisible(true);
   };
 
   const handleSelectAlternative = (alternative: WeeklyScheduleItem) => {
     if (!selectedItem) return;
 
-    const dayName = DAY_ORDER[selectedDayIndex];
+    const cookDay = DAY_ORDER[selectedDayIndex];
+    const cookSlotName = selectedItem.slotName;
+    const slotKey = (cookSlotName?.toLowerCase() ?? 'lunch') as keyof AltPool;
 
+    // Mutate the alt pool: remove the chosen alternative, add the displaced primary
+    setAltPool((prev) => {
+      const oldPrimary: WeeklyScheduleItem = {
+        ...selectedItem,
+        id: selectedItem.recipe?.id ?? selectedItem.id,
+        slotName: cookSlotName,
+      };
+      return {
+        ...prev,
+        [slotKey]: [...prev[slotKey].filter((a) => a.id !== alternative.id), oldPrimary],
+      };
+    });
+
+    // Update weekPlan display
     setWeekPlan((prevPlan) =>
       prevPlan.map((day, dayIdx) => {
-        if (dayIdx === selectedDayIndex) {
-          return {
-            ...day,
-            items: day.items.map((item) =>
-              item.id === selectedItem.id ? { ...alternative, id: item.id } : item
-            ),
-          };
-        }
-        return day;
+        return {
+          ...day,
+          items: day.items.map((item) => {
+            // Swap the cook slot
+            if (dayIdx === selectedDayIndex && item.id === selectedItem.id) {
+              return {
+                ...alternative,
+                id: item.id,
+                time: item.time,
+                duration: item.duration,
+                isLeftover: false,
+                slotName: cookSlotName,
+              };
+            }
+            // Sync any leftover that pairs with this cook slot
+            if (
+              item.isLeftover &&
+              item.leftoverFromDay === cookDay &&
+              item.leftoverFromSlot === cookSlotName
+            ) {
+              return {
+                ...item,
+                title: alternative.title,
+                subtitle: alternative.subtitle,
+                recipe: alternative.recipe,
+                calories: alternative.calories,
+              };
+            }
+            return item;
+          }),
+        };
       })
     );
 
@@ -184,40 +260,73 @@ export default function WeekPlanningScreen() {
         if (!prev) return prev;
         return {
           ...prev,
-          daily_plans: prev.daily_plans.map((dp: DailyMealPlanOutput) => {
-            if (dp.day !== dayName) return dp;
-            return {
-              ...dp,
-              slots: dp.slots.map((slot: MealSlotTargetOutput) => {
-                const currentRecipeId = slot.plan?.main_recipe?.id;
-                if (currentRecipeId !== selectedItem.id) return slot;
+          daily_plans: prev.daily_plans.map((dp: DailyMealPlanOutput) => ({
+            ...dp,
+            slots: dp.slots.map((slot: MealSlotTargetOutput) => {
+              // Update the cook slot
+              if (dp.day === cookDay && slot.plan?.main_recipe?.id === selectedItem.id) {
                 return {
                   ...slot,
-                  plan: {
-                    ...slot.plan,
-                    main_recipe: alternative.recipe ?? null,
-                    alternatives: [],
-                  },
+                  plan: { ...slot.plan, main_recipe: alternative.recipe ?? null },
                 };
-              }),
-            };
-          }),
+              }
+              // Sync paired leftover slot
+              if (
+                slot.is_leftover &&
+                slot.leftover_from_day === cookDay &&
+                slot.leftover_from_slot === cookSlotName
+              ) {
+                return {
+                  ...slot,
+                  plan: { ...slot.plan, main_recipe: alternative.recipe ?? null },
+                };
+              }
+              return slot;
+            }),
+          })),
         };
       });
     }
   };
 
-  const handleEdit = (item: WeeklyScheduleItem) => {
-    setSelectedItem(item);
-    setEditMode('edit');
-    setEditModalVisible(true);
-  };
-
   const handleSaveEdit = (updatedItem: WeeklyScheduleItem) => {
-    setWeekPlan((prevPlan) =>
-      prevPlan.map((day, dayIdx) => {
-        if (dayIdx === selectedDayIndex) {
-          if (editMode === 'add') {
+    if (editMode === 'replace' && selectedItem) {
+      // Replace the existing slot with the manually entered item
+      const cookDay = DAY_ORDER[selectedDayIndex];
+      const cookSlotName = selectedItem.slotName;
+      setWeekPlan((prevPlan) =>
+        prevPlan.map((day, dayIdx) => ({
+          ...day,
+          items: day.items.map((item) => {
+            if (dayIdx === selectedDayIndex && item.id === selectedItem.id) {
+              return {
+                ...updatedItem,
+                id: item.id,
+                time: item.time,
+                isLeftover: false,
+                slotName: cookSlotName,
+              };
+            }
+            if (
+              item.isLeftover &&
+              item.leftoverFromDay === cookDay &&
+              item.leftoverFromSlot === cookSlotName
+            ) {
+              return {
+                ...item,
+                title: updatedItem.title,
+                subtitle: updatedItem.subtitle,
+                calories: updatedItem.calories,
+              };
+            }
+            return item;
+          }),
+        }))
+      );
+    } else {
+      setWeekPlan((prevPlan) =>
+        prevPlan.map((day, dayIdx) => {
+          if (dayIdx === selectedDayIndex) {
             return {
               ...day,
               items: [...day.items, updatedItem].sort((a, b) => {
@@ -226,16 +335,19 @@ export default function WeekPlanningScreen() {
                 return timeA - timeB;
               }),
             };
-          } else {
-            return {
-              ...day,
-              items: day.items.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
-            };
           }
-        }
-        return day;
-      })
-    );
+          return day;
+        })
+      );
+    }
+  };
+
+  const handleAddManual = (type: ItemType) => {
+    // Keep selectedItem set so handleSaveEdit can replace the correct slot
+    setSwapModalVisible(false);
+    setAddItemType(type);
+    setEditMode('replace');
+    setEditModalVisible(true);
   };
 
   const handleDelete = (id: string) => {
@@ -261,13 +373,6 @@ export default function WeekPlanningScreen() {
     ]);
   };
 
-  const handleAddItem = (type: ItemType) => {
-    setAddItemType(type);
-    setSelectedItem(null);
-    setEditMode('add');
-    setEditModalVisible(true);
-  };
-
   const convertTimeToMinutes = (time: string): number => {
     const [timePart, period] = time.split(' ');
     const [hours, minutes] = timePart.split(':').map(Number);
@@ -279,6 +384,20 @@ export default function WeekPlanningScreen() {
   const getDayName = (dayOfWeek: number): string => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[dayOfWeek];
+  };
+
+  const formatBusyTime = (t: string | undefined): string => {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
+
+  const busyTimeToMinutes = (t: string | undefined): number => {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
   };
 
   const formatDate = (date: Date): string => {
@@ -316,7 +435,7 @@ export default function WeekPlanningScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { marginTop: 12 }]}
-            onPress={() => router.push('/profile/edit')}
+            onPress={() => router.push('/(tabs)/profile')}
           >
             <Text style={styles.retryButtonText}>Go to Profile Settings</Text>
           </TouchableOpacity>
@@ -364,6 +483,38 @@ export default function WeekPlanningScreen() {
   }
 
   const selectedDay = weekPlan[selectedDayIndex];
+
+  type ScheduleRow =
+    | { kind: 'item'; item: WeeklyScheduleItem; sortKey: number }
+    | { kind: 'busy'; bt: BusyTime; sortKey: number }
+    | { kind: 'wake' | 'sleep'; label: string; sortKey: number };
+
+  const sortedRows: ScheduleRow[] = [
+    ...selectedDay.items.map(
+      (item): ScheduleRow => ({ kind: 'item', item, sortKey: convertTimeToMinutes(item.time) })
+    ),
+    ...(backendUser?.busy_times ?? [])
+      .filter((bt) => bt.day === DAY_ORDER[selectedDayIndex])
+      .map((bt): ScheduleRow => ({ kind: 'busy', bt, sortKey: busyTimeToMinutes(bt.start) })),
+    ...(backendUser?.wake_up_time
+      ? [
+          {
+            kind: 'wake' as const,
+            label: formatBusyTime(backendUser.wake_up_time),
+            sortKey: busyTimeToMinutes(backendUser.wake_up_time),
+          },
+        ]
+      : []),
+    ...(backendUser?.sleep_time
+      ? [
+          {
+            kind: 'sleep' as const,
+            label: formatBusyTime(backendUser.sleep_time),
+            sortKey: busyTimeToMinutes(backendUser.sleep_time),
+          },
+        ]
+      : []),
+  ].sort((a, b) => a.sortKey - b.sortKey);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -421,43 +572,50 @@ export default function WeekPlanningScreen() {
           <Text style={styles.itemCount}>{selectedDay.items.length} items</Text>
         </View>
 
-        {selectedDay.items.map((item) => (
-          <ScheduleItemCard
-            key={item.id}
-            item={item}
-            onSwap={handleSwap}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        ))}
-
-        {/* Add Item Buttons */}
-        <View style={styles.addSection}>
-          <Text style={styles.addSectionTitle}>Add Item</Text>
-          <View style={styles.addButtons}>
-            <TouchableOpacity
-              style={[styles.addButton, { borderColor: Colors.light.secondary }]}
-              onPress={() => handleAddItem('meal')}
-            >
-              <Text style={styles.addButtonEmoji}>🍽️</Text>
-              <Text style={styles.addButtonText}>Meal</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.addButton, { borderColor: Colors.light.primary }]}
-              onPress={() => handleAddItem('workout')}
-            >
-              <Text style={styles.addButtonEmoji}>💪</Text>
-              <Text style={styles.addButtonText}>Workout</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.addButton, { borderColor: Colors.light.charts.carbs }]}
-              onPress={() => handleAddItem('sleep')}
-            >
-              <Text style={styles.addButtonEmoji}>😴</Text>
-              <Text style={styles.addButtonText}>Sleep</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {sortedRows.map((row, i) => {
+          if (row.kind === 'item') {
+            return (
+              <ScheduleItemCard
+                key={row.item.id}
+                item={row.item}
+                onSwap={handleSwap}
+                onDelete={handleDelete}
+              />
+            );
+          }
+          if (row.kind === 'busy') {
+            return (
+              <View key={`busy-${i}`} style={styles.busyCard}>
+                <View style={styles.busyIndicator} />
+                <View>
+                  <Text style={styles.busyLabel}>Busy</Text>
+                  <Text style={styles.busyTime}>
+                    {formatBusyTime(row.bt.start)} – {formatBusyTime(row.bt.end)}
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+          return (
+            <View key={`${row.kind}-${i}`} style={styles.timeMarkerRow}>
+              <View
+                style={[styles.timeMarkerLine, row.kind === 'sleep' && styles.timeMarkerLineSleep]}
+              />
+              <Text
+                style={[
+                  styles.timeMarkerLabel,
+                  row.kind === 'sleep' && styles.timeMarkerLabelSleep,
+                ]}
+              >
+                {row.kind === 'wake' ? '☀️' : '🌙'} {row.kind === 'wake' ? 'Wake Up' : 'Bedtime'} ·{' '}
+                {row.label}
+              </Text>
+              <View
+                style={[styles.timeMarkerLine, row.kind === 'sleep' && styles.timeMarkerLineSleep]}
+              />
+            </View>
+          );
+        })}
 
         {/* Confirm & Save Button */}
         <TouchableOpacity
@@ -483,6 +641,7 @@ export default function WeekPlanningScreen() {
         item={selectedItem}
         alternatives={alternatives}
         onSelect={handleSelectAlternative}
+        onAddManual={handleAddManual}
       />
 
       <EditItemModal
@@ -492,6 +651,7 @@ export default function WeekPlanningScreen() {
         onSave={handleSaveEdit}
         mode={editMode}
         itemType={addItemType}
+        inheritedTime={editMode === 'replace' ? (selectedItem?.time ?? undefined) : undefined}
       />
     </SafeAreaView>
   );
@@ -671,5 +831,52 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  timeMarkerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 6,
+  },
+  timeMarkerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#FCD34D',
+  },
+  timeMarkerLineSleep: {
+    backgroundColor: '#A5B4FC',
+  },
+  timeMarkerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  timeMarkerLabelSleep: {
+    color: '#4338CA',
+  },
+  busyCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    padding: 14,
+    marginBottom: 10,
+  },
+  busyIndicator: {
+    width: 4,
+    height: 36,
+    borderRadius: 2,
+    backgroundColor: Colors.light.error,
+  },
+  busyLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.error,
+  },
+  busyTime: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
+    marginTop: 2,
   },
 });

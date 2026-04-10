@@ -103,6 +103,20 @@ export default function SchedulePage() {
       .then(setShowSleepPrompt);
   }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const apiTimeToMins = (t: string | undefined): number => {
+    if (!t) return 0;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  };
+
+  const apiTimeToDisplay = (t: string | undefined): string => {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${period}`;
+  };
+
   // Compute which day index to default to
   // For current week, default to today; for other weeks, default to Monday (index 0)
   const todayMondayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // Mon=0..Sun=6
@@ -265,6 +279,14 @@ export default function SchedulePage() {
   const handleWeekChange = (direction: number) => {
     setWeekOffset((prev) => prev + direction);
     setSelectedDayIndex(0); // Reset to Monday when changing weeks
+  };
+
+  const itemTimeToMins = (timeStr: string): number => {
+    const [timePart, period] = timeStr.split(' ');
+    const [h, m] = timePart.split(':').map(Number);
+    let hours = h % 12;
+    if (period === 'PM') hours += 12;
+    return hours * 60 + (m || 0);
   };
 
   const getBorderColor = (type: string) => {
@@ -896,5 +918,27 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  timeMarkerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 6,
+  },
+  timeMarkerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#FCD34D',
+  },
+  timeMarkerLineSleep: {
+    backgroundColor: '#A5B4FC',
+  },
+  timeMarkerLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  timeMarkerLabelSleep: {
+    color: '#4338CA',
   },
 });

@@ -43,6 +43,9 @@ import type {
   UpdateUserMeApiV1UsersMePutData,
   UpdateUserMeApiV1UsersMePutErrors,
   UpdateUserMeApiV1UsersMePutResponses,
+  ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostData,
+  ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostErrors,
+  ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponses,
 } from './types.gen';
 
 export type Options<
@@ -109,6 +112,7 @@ export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
  * Update current user profile.
  * Dietary list fields (allergies, include_cuisine, exclude_cuisine) are
  * replaced wholesale — existing rows are deleted and new ones inserted.
+ * Validates busy times against meal windows before saving.
  */
 export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false>(
   options: Options<UpdateUserMeApiV1UsersMePutData, ThrowOnError>
@@ -120,6 +124,33 @@ export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Validate Busy Times
+ *
+ * Validate that busy times don't prevent meal scheduling.
+ * Returns list of conflicting meals or success.
+ *
+ * Call this before updating the user profile to give feedback.
+ */
+export const validateBusyTimesApiV1UsersMeValidateBusyTimesPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponses,
+    ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/validate-busy-times',
     ...options,
     headers: {
       'Content-Type': 'application/json',

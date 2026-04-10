@@ -26,6 +26,17 @@ class UserSchedule(BaseModel):
     sleep_time: time = time(23, 0)
 
 
+class BusyTimeValidationResult(BaseModel):
+    """Result of validating busy times against meal windows."""
+
+    is_valid: bool
+    conflicting_meals: list[str] = Field(
+        default_factory=list,
+        description="List of meal slots that have no available time windows",
+    )
+    message: str | None = None
+
+
 # TODO: Use enums for other attrs
 class UserBase(BaseModel):
     email: str

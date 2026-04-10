@@ -22,6 +22,7 @@ export interface OnboardingData {
   activityLevel: ActivityLevel | null;
   targetWeight: string; // kg (stored in metric regardless of display)
   targetDate: string; // YYYY-MM-DD
+  targetBodyFat: string; // percentage
   wakeUpTime: string; // HH:MM
   sleepTime: string; // HH:MM
   allergies: Allergy[];
@@ -78,6 +79,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     activityLevel: null,
     targetWeight: '',
     targetDate: '',
+    targetBodyFat: '',
     wakeUpTime: '07:00',
     sleepTime: '23:00',
     allergies: [],
@@ -211,6 +213,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const isSection5Complete = () => {
+    const weightNum = parseFloat(data.targetWeight);
+    if (!data.targetWeight || isNaN(weightNum) || weightNum <= 0) return false;
+    if (!data.targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(data.targetDate)) return false;
+    const bodyFat = parseFloat(data.targetBodyFat);
+    if (!data.targetBodyFat || isNaN(bodyFat) || bodyFat < 3 || bodyFat > 60) return false;
     const targetWeightKg = parseFloat(data.targetWeight);
     return !isNaN(targetWeightKg) && targetWeightKg > 0 && data.targetDate !== '';
   };
@@ -265,6 +272,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         payload.pregnancy_status = data.pregnancyStatus;
       }
 
+      // Include required goal fields
+      const targetWeightKg = parseFloat(data.targetWeight);
+      payload.target_weight = targetWeightKg;
+      payload.target_date = data.targetDate;
+      payload.target_body_fat = parseFloat(data.targetBodyFat);
       // Include target weight (now required)
       payload.target_weight = parseFloat(data.targetWeight);
 

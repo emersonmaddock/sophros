@@ -47,6 +47,28 @@ export type BusyTime = {
 };
 
 /**
+ * BusyTimeValidationResult
+ *
+ * Result of validating busy times against meal windows.
+ */
+export type BusyTimeValidationResult = {
+  /**
+   * Is Valid
+   */
+  is_valid: boolean;
+  /**
+   * Conflicting Meals
+   *
+   * List of meal slots that have no available time windows
+   */
+  conflicting_meals?: Array<string>;
+  /**
+   * Message
+   */
+  message?: string | null;
+};
+
+/**
  * Cuisine
  */
 export type Cuisine =
@@ -800,6 +822,18 @@ export type WeeklyMealPlanInput = {
    * Total Weekly Calories
    */
   total_weekly_calories: number;
+  /**
+   * Breakfast Alternatives
+   */
+  breakfast_alternatives?: Array<Recipe>;
+  /**
+   * Lunch Alternatives
+   */
+  lunch_alternatives?: Array<Recipe>;
+  /**
+   * Dinner Alternatives
+   */
+  dinner_alternatives?: Array<Recipe>;
 };
 
 /**
@@ -814,6 +848,18 @@ export type WeeklyMealPlanOutput = {
    * Total Weekly Calories
    */
   total_weekly_calories: number;
+  /**
+   * Breakfast Alternatives
+   */
+  breakfast_alternatives?: Array<Recipe>;
+  /**
+   * Lunch Alternatives
+   */
+  lunch_alternatives?: Array<Recipe>;
+  /**
+   * Dinner Alternatives
+   */
+  dinner_alternatives?: Array<Recipe>;
 };
 
 export type CreateUserApiV1UsersPostData = {
@@ -897,6 +943,45 @@ export type UpdateUserMeApiV1UsersMePutResponses = {
 
 export type UpdateUserMeApiV1UsersMePutResponse =
   UpdateUserMeApiV1UsersMePutResponses[keyof UpdateUserMeApiV1UsersMePutResponses];
+
+export type ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostData = {
+  /**
+   * Busy Times
+   */
+  body: Array<BusyTime>;
+  path?: never;
+  query: {
+    /**
+     * Wake Up Time
+     */
+    wake_up_time: string;
+    /**
+     * Sleep Time
+     */
+    sleep_time: string;
+  };
+  url: '/api/v1/users/me/validate-busy-times';
+};
+
+export type ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostError =
+  ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostErrors[keyof ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostErrors];
+
+export type ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: BusyTimeValidationResult;
+};
+
+export type ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponse =
+  ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponses[keyof ValidateBusyTimesApiV1UsersMeValidateBusyTimesPostResponses];
 
 export type ReadUserTargetsApiV1UsersMeTargetsGetData = {
   body?: never;

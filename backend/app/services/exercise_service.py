@@ -54,55 +54,78 @@ class ExercisePlanService:
             cardio_ratio = 0.5
             base_sessions = 3
 
-        # 2. Distribute sessions across the week based on schedule gaps
-        # We'll calculate total free time minutes per day (rough estimate)
-        day_gaps = {}
+        # 2. Calculate free time per day
+        all_days = list(Day)
+        day_gaps: dict[Any, int] = {}
         for day, schedule in schedules.items():
             busy_mins = sum(
-                (
-                    (b.end.hour * 60 + b.end.minute)
-                    - (b.start.hour * 60 + b.start.minute)
-                )
+                (b.end.hour * 60 + b.end.minute) - (b.start.hour * 60 + b.start.minute)
                 for b in schedule.busy_times
             )
-            # Rough estimate of available wake minutes (16 hours = 960 mins)
-            day_gaps[day] = 960 - busy_mins
+            day_gaps[day] = 960 - busy_mins  # ~16 wake hours
 
-        # Sort days by free time to place sessions
-        sorted_days = sorted(list(Day), key=lambda d: day_gaps[d], reverse=True)
+        # Split target sessions into weight lifting vs cardio counts
+        n_cardio = round(base_sessions * cardio_ratio)
+        n_weights = base_sessions - n_cardio
 
-        sessions_placed = 0
-        for day in sorted_days:
-            if sessions_placed >= base_sessions:
+        # Candidate days sorted by free time (most free first)
+        candidate_days = sorted(
+            [d for d in all_days if day_gaps[d] >= 60],
+            key=lambda d: day_gaps[d],
+            reverse=True,
+        )
+
+        # -- Weight lifting placement: maximise spacing --
+        # Measures circular distance between two day indices (Mon=0 … Sun=6)
+        def circ_dist(i: int, j: int) -> int:
+            d = abs(i - j)
+            return min(d, 7 - d)
+
+        def min_dist_to_placed(idx: int, placed: list[int]) -> int:
+            if not placed:
+                return 7
+            return min(circ_dist(idx, p) for p in placed)
+
+        weight_days: list[Any] = []
+        remaining = list(candidate_days)
+
+        for _ in range(n_weights):
+            if not remaining:
                 break
+            if not weight_days:
+                chosen = remaining[0]  # First: most free time
+            else:
+                placed_indices = [all_days.index(d) for d in weight_days]
+                # Pick day that maximises min-distance to existing weight days;
+                # break ties by free time (already sorted desc)
+                chosen = max(
+                    remaining,
+                    key=lambda d: (
+                        min_dist_to_placed(all_days.index(d), placed_indices),
+                        day_gaps[d],
+                    ),
+                )
+            weight_days.append(chosen)
+            remaining.remove(chosen)
 
-            # Skip if day is extremely busy (< 60 mins gap)
-            if day_gaps[day] < 60:
-                continue
+        # -- Cardio placement: most free remaining days --
+        cardio_days = [d for d in candidate_days if d not in weight_days][:n_cardio]
 
-            # Determine category for this session based on current mix
-            category = (
-                ExerciseCategory.CARDIO
-                if (sessions_placed / base_sessions) < cardio_ratio
-                else ExerciseCategory.WEIGHT_LIFTING
-            )
-
-            # Duration based on available gap
+        # 3. Build the weekly plan
+        def _make_rec(day: Any, category: ExerciseCategory) -> ExerciseRecommendation:
             duration = 60 if day_gaps[day] > 180 else 30
-
-            # Physiological Estimates (General Estimates)
-            # Cardio: ~10 cal/min for average person
-            # Weights: ~5 cal/min + muscle gain estimate
             cals = duration * (10 if category == ExerciseCategory.CARDIO else 5)
-            # Muscle gain estimate: ~0.02kg per intense session for beginners
             muscle = 0.02 if category == ExerciseCategory.WEIGHT_LIFTING else 0.0
-
-            weekly_plan[day] = ExerciseRecommendation(
+            return ExerciseRecommendation(
                 category=category,
                 duration_minutes=duration,
                 calories_burned=cals,
                 muscle_gain_estimate_kg=muscle,
             )
-            sessions_placed += 1
+
+        for day in weight_days:
+            weekly_plan[day] = _make_rec(day, ExerciseCategory.WEIGHT_LIFTING)
+        for day in cardio_days:
+            weekly_plan[day] = _make_rec(day, ExerciseCategory.CARDIO)
 
         return weekly_plan
