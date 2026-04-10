@@ -259,12 +259,12 @@ describe('useScheduleEditing', () => {
 
   // --- statusText ---
 
-  it('statusText is "AI-optimized" when saveStatus is idle', () => {
+  it('statusText is empty when saveStatus is idle', () => {
     const savedPlan = makeSavedPlan(makeWeeklyPlan());
     const { result } = renderHook(() => useScheduleEditing(savedPlan, WEEK_START), {
       wrapper: createWrapper(),
     });
-    expect(result.current.statusText).toBe('AI-optimized');
+    expect(result.current.statusText).toBe('');
   });
 
   it('statusText reflects saving/saved/error states', async () => {

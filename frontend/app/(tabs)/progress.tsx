@@ -1,26 +1,18 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { Award, Users } from 'lucide-react-native';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAchievements } from '@/hooks/useAchievements';
+import { useStreak } from '@/hooks/useStreak';
+import { Award, ChevronDown, ChevronUp } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProgressPage() {
-  const achievements = [
-    { icon: '🎯', name: 'Week Warrior', unlocked: true },
-    { icon: '💪', name: 'Strong Start', unlocked: true },
-    { icon: '🥗', name: 'Meal Master', unlocked: true },
-    { icon: '🏃', name: 'Cardio King', unlocked: false },
-    { icon: '🌙', name: 'Sleep Scholar', unlocked: false },
-    { icon: '⭐', name: 'Perfect Week', unlocked: false },
-  ];
+  const streak = useStreak();
+  const achievements = useAchievements();
+  const [showLocked, setShowLocked] = useState(false);
 
-  const leaderboard = [
-    { rank: 1, name: 'Sarah Chen', streak: 45, you: false },
-    { rank: 2, name: 'Mike Johnson', streak: 28, you: false },
-    { rank: 3, name: 'You (Alex)', streak: 12, you: true },
-    { rank: 4, name: 'Emma Davis', streak: 9, you: false },
-    { rank: 5, name: 'Ryan Smith', streak: 7, you: false },
-  ];
+  const unlocked = achievements.filter((a) => a.unlocked);
+  const locked = achievements.filter((a) => !a.unlocked);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -33,20 +25,15 @@ export default function ProgressPage() {
 
         {/* Streak Card */}
         <View style={styles.streakCard}>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 16,
-              marginBottom: 16,
-            }}
-          >
+          <View style={styles.streakRow}>
             <View style={styles.streakIconBox}>
               <Award size={32} color="#FFFFFF" />
             </View>
             <View>
               <Text style={styles.streakLabel}>Current Streak</Text>
-              <Text style={styles.streakValue}>12 Days</Text>
+              <Text style={styles.streakValue}>
+                {streak} {streak === 1 ? 'Day' : 'Days'}
+              </Text>
             </View>
           </View>
           <Text style={styles.streakFooter}>Keep it up! You&apos;re on fire 🔥</Text>
@@ -54,72 +41,61 @@ export default function ProgressPage() {
 
         {/* Achievements */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Achievements</Text>
-          <View style={styles.achievementsGrid}>
-            {achievements.map((badge, i) => (
-              <View key={i} style={[styles.achievementCard, { opacity: badge.unlocked ? 1 : 0.4 }]}>
-                <Text style={{ fontSize: 32 }}>{badge.icon}</Text>
-                <Text style={styles.achievementName}>{badge.name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Leaderboard */}
-        <View style={styles.section}>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 16,
-            }}
-          >
-            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Leaderboard</Text>
-            <Users size={20} color={Colors.light.textMuted} />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Achievements</Text>
+            <Text style={styles.achievementCount}>
+              {unlocked.length} / {achievements.length}
+            </Text>
           </View>
 
-          <View style={styles.card}>
-            {leaderboard.map((user, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.leaderboardRow,
-                  user.you && {
-                    backgroundColor: `${Colors.light.primary}10`,
-                    borderRadius: 12,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.rankBadge,
-                    user.rank <= 3
-                      ? { backgroundColor: Colors.light.secondary }
-                      : { backgroundColor: Colors.light.background },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.rankText,
-                      user.rank <= 3 ? { color: '#FFF' } : { color: Colors.light.text },
-                    ]}
-                  >
-                    {user.rank}
+          {unlocked.length === 0 ? (
+            <View style={styles.emptyUnlocked}>
+              <Text style={styles.emptyUnlockedText}>
+                No achievements yet — start logging meals, workouts, and sleep!
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.achievementsGrid}>
+              {unlocked.map((badge) => (
+                <View key={badge.id} style={styles.achievementCard}>
+                  <Text style={styles.achievementIcon}>{badge.icon}</Text>
+                  <Text style={styles.achievementName}>{badge.name}</Text>
+                  <Text style={styles.achievementDesc}>{badge.description}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {locked.length > 0 && (
+            <TouchableOpacity
+              style={styles.showLockedButton}
+              onPress={() => setShowLocked((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.showLockedText}>
+                {showLocked ? 'Hide locked achievements' : `${locked.length} more to unlock`}
+              </Text>
+              {showLocked ? (
+                <ChevronUp size={16} color={Colors.light.textMuted} />
+              ) : (
+                <ChevronDown size={16} color={Colors.light.textMuted} />
+              )}
+            </TouchableOpacity>
+          )}
+
+          {showLocked && (
+            <View style={[styles.achievementsGrid, styles.lockedGrid]}>
+              {locked.map((badge) => (
+                <View key={badge.id} style={[styles.achievementCard, styles.achievementCardLocked]}>
+                  <Text style={styles.achievementIcon}>{badge.icon}</Text>
+                  <Text style={[styles.achievementName, styles.achievementNameLocked]}>
+                    {badge.name}
                   </Text>
+                  <Text style={styles.achievementDesc}>{badge.description}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.userName, user.you && { fontWeight: '700' }]}>
-                    {user.name}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Award size={16} color={Colors.light.secondary} />
-                  <Text style={styles.userStreak}>{user.streak}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -155,6 +131,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     ...Shadows.card,
   },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 16,
+  },
   streakIconBox: {
     width: 56,
     height: 56,
@@ -181,64 +163,86 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.light.text,
-    marginBottom: 16,
   },
-  card: {
+  achievementCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+  },
+  emptyUnlocked: {
     backgroundColor: Colors.light.surface,
     borderRadius: Layout.cardRadius,
     padding: 20,
-    paddingVertical: 16, // Matching template padding
+    alignItems: 'center',
+    marginBottom: 12,
     ...Shadows.card,
+  },
+  emptyUnlockedText: {
+    fontSize: 14,
+    color: Colors.light.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   achievementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
+    marginBottom: 12,
+  },
+  lockedGrid: {
+    marginTop: 4,
   },
   achievementCard: {
-    width: '31%', // roughly 1/3 minus gap
+    width: '47%',
     backgroundColor: Colors.light.surface,
     borderRadius: Layout.cardRadius,
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
+    padding: 12,
+    gap: 4,
     ...Shadows.card,
   },
-  achievementName: {
-    fontSize: 11,
-    textAlign: 'center',
-    color: Colors.light.text,
-    fontWeight: '500',
+  achievementCardLocked: {
+    opacity: 0.45,
   },
-  leaderboardRow: {
+  achievementIcon: {
+    fontSize: 20,
+  },
+  achievementName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.light.text,
+  },
+  achievementNameLocked: {
+    color: Colors.light.textMuted,
+  },
+  achievementDesc: {
+    fontSize: 11,
+    color: Colors.light.textMuted,
+    lineHeight: 15,
+  },
+  showLockedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 12,
-  },
-  rankBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    marginBottom: 4,
+    ...Shadows.card,
   },
-  rankText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  userName: {
-    fontSize: 14,
-    color: Colors.light.text,
-  },
-  userStreak: {
-    fontSize: 14,
+  showLockedText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.text,
+    color: Colors.light.textMuted,
   },
 });

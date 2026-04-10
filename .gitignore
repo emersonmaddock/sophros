@@ -2,5 +2,5 @@
 
 .expo/
 .worktrees/
-.claude/
-CLAUDE.md
+
+*.keystore

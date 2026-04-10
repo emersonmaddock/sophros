@@ -132,7 +132,7 @@ export function TimePickerInput({
 
   return (
     <View style={style}>
-      <Text style={styles.label}>{label}</Text>
+      {!!label && <Text style={styles.label}>{label}</Text>}
       <TouchableOpacity style={styles.input} onPress={open} activeOpacity={0.7}>
         <Text style={value ? styles.inputText : styles.inputPlaceholder}>
           {value ? displayTime(currentDate) : 'Select a time'}
