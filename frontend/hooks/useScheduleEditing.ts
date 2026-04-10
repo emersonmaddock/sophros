@@ -111,7 +111,7 @@ export function useScheduleEditing(
       case 'error':
         return 'Error saving';
       default:
-        return 'AI-optimized';
+        return '';
     }
   }, [saveStatus]);
 

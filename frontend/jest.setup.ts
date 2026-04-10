@@ -92,6 +92,28 @@ jest.mock('expo-auth-session', () => ({
   makeRedirectUri: jest.fn(() => 'exp://redirect'),
 }));
 
+// Mock AsyncStorage — used by sleep/streak hooks and ConfirmationsContext
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+  multiGet: jest.fn().mockResolvedValue([]),
+  multiSet: jest.fn().mockResolvedValue(undefined),
+  clear: jest.fn().mockResolvedValue(undefined),
+}));
+
+// Mock useNow — returns a fixed date so tests don't get extra re-renders from
+// the setInterval inside the real hook, and mockReturnValueOnce patterns stay stable.
+jest.mock('@/hooks/useNow', () => ({
+  useNow: () => new Date('2026-01-15T10:00:00'),
+}));
+
+// Mock DevTimeContext — no-op provider so components that call useDevTime() don't crash.
+jest.mock('@/contexts/DevTimeContext', () => ({
+  useDevTime: () => ({ overrideTime: null, setOverrideTime: jest.fn() }),
+  DevTimeProvider: ({ children }: { children: unknown }) => children,
+}));
+
 // theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
 jest.mock('@/constants/theme', () => ({
   Colors: {

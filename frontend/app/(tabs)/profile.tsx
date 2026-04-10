@@ -1,4 +1,7 @@
+import { DatePickerInput } from '@/components/DatePickerInput';
+import { TimePickerInput } from '@/components/TimePickerInput';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useDevTime } from '@/contexts/DevTimeContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useAuth, useUserProfileModal } from '@clerk/expo';
 import Constants from 'expo-constants';
@@ -11,8 +14,9 @@ import {
   Pencil,
   Settings,
   Utensils,
+  Wrench,
 } from 'lucide-react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,11 +40,54 @@ const appVersion = Constants.expoConfig?.version ?? 'unknown';
 const gitHash = (Constants.expoConfig?.extra as { gitHash?: string } | undefined)?.gitHash;
 const versionDisplay = gitHash ? `v${appVersion} (${gitHash})` : `v${appVersion}`;
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function todayStr(): string {
+  return localDateStr(new Date());
+}
+
+function currentTimeStr(): string {
+  const now = new Date();
+  return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+}
+
 export default function ProfilePage() {
   const { signOut } = useAuth();
   const { presentUserProfile } = useUserProfileModal();
   const router = useRouter();
   const { profile, backendUser, loading, clerkUser } = useUserProfile();
+
+  // Dev time override
+  const { overrideTime, setOverrideTime } = useDevTime();
+  const [devDate, setDevDate] = useState(todayStr);
+  const [devTime, setDevTime] = useState(currentTimeStr);
+
+  // Keep pickers in sync with the active override (or real time when cleared)
+  useEffect(() => {
+    const ref = overrideTime ?? new Date();
+    setDevDate(localDateStr(ref));
+    setDevTime(
+      `${ref.getHours().toString().padStart(2, '0')}:${ref.getMinutes().toString().padStart(2, '0')}`
+    );
+  }, [overrideTime]);
+
+  const handleApplyOverride = () => {
+    const [year, month, day] = devDate.split('-').map(Number);
+    const [hour, minute] = devTime.split(':').map(Number);
+    const d = new Date(year, month - 1, day, hour, minute, 0, 0);
+    setOverrideTime(d);
+  };
+
+  const handleResetTime = () => {
+    setOverrideTime(null);
+    setDevDate(todayStr());
+    setDevTime(currentTimeStr());
+  };
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -194,6 +241,54 @@ export default function ProfilePage() {
             <LogOut size={20} color={Colors.light.error} />
             <Text style={styles.logoutButtonText}>Sign Out</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Developer Tools */}
+        <View style={styles.devSection}>
+          <View style={styles.devHeader}>
+            <Wrench size={14} color="#92400E" />
+            <Text style={styles.devTitle}>Developer Tools</Text>
+          </View>
+
+          <View style={styles.devStatus}>
+            <Text style={styles.devStatusLabel}>Current time override</Text>
+            <Text style={styles.devStatusValue}>
+              {overrideTime
+                ? overrideTime.toLocaleString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : 'Real time (no override)'}
+            </Text>
+          </View>
+
+          <DatePickerInput
+            label="Override Date"
+            value={devDate}
+            onChange={setDevDate}
+            style={styles.devPicker}
+          />
+          <TimePickerInput
+            label="Override Time"
+            value={devTime}
+            onChange={setDevTime}
+            format="24h"
+            style={styles.devPicker}
+          />
+
+          <View style={styles.devActions}>
+            <TouchableOpacity style={styles.devApplyButton} onPress={handleApplyOverride}>
+              <Text style={styles.devApplyText}>Apply Override</Text>
+            </TouchableOpacity>
+            {overrideTime && (
+              <TouchableOpacity style={styles.devResetButton} onPress={handleResetTime}>
+                <Text style={styles.devResetText}>Reset to Real Time</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <Text style={styles.versionText}>{versionDisplay}</Text>
@@ -368,5 +463,74 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.light.textMuted,
     textAlign: 'center',
+  },
+  devSection: {
+    marginBottom: 24,
+    backgroundColor: '#FFFBEB',
+    borderRadius: Layout.cardRadius,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FEF3C7',
+    gap: 12,
+  },
+  devHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  devTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  devStatus: {
+    gap: 2,
+  },
+  devStatusLabel: {
+    fontSize: 11,
+    color: '#92400E',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  devStatusValue: {
+    fontSize: 13,
+    color: '#78350F',
+    fontWeight: '500',
+  },
+  devPicker: {
+    // no extra style needed — picker handles its own layout
+  },
+  devActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  devApplyButton: {
+    flex: 1,
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  devApplyText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  devResetButton: {
+    flex: 1,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  devResetText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#92400E',
   },
 });
