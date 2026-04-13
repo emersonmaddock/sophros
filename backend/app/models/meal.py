@@ -7,7 +7,9 @@ from app.db.base_class import Base
 class Meal(Base):
     __tablename__ = "meals"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, index=True, autoincrement=True
+    )
     recipe_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
     title: Mapped[str] = mapped_column(String, nullable=False)
     image_url: Mapped[str | None] = mapped_column(String, nullable=True)
