@@ -23,11 +23,11 @@ class ScheduleItem(Base):
 
     # Meal link (nullable — non-meal items leave these null)
     meal_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("meals.id"), nullable=True
+        Integer, ForeignKey("meals.id", ondelete="SET NULL"), nullable=True
     )
     # Self-referential FK: set when this slot is a leftover from another slot
     source_schedule_item_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("schedules.id"), nullable=True
+        Integer, ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True
     )
 
     # Relationships
