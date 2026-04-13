@@ -11,10 +11,7 @@ from alembic import context
 # Need to import models here to register them
 from app.core.config import settings
 from app.db.base_class import Base
-from app.models.user import User
-from app.models.schedule import ScheduleItem
-from app.models.dietary import UserAllergy, UserBusyTime, UserExcludeCuisine, UserIncludeCuisine
-from app.models.saved_meal_plan import SavedMealPlan
+from app.models.meal import Meal, ScheduleItemAlternative  # noqa: F401
 
 config = context.config
 
