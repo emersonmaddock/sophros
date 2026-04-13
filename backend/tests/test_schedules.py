@@ -96,3 +96,133 @@ async def test_delete_schedule_item(client: AsyncClient):
 async def test_delete_schedule_item_not_found(client: AsyncClient):
     response = await client.delete(f"{BASE}/99999")
     assert response.status_code == 404
+
+
+# ── New endpoint tests ──────────────────────────────────────────────────────
+
+from datetime import datetime as dt_type
+
+from app.domain.enums import ActivityType
+from app.models.meal import Meal, ScheduleItemAlternative
+from app.models.schedule import ScheduleItem
+
+MONDAY = "2025-06-02"  # confirmed Monday
+TUESDAY = "2025-06-03"  # not a Monday
+
+
+async def _create_meal(db, **kwargs) -> Meal:
+    defaults = dict(
+        recipe_id="abc123",
+        title="Test Meal",
+        calories=500,
+        protein=30,
+        carbohydrates=60,
+        fat=15,
+        ingredients=[],
+        tags=[],
+    )
+    meal = Meal(**{**defaults, **kwargs})
+    db.add(meal)
+    await db.flush()
+    return meal
+
+
+async def _create_meal_schedule_item(
+    db, user_id: str, day_offset: int, meal: Meal
+) -> ScheduleItem:
+    monday = dt_type(2025, 6, 2)
+    item_dt = monday.replace(day=monday.day + day_offset, hour=8)
+    item = ScheduleItem(
+        user_id=user_id,
+        date=item_dt,
+        activity_type=ActivityType.MEAL,
+        duration_minutes=30,
+        is_completed=False,
+        meal_id=meal.id,
+    )
+    db.add(item)
+    await db.flush()
+    return item
+
+
+@pytest.mark.asyncio
+async def test_get_week_schedule_returns_meal_items(client: AsyncClient, db, mock_user):
+    meal = await _create_meal(db)
+    await _create_meal_schedule_item(db, mock_user.id, 0, meal)  # Monday
+    await db.commit()
+
+    response = await client.get(f"{BASE}/week", params={"week_start_date": MONDAY})
+
+    assert response.status_code == 200
+    items = response.json()
+    assert len(items) >= 1
+    meal_items = [i for i in items if i["activity_type"] == "meal"]
+    assert len(meal_items) == 1
+    assert meal_items[0]["meal"]["title"] == "Test Meal"
+    assert meal_items[0]["meal"]["calories"] == 500
+    assert meal_items[0]["alternatives"] == []
+
+
+@pytest.mark.asyncio
+async def test_get_week_schedule_includes_alternatives(client: AsyncClient, db, mock_user):
+    primary = await _create_meal(db, recipe_id="primary", title="Primary Meal")
+    alt_meal = await _create_meal(db, recipe_id="alt", title="Alt Meal")
+    item = await _create_meal_schedule_item(db, mock_user.id, 0, primary)
+    db.add(ScheduleItemAlternative(schedule_item_id=item.id, meal_id=alt_meal.id))
+    await db.commit()
+
+    response = await client.get(f"{BASE}/week", params={"week_start_date": MONDAY})
+
+    assert response.status_code == 200
+    items = response.json()
+    meal_items = [i for i in items if i["activity_type"] == "meal"]
+    assert len(meal_items[0]["alternatives"]) == 1
+    assert meal_items[0]["alternatives"][0]["title"] == "Alt Meal"
+
+
+@pytest.mark.asyncio
+async def test_get_week_schedule_rejects_non_monday(client: AsyncClient):
+    response = await client.get(f"{BASE}/week", params={"week_start_date": TUESDAY})
+    assert response.status_code == 400
+    assert "Monday" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_get_week_schedule_empty_week(client: AsyncClient):
+    response = await client.get(f"{BASE}/week", params={"week_start_date": "2025-01-06"})
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_swap_meal(client: AsyncClient, db, mock_user):
+    primary = await _create_meal(db, recipe_id="primary", title="Primary")
+    alt = await _create_meal(db, recipe_id="alt", title="Alternative")
+    item = await _create_meal_schedule_item(db, mock_user.id, 0, primary)
+    db.add(ScheduleItemAlternative(schedule_item_id=item.id, meal_id=alt.id))
+    await db.commit()
+
+    response = await client.post(f"{BASE}/{item.id}/swap", json={"meal_id": alt.id})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["meal_id"] == alt.id
+    assert data["meal"]["title"] == "Alternative"
+
+
+@pytest.mark.asyncio
+async def test_swap_meal_invalid_meal_id(client: AsyncClient, db, mock_user):
+    meal = await _create_meal(db)
+    item = await _create_meal_schedule_item(db, mock_user.id, 0, meal)
+    await db.commit()
+
+    response = await client.post(f"{BASE}/{item.id}/swap", json={"meal_id": 99999})
+
+    assert response.status_code == 400
+    assert "not an alternative" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_swap_meal_not_found(client: AsyncClient):
+    response = await client.post(f"{BASE}/99999/swap", json={"meal_id": 1})
+    assert response.status_code == 404

@@ -4,6 +4,7 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
+from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
 
@@ -19,7 +20,7 @@ from app.models.dietary import (  # noqa: F401 — registers models with Base.me
     UserExcludeCuisine,
     UserIncludeCuisine,
 )
-from app.models.saved_meal_plan import SavedMealPlan  # noqa: F401
+from app.models.meal import Meal, ScheduleItemAlternative  # noqa: F401
 from app.models.schedule import ScheduleItem  # noqa: F401
 from app.models.user import User
 
@@ -30,7 +31,7 @@ MOCK_USER_ID = "test_clerk_user_id"
 async def engine():
     if not settings.DATABASE_URL:
         pytest.skip("DATABASE_URL not configured — skipping DB tests")
-    eng = create_async_engine(settings.DATABASE_URL, echo=False)
+    eng = create_async_engine(settings.DATABASE_URL, echo=False, poolclass=NullPool)
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield eng

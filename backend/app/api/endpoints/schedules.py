@@ -19,10 +19,12 @@ from app.schemas.schedule import (
 
 router = APIRouter()
 
-_MEAL_LOAD = [
-    selectinload(ScheduleItem.meal),
-    selectinload(ScheduleItem.alternatives).selectinload(ScheduleItemAlternative.meal),
-]
+
+def _meal_load() -> list:
+    return [
+        selectinload(ScheduleItem.meal),
+        selectinload(ScheduleItem.alternatives).selectinload(ScheduleItemAlternative.meal),
+    ]
 
 
 @router.get("/week", response_model=list[ScheduleItemRead])
@@ -59,7 +61,7 @@ async def get_week_schedule(
             ScheduleItem.date <= week_end_dt,
         )
         .order_by(ScheduleItem.date)
-        .options(*_MEAL_LOAD)
+        .options(*_meal_load())
     )
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -76,7 +78,7 @@ async def create_schedule_item(
     await db.commit()
     await db.refresh(item)
     # Re-fetch with meal loaded
-    stmt = select(ScheduleItem).where(ScheduleItem.id == item.id).options(*_MEAL_LOAD)
+    stmt = select(ScheduleItem).where(ScheduleItem.id == item.id).options(*_meal_load())
     result = await db.execute(stmt)
     return result.scalar_one()
 
@@ -96,7 +98,7 @@ async def get_schedule_items(
             ScheduleItem.date <= end_date,
         )
         .order_by(ScheduleItem.date)
-        .options(*_MEAL_LOAD)
+        .options(*_meal_load())
     )
     result = await db.execute(stmt)
     return result.scalars().all()
@@ -121,7 +123,7 @@ async def update_schedule_item(
     db.add(item)
     await db.commit()
 
-    stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_MEAL_LOAD)
+    stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
     result = await db.execute(stmt)
     return result.scalar_one()
 
@@ -137,7 +139,7 @@ async def swap_schedule_item_meal(
     stmt = (
         select(ScheduleItem)
         .where(ScheduleItem.id == item_id)
-        .options(*_MEAL_LOAD)
+        .options(*_meal_load())
     )
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
