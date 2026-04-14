@@ -18,7 +18,7 @@ import {
   useWeekScheduleQuery,
 } from '@/lib/queries/schedule';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Plus, Utensils } from 'lucide-react-native';
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
 import { useNow } from '@/hooks/useNow';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -275,7 +275,7 @@ export default function SchedulePage() {
   );
 
   const handleConfirmMissed = useCallback((item: ScheduleItemRead) => {
-    setMissedModalItem(item as any);
+    setMissedModalItem(item);
   }, []);
 
   const handleMissedSave = useCallback(
@@ -757,12 +757,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#16A34A',
-  },
-  missedNote: {
-    fontSize: 13,
-    color: Colors.light.error,
-    marginTop: 2,
-    fontStyle: 'italic',
   },
   swipeHint: {
     fontSize: 10,
