@@ -71,11 +71,12 @@ export default function WeekPlanningScreen() {
     if (profileLoading || isLoading) return;
     if (!backendUser?.target_weight || !backendUser?.target_date) return;
     if (mealItems.length > 0) return;
+    if (generateMutation.isPending || generateMutation.isError) return;
 
     generateMutation.mutate(weekStart, {
       onError: () => Alert.alert('Error', 'Failed to generate meal plan. Please try again.'),
     });
-  }, [profileLoading, isLoading, mealItems.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profileLoading, isLoading, mealItems.length, generateMutation.isPending, generateMutation.isError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dayItems = useMemo(
     () =>
@@ -118,9 +119,11 @@ export default function WeekPlanningScreen() {
     if (!swapItem) return;
     swapMutation.mutate(
       { itemId: swapItem.id, mealId, weekStartDate: weekStart },
-      { onError: () => Alert.alert('Error', 'Failed to swap meal.') }
+      {
+        onSuccess: () => setSwapItem(null),
+        onError: () => Alert.alert('Error', 'Failed to swap meal.'),
+      }
     );
-    setSwapItem(null);
   };
 
   if (profileLoading) {
