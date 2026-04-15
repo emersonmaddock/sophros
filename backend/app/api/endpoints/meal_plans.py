@@ -56,16 +56,15 @@ async def get_planned_weeks(
     """
     Return the Monday start date for every week that has meal-type schedule items.
     """
+    week_start = func.date_trunc("week", ScheduleItem.date).cast(Date)
     stmt = (
-        select(
-            func.date_trunc("week", ScheduleItem.date).cast(Date)
-        )
+        select(week_start)
         .where(
             ScheduleItem.user_id == current_user.id,
             ScheduleItem.activity_type == ActivityType.MEAL,
         )
         .distinct()
-        .order_by(func.date_trunc("week", ScheduleItem.date))
+        .order_by(week_start)
     )
     result = await db.execute(stmt)
     return [row[0] for row in result.all()]

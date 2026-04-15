@@ -31,7 +31,12 @@ MOCK_USER_ID = "test_clerk_user_id"
 async def engine():
     if not settings.DATABASE_URL:
         pytest.skip("DATABASE_URL not configured — skipping DB tests")
-    eng = create_async_engine(settings.DATABASE_URL, echo=False, poolclass=NullPool)
+    eng = create_async_engine(
+        settings.DATABASE_URL,
+        echo=False,
+        poolclass=NullPool,
+        connect_args={"statement_cache_size": 0},
+    )
     try:
         async with eng.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

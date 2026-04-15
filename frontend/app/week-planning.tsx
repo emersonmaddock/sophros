@@ -76,13 +76,16 @@ export default function WeekPlanningScreen() {
     generateMutation.mutate(weekStart, {
       onError: () => Alert.alert('Error', 'Failed to generate meal plan. Please try again.'),
     });
-  }, [profileLoading, isLoading, mealItems.length, generateMutation.isPending, generateMutation.isError]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    profileLoading,
+    isLoading,
+    mealItems.length,
+    generateMutation.isPending,
+    generateMutation.isError,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dayItems = useMemo(
-    () =>
-      scheduleItems.filter(
-        (item) => getDayIndex(item.date, weekStart) === selectedDayIndex
-      ),
+    () => scheduleItems.filter((item) => getDayIndex(item.date, weekStart) === selectedDayIndex),
     [scheduleItems, selectedDayIndex, weekStart]
   );
 
@@ -145,7 +148,10 @@ export default function WeekPlanningScreen() {
           <Text style={styles.subtext}>
             Set your target weight and goal date to generate a personalized meal plan.
           </Text>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/profile/edit')}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => router.push('/profile/edit')}
+          >
             <Text style={styles.primaryButtonText}>Go to Profile Settings</Text>
           </TouchableOpacity>
         </View>
@@ -161,7 +167,9 @@ export default function WeekPlanningScreen() {
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.light.primary} />
           <Text style={styles.subtext}>Generating your personalized week plan…</Text>
-          <Text style={[styles.subtext, { fontSize: 13 }]}>Finding recipes that match your goals</Text>
+          <Text style={[styles.subtext, { fontSize: 13 }]}>
+            Finding recipes that match your goals
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -219,7 +227,7 @@ export default function WeekPlanningScreen() {
       {/* Schedule Items */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>{DAY_NAMES[selectedDayIndex]}'s Schedule</Text>
+          <Text style={styles.sectionTitle}>{DAY_NAMES[selectedDayIndex]}&apos;s Schedule</Text>
           <Text style={styles.itemCount}>{dayItems.length} items</Text>
         </View>
 
@@ -238,7 +246,8 @@ export default function WeekPlanningScreen() {
                   </Text>
                   {item.meal && (
                     <Text style={styles.itemMacros}>
-                      {item.meal.calories} cal · {item.meal.protein}g P · {item.meal.carbohydrates}g C
+                      {item.meal.calories} cal · {item.meal.protein}g P · {item.meal.carbohydrates}g
+                      C
                     </Text>
                   )}
                 </View>
@@ -246,7 +255,10 @@ export default function WeekPlanningScreen() {
                   {item.alternatives && item.alternatives.length > 0 && (
                     <TouchableOpacity
                       onPress={() => handleSwap(item)}
-                      style={[styles.actionButton, { backgroundColor: `${Colors.light.primary}15` }]}
+                      style={[
+                        styles.actionButton,
+                        { backgroundColor: `${Colors.light.primary}15` },
+                      ]}
                     >
                       <Text style={[styles.actionButtonText, { color: Colors.light.primary }]}>
                         Swap

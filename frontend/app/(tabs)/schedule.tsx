@@ -21,14 +21,7 @@ import { useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
 import { useNow } from '@/hooks/useNow';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -47,7 +40,6 @@ function getMonday(weekOffset: number): Date {
 function formatDateStr(d: Date): string {
   return d.toISOString().split('T')[0];
 }
-
 
 /** Derive a display time string (e.g. "7:30 AM") from an ISO date string */
 function getDisplayTime(isoDate: string): string {
@@ -226,7 +218,9 @@ export default function SchedulePage() {
         itemDate.setHours(hours, m || 0, 0, 0);
 
         const activityType =
-          updatedItem.type === 'workout' ? ('exercise' as const) : (updatedItem.type as 'meal' | 'sleep');
+          updatedItem.type === 'workout'
+            ? ('exercise' as const)
+            : (updatedItem.type as 'meal' | 'sleep');
         const durationMinutes = parseInt(updatedItem.duration) || 30;
 
         createMutation.mutate({
@@ -278,13 +272,10 @@ export default function SchedulePage() {
     setMissedModalItem(item);
   }, []);
 
-  const handleMissedSave = useCallback(
-    (_actual: string | null) => {
-      // Completion is handled by the done swipe; missed just records locally for now
-      setMissedModalItem(null);
-    },
-    []
-  );
+  const handleMissedSave = useCallback((_actual: string | null) => {
+    // Completion is handled by the done swipe; missed just records locally for now
+    setMissedModalItem(null);
+  }, []);
 
   const handleWeekChange = (direction: number) => {
     setWeekOffset((prev) => prev + direction);
@@ -305,9 +296,7 @@ export default function SchedulePage() {
   // --- current-time indicator ---
   const isToday = weekOffset === 0 && selectedDayIndex === todayMondayIndex;
 
-  type TimelineRow =
-    | { kind: 'item'; item: ScheduleItemRead }
-    | { kind: 'now'; label: string };
+  type TimelineRow = { kind: 'item'; item: ScheduleItemRead } | { kind: 'now'; label: string };
 
   const timelineRows = useMemo((): TimelineRow[] => {
     const itemRows: TimelineRow[] = dayItems.map((item) => ({ kind: 'item', item }));
@@ -492,7 +481,9 @@ export default function SchedulePage() {
                       </View>
 
                       {item.meal?.tags && item.meal.tags.length > 0 && (
-                        <Text style={styles.eventSubtitle}>{item.meal.tags.slice(0, 3).join(', ')}</Text>
+                        <Text style={styles.eventSubtitle}>
+                          {item.meal.tags.slice(0, 3).join(', ')}
+                        </Text>
                       )}
                       {needsConfirmation && !isCompleted && (
                         <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>

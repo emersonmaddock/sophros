@@ -55,7 +55,10 @@ export function useCompleteScheduleItemMutation() {
       const prev = queryClient.getQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate));
       queryClient.setQueryData<ScheduleItemRead[]>(
         scheduleKeys.week(weekStartDate),
-        (old) => old?.map((item) => (item.id === itemId ? { ...item, is_completed: isCompleted } : item)) ?? []
+        (old) =>
+          old?.map((item) =>
+            item.id === itemId ? { ...item, is_completed: isCompleted } : item
+          ) ?? []
       );
       return { prev, weekStartDate };
     },
@@ -92,21 +95,18 @@ export function useSwapMealMutation() {
     onMutate: async ({ itemId, mealId, weekStartDate }) => {
       await queryClient.cancelQueries({ queryKey: scheduleKeys.week(weekStartDate) });
       const prev = queryClient.getQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate));
-      queryClient.setQueryData<ScheduleItemRead[]>(
-        scheduleKeys.week(weekStartDate),
-        (old) => {
-          if (!old) return [];
-          return old.map((item) => {
-            if (item.id !== itemId) return item;
-            const newMeal = item.alternatives?.find((a: MealRead) => a.id === mealId);
-            if (!newMeal) return item;
-            const oldMeal = item.meal;
-            const newAlts = (item.alternatives ?? []).filter((a: MealRead) => a.id !== mealId);
-            if (oldMeal) newAlts.push(oldMeal);
-            return { ...item, meal: newMeal, meal_id: mealId, alternatives: newAlts };
-          });
-        }
-      );
+      queryClient.setQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate), (old) => {
+        if (!old) return [];
+        return old.map((item) => {
+          if (item.id !== itemId) return item;
+          const newMeal = item.alternatives?.find((a: MealRead) => a.id === mealId);
+          if (!newMeal) return item;
+          const oldMeal = item.meal;
+          const newAlts = (item.alternatives ?? []).filter((a: MealRead) => a.id !== mealId);
+          if (oldMeal) newAlts.push(oldMeal);
+          return { ...item, meal: newMeal, meal_id: mealId, alternatives: newAlts };
+        });
+      });
       return { prev, weekStartDate };
     },
     onError: (_err, _vars, ctx) => {

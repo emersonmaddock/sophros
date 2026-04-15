@@ -23,8 +23,5 @@ export function renderWithProviders(
   options?: Omit<RenderOptions, 'wrapper'>
 ) {
   const queryClient = createQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
-    options
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>, options);
 }

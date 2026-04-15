@@ -159,8 +159,14 @@ async def swap_schedule_item_meal(
     item.meal_id = body.meal_id
     db.add(item)
     await db.commit()
+    db.expire(item)
 
-    result = await db.execute(stmt)
+    fresh_stmt = (
+        select(ScheduleItem)
+        .where(ScheduleItem.id == item_id)
+        .options(*_meal_load())
+    )
+    result = await db.execute(fresh_stmt)
     return result.scalar_one()
 
 

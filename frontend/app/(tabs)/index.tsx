@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
   const { data: scheduleItems = [], isLoading: isLoadingPlan } = useWeekScheduleQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
-  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+  const { isLoading: isLoadingUser } = useUserQuery();
 
   const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
@@ -72,7 +72,8 @@ export default function DashboardPage() {
   const healthScore = useMemo(() => {
     const completedMeals = todayMealItems.filter((i) => i.is_completed);
     const totalMeals = todayMealItems.length;
-    const nutritionScore = totalMeals > 0 ? Math.round((completedMeals.length / totalMeals) * 100) : 0;
+    const nutritionScore =
+      totalMeals > 0 ? Math.round((completedMeals.length / totalMeals) * 100) : 0;
     const overall = Math.round(nutritionScore * 0.4 + 70 * 0.6); // sleep+exercise default to 70
     return {
       overall,

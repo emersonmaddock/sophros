@@ -48,10 +48,15 @@ export default function HealthScorePage() {
     const hasPlan = todayMealItems.length > 0;
 
     return calculateHealthScore(
-      { total_calories: totalCalories, total_protein: totalProtein, total_carbs: totalCarbs, total_fat: totalFat },
+      {
+        total_calories: totalCalories,
+        total_protein: totalProtein,
+        total_carbs: totalCarbs,
+        total_fat: totalFat,
+      },
       targets,
       user,
-      hasPlan,
+      hasPlan
     );
   }, [todayMealItems, targets, user]);
 

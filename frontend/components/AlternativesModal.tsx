@@ -56,9 +56,7 @@ export function AlternativesModal({
     >
       <BottomSheetScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Swap Meal</Text>
-        {currentMealTitle && (
-          <Text style={styles.current}>Current: {currentMealTitle}</Text>
-        )}
+        {currentMealTitle && <Text style={styles.current}>Current: {currentMealTitle}</Text>}
         {alternatives.length === 0 ? (
           <Text style={styles.empty}>No alternatives available</Text>
         ) : (
@@ -71,7 +69,8 @@ export function AlternativesModal({
             >
               <Text style={styles.optionTitle}>{meal.title}</Text>
               <Text style={styles.optionMacros}>
-                {meal.calories} cal · {meal.protein}g protein · {meal.carbohydrates}g carbs · {meal.fat}g fat
+                {meal.calories} cal · {meal.protein}g protein · {meal.carbohydrates}g carbs ·{' '}
+                {meal.fat}g fat
               </Text>
             </TouchableOpacity>
           ))
