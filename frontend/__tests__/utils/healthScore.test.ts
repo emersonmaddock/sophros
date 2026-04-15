@@ -1,4 +1,4 @@
-import type { DailyMealPlanOutput, DriOutput } from '@/api/types.gen';
+import type { DriOutput } from '@/api/types.gen';
 import { calculateHealthScore } from '@/utils/healthScore';
 
 // ---------------------------------------------------------------------------
@@ -14,21 +14,17 @@ function makeDri(calories: number, protein: number, carbs: number, fat: number):
   };
 }
 
-function makeDailyPlan(
+function makeDailyTotals(
   calories: number,
   protein: number,
   carbs: number,
   fat: number,
-  exercise?: DailyMealPlanOutput['exercise']
-): DailyMealPlanOutput {
+): { total_calories: number; total_protein: number; total_carbs: number; total_fat: number } {
   return {
-    day: 'Monday',
-    slots: [],
     total_calories: calories,
     total_protein: protein,
     total_carbs: carbs,
     total_fat: fat,
-    exercise: exercise ?? null,
   };
 }
 
@@ -64,9 +60,9 @@ describe('calculateHealthScore – hasPlan: false', () => {
 
 describe('calculateHealthScore – nutrition score', () => {
   it('returns 100 when all actuals equal targets exactly', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65);
+    const totals = makeDailyTotals(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, null, true);
+    const result = calculateHealthScore(totals, targets, null, true);
     expect(result.nutrition.score).toBe(100);
   });
 
@@ -77,26 +73,25 @@ describe('calculateHealthScore – nutrition score', () => {
   });
 
   it('returns 0 when targets are undefined', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, undefined, null, true);
+    const totals = makeDailyTotals(2000, 150, 250, 65);
+    const result = calculateHealthScore(totals, undefined, null, true);
     expect(result.nutrition.score).toBe(0);
   });
 
   it('clamps individual macro adherence to 0 (no negative scores)', () => {
     // actual = 0, target = 2000 → adherence = 100 - (2000/2000)*100 = 0
     // All macros at 0 → nutrition score = 0
-    const plan = makeDailyPlan(0, 0, 0, 0);
+    const totals = makeDailyTotals(0, 0, 0, 0);
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, null, true);
+    const result = calculateHealthScore(totals, targets, null, true);
     expect(result.nutrition.score).toBe(0);
   });
 
   it('clamps individual macro adherence to 100 (no over-100 scores)', () => {
-    // actual = 2x target → adherence = 100 - 100 = 0 → score still 0
     // actual = 1.5x target for all → adherence = 100 - 50 = 50 → nutrition score = 50
-    const plan = makeDailyPlan(3000, 225, 375, 97.5);
+    const totals = makeDailyTotals(3000, 225, 375, 97.5);
     const targets = makeDri(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, targets, null, true);
+    const result = calculateHealthScore(totals, targets, null, true);
     expect(result.nutrition.score).toBe(50);
   });
 });
@@ -208,44 +203,14 @@ describe('calculateHealthScore – sleep score', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculateHealthScore – exercise score', () => {
-  it('returns 100 when hasPlan is true and calories_burned > 0', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65, {
-      category: 'Cardio',
-      duration_minutes: 30,
-      calories_burned: 300,
-    });
-    const result = calculateHealthScore(plan, undefined, null, true);
-    expect(result.exercise.score).toBe(100);
+  it('returns 70 when hasPlan is true', () => {
+    const totals = makeDailyTotals(2000, 150, 250, 65);
+    const result = calculateHealthScore(totals, undefined, null, true);
+    expect(result.exercise.score).toBe(70);
   });
 
-  it('returns 85 when hasPlan is true and exercise exists but no calories_burned', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65, {
-      category: 'Weight Lifting',
-      duration_minutes: 45,
-    });
-    const result = calculateHealthScore(plan, undefined, null, true);
-    expect(result.exercise.score).toBe(85);
-  });
-
-  it('returns 30 when hasPlan is true but exercise is null', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65, null);
-    const result = calculateHealthScore(plan, undefined, null, true);
-    expect(result.exercise.score).toBe(30);
-  });
-
-  it('returns 30 when hasPlan is true and todayPlan has no exercise field', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65);
-    const result = calculateHealthScore(plan, undefined, null, true);
-    expect(result.exercise.score).toBe(30);
-  });
-
-  it('returns 0 when hasPlan is false regardless of exercise data', () => {
-    const plan = makeDailyPlan(2000, 150, 250, 65, {
-      category: 'Cardio',
-      duration_minutes: 30,
-      calories_burned: 500,
-    });
-    const result = calculateHealthScore(plan, undefined, null, false);
+  it('returns 0 when hasPlan is false', () => {
+    const result = calculateHealthScore(undefined, undefined, null, false);
     expect(result.exercise.score).toBe(0);
   });
 });
@@ -255,32 +220,28 @@ describe('calculateHealthScore – exercise score', () => {
 // ---------------------------------------------------------------------------
 
 describe('calculateHealthScore – status labels', () => {
-  it('returns "Excellent" for score >= 90', () => {
-    // Perfect everything → overall 100
-    const plan = makeDailyPlan(2000, 150, 250, 65, {
-      category: 'Cardio',
-      duration_minutes: 30,
-      calories_burned: 300,
-    });
+  it('returns "Excellent" overall for score >= 90', () => {
+    // nutrition=100, exercise=70, sleep=100 → round(40 + 21 + 30) = 91
+    const totals = makeDailyTotals(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
     const result = calculateHealthScore(
-      plan,
+      totals,
       targets,
       { sleep_time: '23:00', wake_up_time: '07:00' },
       true
     );
-    expect(result.overall).toBe(100);
+    expect(result.overall).toBe(91);
     expect(result.nutrition.status).toBe('Excellent');
-    expect(result.exercise.status).toBe('Excellent');
+    expect(result.exercise.status).toBe('Good');
     expect(result.sleep.status).toBe('Excellent');
   });
 
   it('returns "Good" for score >= 70 and < 90', () => {
     // nutrition=100, exercise=0 (hasPlan=false), sleep=100 → overall = 40+0+30 = 70
-    const plan = makeDailyPlan(2000, 150, 250, 65);
+    const totals = makeDailyTotals(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
     const result = calculateHealthScore(
-      plan,
+      totals,
       targets,
       { sleep_time: '23:00', wake_up_time: '07:00' },
       false
@@ -292,17 +253,15 @@ describe('calculateHealthScore – status labels', () => {
   });
 
   it('returns "Fair" for score >= 50 and < 70', () => {
-    // nutrition=0, exercise=85, sleep=50 → 0*0.4 + 85*0.3 + 50*0.3 = 0 + 25.5 + 15 = 40.5 → 41...
-    // Let's use nutrition=100, exercise=0, sleep=75 → 40 + 0 + 22.5 = 62.5 → 63
-    const plan = makeDailyPlan(2000, 150, 250, 65);
+    // nutrition=100, exercise=0 (hasPlan=false), sleep=75 → 40 + 0 + 22.5 = 62.5 → 63
+    const totals = makeDailyTotals(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
     const result = calculateHealthScore(
-      plan,
+      totals,
       targets,
       { sleep_time: '01:00', wake_up_time: '07:00' },
       false
     );
-    // nutrition=100, exercise=0, sleep=75 → 40 + 0 + 22.5 = 62.5 → 63
     expect(result.overall).toBe(63);
     expect(result.nutrition.status).toBe('Excellent'); // 100
     expect(result.exercise.status).toBe('Needs Work'); // 0
@@ -325,20 +284,16 @@ describe('calculateHealthScore – status labels', () => {
 
 describe('calculateHealthScore – overall weighted formula', () => {
   it('computes overall as round(nutrition*0.4 + exercise*0.3 + sleep*0.3)', () => {
-    // nutrition=100, exercise=100, sleep=75 → round(40 + 30 + 22.5) = 93
-    const plan = makeDailyPlan(2000, 150, 250, 65, {
-      category: 'Cardio',
-      duration_minutes: 30,
-      calories_burned: 300,
-    });
+    // nutrition=100, exercise=70, sleep=75 → round(40 + 21 + 22.5) = 84
+    const totals = makeDailyTotals(2000, 150, 250, 65);
     const targets = makeDri(2000, 150, 250, 65);
     const result = calculateHealthScore(
-      plan,
+      totals,
       targets,
       { sleep_time: '01:00', wake_up_time: '07:00' },
       true
     );
-    expect(result.overall).toBe(93);
+    expect(result.overall).toBe(84);
   });
 
   it('computes overall = 21 for all-zero scenario (nutrition=0, exercise=0, sleep=70)', () => {
