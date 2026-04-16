@@ -114,6 +114,75 @@ jest.mock('@/contexts/DevTimeContext', () => ({
   DevTimeProvider: ({ children }: { children: unknown }) => children,
 }));
 
+// Mock react-native-health — controllable stub used across HealthKit tests.
+// Each method resolves via callback. Tests can override per-method behavior
+// via (AppleHealthKit as any).__mockImpl.<methodName> = (opts, cb) => cb(...).
+jest.mock('react-native-health', () => {
+  const Permissions = {
+    Steps: 'Steps',
+    ActiveEnergyBurned: 'ActiveEnergyBurned',
+    SleepAnalysis: 'SleepAnalysis',
+    Workout: 'Workout',
+    Weight: 'Weight',
+    BodyFatPercentage: 'BodyFatPercentage',
+    EnergyConsumed: 'EnergyConsumed',
+    Protein: 'Protein',
+    FatTotal: 'FatTotal',
+    Carbohydrates: 'Carbohydrates',
+  };
+  const Activities = { Running: 'Running', TraditionalStrengthTraining: 'TraditionalStrengthTraining', Other: 'Other' };
+  const defaults = {
+    initHealthKit: (_opts: unknown, cb: (e: string | null) => void) => cb(null),
+    getStepCount: (_opts: unknown, cb: (e: string | null, r: { value: number }) => void) =>
+      cb(null, { value: 0 }),
+    getActiveEnergyBurned: (_opts: unknown, cb: (e: string | null, r: { value: number }) => void) =>
+      cb(null, { value: 0 }),
+    getSleepSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) => cb(null, []),
+    getAnchoredWorkouts: (
+      _opts: unknown,
+      cb: (e: string | null, r: { data: unknown[]; anchor: string | null }) => void
+    ) => cb(null, { data: [], anchor: null }),
+    getLatestWeight: (_opts: unknown, cb: (e: string | null, r: { value: number } | null) => void) =>
+      cb(null, null),
+    getBodyFatPercentageSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
+      cb(null, []),
+    getEnergyConsumedSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
+      cb(null, []),
+    getProteinSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) => cb(null, []),
+    getFatTotalSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
+      cb(null, []),
+    getCarbohydratesSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
+      cb(null, []),
+    saveWeight: (_opts: unknown, cb: (e: string | null, r: string) => void) => cb(null, 'ok'),
+    saveWorkout: (_opts: unknown, cb: (e: string | null, r: string) => void) => cb(null, 'ok'),
+    saveFood: (_opts: unknown, cb: (e: string | null, r: string) => void) => cb(null, 'ok'),
+    getAuthStatus: (
+      _opts: unknown,
+      cb: (e: string | null, r: { permissions: { read: number[]; write: number[] } }) => void
+    ) => cb(null, { permissions: { read: [], write: [] } }),
+  };
+  const mockImpl: Record<string, (opts: unknown, cb: (...args: unknown[]) => void) => void> = {
+    ...defaults,
+  };
+  const proxy = new Proxy(
+    {
+      Constants: { Permissions, Activities },
+      __mockImpl: mockImpl,
+    } as Record<string, unknown>,
+    {
+      get(target, prop: string) {
+        if (prop in target) return target[prop];
+        return (opts: unknown, cb: (...args: unknown[]) => void) => {
+          const impl = mockImpl[prop] ?? defaults[prop as keyof typeof defaults];
+          if (!impl) throw new Error(`react-native-health mock: no impl for ${prop}`);
+          impl(opts, cb);
+        };
+      },
+    }
+  );
+  return { __esModule: true, default: proxy };
+});
+
 // theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
 jest.mock('@/constants/theme', () => ({
   Colors: {
