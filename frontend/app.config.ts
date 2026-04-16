@@ -40,6 +40,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: 'com.sophros.app',
     buildNumber: '1',
+    infoPlist: {
+      NSHealthShareUsageDescription:
+        'Sophros reads your activity, sleep, body metrics, and nutrition to tailor your daily health score.',
+      NSHealthUpdateUsageDescription:
+        'Sophros records completed workouts, weight, and meals back to Apple Health when you enable two-way sync.',
+    },
+    entitlements: {
+      'com.apple.developer.healthkit': true,
+    },
   },
   android: {
     package: 'com.sophros.app',
@@ -74,6 +83,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         imageWidth: 200,
         resizeMode: 'contain',
         backgroundColor: '#ffffff',
+      },
+    ],
+    [
+      'react-native-health',
+      {
+        healthSharePermission:
+          'Sophros reads your activity, sleep, body metrics, and nutrition to tailor your daily health score.',
+        healthUpdatePermission:
+          'Sophros records completed workouts, weight, and meals back to Apple Health when you enable two-way sync.',
       },
     ],
   ],
