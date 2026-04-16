@@ -23,13 +23,10 @@ describe('react-native-health mock', () => {
   });
 
   it('invokes getStepCount callback with a HealthValue result by default', (done) => {
-    AppleHealthKit.getStepCount(
-      { startDate: new Date().toISOString() },
-      (err, result) => {
-        expect(err).toBeNull();
-        expect(result).toEqual(expect.objectContaining({ value: expect.any(Number) }));
-        done();
-      }
-    );
+    AppleHealthKit.getStepCount({ startDate: new Date().toISOString() }, (err, result) => {
+      expect(err).toBeNull();
+      expect(result).toEqual(expect.objectContaining({ value: expect.any(Number) }));
+      done();
+    });
   });
 });

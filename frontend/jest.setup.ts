@@ -130,7 +130,11 @@ jest.mock('react-native-health', () => {
     FatTotal: 'FatTotal',
     Carbohydrates: 'Carbohydrates',
   };
-  const Activities = { Running: 'Running', TraditionalStrengthTraining: 'TraditionalStrengthTraining', Other: 'Other' };
+  const Activities = {
+    Running: 'Running',
+    TraditionalStrengthTraining: 'TraditionalStrengthTraining',
+    Other: 'Other',
+  };
   const defaults = {
     initHealthKit: (_opts: unknown, cb: (e: string | null) => void) => cb(null),
     getStepCount: (_opts: unknown, cb: (e: string | null, r: { value: number }) => void) =>
@@ -142,13 +146,16 @@ jest.mock('react-native-health', () => {
       _opts: unknown,
       cb: (e: string | null, r: { data: unknown[]; anchor: string | null }) => void
     ) => cb(null, { data: [], anchor: null }),
-    getLatestWeight: (_opts: unknown, cb: (e: string | null, r: { value: number } | null) => void) =>
-      cb(null, null),
+    getLatestWeight: (
+      _opts: unknown,
+      cb: (e: string | null, r: { value: number } | null) => void
+    ) => cb(null, null),
     getBodyFatPercentageSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
       cb(null, []),
     getEnergyConsumedSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
       cb(null, []),
-    getProteinSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) => cb(null, []),
+    getProteinSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
+      cb(null, []),
     getFatTotalSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
       cb(null, []),
     getCarbohydratesSamples: (_opts: unknown, cb: (e: string | null, r: unknown[]) => void) =>
