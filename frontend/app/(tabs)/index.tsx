@@ -6,6 +6,8 @@ import { useNow } from '@/hooks/useNow';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
+import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
+import type { HealthKitInputs } from '@/lib/healthkit';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
@@ -65,6 +67,19 @@ export default function DashboardPage() {
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
   const { data: user, isLoading: isLoadingUser } = useUserQuery();
 
+  const { data: hkActive } = useActiveEnergyToday();
+  const { data: hkSteps } = useStepsToday();
+  const { data: hkSleep } = useSleepLastNight();
+
+  const hkInputs: HealthKitInputs = useMemo(
+    () => ({
+      activeEnergyKcal: hkActive?.kcalToday ?? null,
+      stepCount: hkSteps?.valueToday ?? null,
+      sleepMinutes: hkSleep?.minutesLastNight ?? null,
+    }),
+    [hkActive, hkSteps, hkSleep]
+  );
+
   const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
   // Derive today's plan
@@ -75,8 +90,8 @@ export default function DashboardPage() {
 
   // Compute health score
   const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
+    [todayPlan, targets, user, hkInputs]
   );
 
   // Parse a display time string to minutes-from-midnight

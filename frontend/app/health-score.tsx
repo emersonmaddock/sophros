@@ -3,6 +3,8 @@ import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
+import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
+import type { HealthKitInputs } from '@/lib/healthkit';
 import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft, Info } from 'lucide-react-native';
 import React, { useMemo } from 'react';
@@ -37,14 +39,27 @@ export default function HealthScorePage() {
   const { data: targets } = useUserTargetsQuery();
   const { data: user } = useUserQuery();
 
+  const { data: hkActive } = useActiveEnergyToday();
+  const { data: hkSteps } = useStepsToday();
+  const { data: hkSleep } = useSleepLastNight();
+
+  const hkInputs: HealthKitInputs = useMemo(
+    () => ({
+      activeEnergyKcal: hkActive?.kcalToday ?? null,
+      stepCount: hkSteps?.valueToday ?? null,
+      sleepMinutes: hkSleep?.minutesLastNight ?? null,
+    }),
+    [hkActive, hkSteps, hkSleep]
+  );
+
   const todayPlan = useMemo(() => {
     const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
     return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
   }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
+    [todayPlan, targets, user, hkInputs]
   );
 
   const scoreComponents = [
