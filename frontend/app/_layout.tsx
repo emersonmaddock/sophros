@@ -60,6 +60,7 @@ export default function RootLayout() {
                             name="profile/dietary-preferences"
                             options={{ headerShown: false }}
                           />
+                          <Stack.Screen name="profile/health" options={{ headerShown: false }} />
                         </Stack>
                         <StatusBar style="dark" />
                       </ThemeProvider>

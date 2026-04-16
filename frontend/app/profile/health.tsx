@@ -15,7 +15,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft } from 'lucide-react-native';
 import React from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Option = { label: string; value: 'off' | 'read' | 'readWrite' };
@@ -52,7 +52,7 @@ export default function HealthIntegrationScreen() {
       ? 'Off'
       : 'Connected';
 
-  const metrics: Array<{ key: string; label: string; value: string }> = [
+  const metrics: { key: string; label: string; value: string }[] = [
     { key: 'steps', label: 'Steps today', value: steps.data ? `${steps.data.valueToday}` : '—' },
     {
       key: 'activeEnergy',
