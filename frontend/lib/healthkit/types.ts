@@ -57,3 +57,9 @@ export function activityTypeToHK(t: ExerciseCategory | string): string {
   if (Object.hasOwn(ACTIVITY_MAP, t)) return ACTIVITY_MAP[t as ExerciseCategory];
   return 'Other';
 }
+
+export interface HealthKitInputs {
+  activeEnergyKcal: number | null;
+  stepCount: number | null;
+  sleepMinutes: number | null;
+}

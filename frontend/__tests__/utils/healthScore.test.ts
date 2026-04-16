@@ -346,3 +346,87 @@ describe('calculateHealthScore – overall weighted formula', () => {
     expect(result.overall).toBe(Math.round(0 * 0.4 + 0 * 0.3 + 70 * 0.3));
   });
 });
+
+// ---------------------------------------------------------------------------
+// HealthKit inputs override plan/scheduled fallbacks
+// ---------------------------------------------------------------------------
+
+describe('calculateHealthScore – HealthKit inputs', () => {
+  it('exercise score = 100 when active energy >= 200 kcal, regardless of plan data', () => {
+    const plan = makeDailyPlan(2000, 150, 250, 65, null); // no planned exercise
+    const result = calculateHealthScore(plan, undefined, null, true, {
+      activeEnergyKcal: 250,
+      stepCount: 0,
+      sleepMinutes: null,
+    });
+    expect(result.exercise.score).toBe(100);
+  });
+
+  it('exercise score = 85 when active energy < 200 but steps >= 8000', () => {
+    const plan = makeDailyPlan(2000, 150, 250, 65, null);
+    const result = calculateHealthScore(plan, undefined, null, true, {
+      activeEnergyKcal: 50,
+      stepCount: 9000,
+      sleepMinutes: null,
+    });
+    expect(result.exercise.score).toBe(85);
+  });
+
+  it('exercise falls back to plan-based when HK values are below thresholds', () => {
+    const plan = makeDailyPlan(2000, 150, 250, 65, {
+      category: 'Cardio',
+      duration_minutes: 30,
+      calories_burned: 300,
+    });
+    const result = calculateHealthScore(plan, undefined, null, true, {
+      activeEnergyKcal: 50,
+      stepCount: 1000,
+      sleepMinutes: null,
+    });
+    expect(result.exercise.score).toBe(100); // from plan
+  });
+
+  it('sleep score from real minutes — 8 hours yields 100', () => {
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      { sleep_time: '01:00', wake_up_time: '07:00' }, // scheduled 6h → would have been 75
+      false,
+      { activeEnergyKcal: null, stepCount: null, sleepMinutes: 8 * 60 }
+    );
+    expect(result.sleep.score).toBe(100);
+  });
+
+  it('sleep score from real minutes — 4 hours yields 50', () => {
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      { sleep_time: '23:00', wake_up_time: '07:00' },
+      false,
+      { activeEnergyKcal: null, stepCount: null, sleepMinutes: 4 * 60 }
+    );
+    expect(result.sleep.score).toBe(50);
+  });
+
+  it('sleep falls back to schedule-based when sleepMinutes is null', () => {
+    const result = calculateHealthScore(
+      undefined,
+      undefined,
+      { sleep_time: '23:00', wake_up_time: '07:00' }, // 8h scheduled → 100
+      false,
+      { activeEnergyKcal: null, stepCount: null, sleepMinutes: null }
+    );
+    expect(result.sleep.score).toBe(100);
+  });
+
+  it('omitting hkInputs entirely is equivalent to no-HK fallback (backwards compatible)', () => {
+    const plan = makeDailyPlan(2000, 150, 250, 65, null);
+    const without = calculateHealthScore(plan, undefined, null, true);
+    const withNulls = calculateHealthScore(plan, undefined, null, true, {
+      activeEnergyKcal: null,
+      stepCount: null,
+      sleepMinutes: null,
+    });
+    expect(without).toEqual(withNulls);
+  });
+});

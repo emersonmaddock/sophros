@@ -1,4 +1,10 @@
 import type { DailyMealPlanOutput, DriOutput, ExerciseRecommendation } from '@/api/types.gen';
+import type { HealthKitInputs } from '@/lib/healthkit';
+
+const ACTIVE_ENERGY_EXCELLENT_KCAL = 200;
+const STEPS_GOOD_THRESHOLD = 8000;
+const ACTIVE_ENERGY_EXCELLENT_SCORE = 100;
+const STEPS_GOOD_SCORE = 85;
 
 export interface HealthScoreResult {
   overall: number;
@@ -40,13 +46,32 @@ function calculateNutritionScore(
   return Math.round(total / macros.length);
 }
 
-function calculateExerciseScore(exercise: ExerciseRecommendation | null | undefined): number {
+function calculateExerciseScoreFromPlan(
+  exercise: ExerciseRecommendation | null | undefined
+): number {
   if (!exercise) return 30;
   if (exercise.calories_burned && exercise.calories_burned > 0) return 100;
   return 85;
 }
 
-function calculateSleepScore(
+function calculateExerciseScore(
+  hasPlan: boolean,
+  exercise: ExerciseRecommendation | null | undefined,
+  hk: HealthKitInputs | undefined
+): number {
+  if (!hasPlan && !hk) return 0;
+  // HealthKit inputs win when they cross the thresholds.
+  if (hk?.activeEnergyKcal != null && hk.activeEnergyKcal >= ACTIVE_ENERGY_EXCELLENT_KCAL) {
+    return ACTIVE_ENERGY_EXCELLENT_SCORE;
+  }
+  if (hk?.stepCount != null && hk.stepCount >= STEPS_GOOD_THRESHOLD) {
+    return STEPS_GOOD_SCORE;
+  }
+  if (!hasPlan) return 0;
+  return calculateExerciseScoreFromPlan(exercise);
+}
+
+function calculateSleepScoreFromSchedule(
   sleepTime: string | null | undefined,
   wakeUpTime: string | null | undefined
 ): number {
@@ -58,7 +83,6 @@ function calculateSleepScore(
   let sleepMinutes = sleepH * 60 + sleepM;
   const wakeMinutes = wakeH * 60 + wakeM;
 
-  // If sleep time is in the evening (after noon), it's the night before
   if (sleepMinutes > wakeMinutes) {
     sleepMinutes -= 24 * 60;
   }
@@ -70,15 +94,34 @@ function calculateSleepScore(
   return 50;
 }
 
+function calculateSleepScoreFromMinutes(minutes: number): number {
+  const hours = minutes / 60;
+  if (hours >= 7 && hours <= 9) return 100;
+  if ((hours >= 6 && hours < 7) || (hours > 9 && hours <= 10)) return 75;
+  return 50;
+}
+
+function calculateSleepScore(
+  sleepTime: string | null | undefined,
+  wakeUpTime: string | null | undefined,
+  hk: HealthKitInputs | undefined
+): number {
+  if (hk?.sleepMinutes != null) {
+    return calculateSleepScoreFromMinutes(hk.sleepMinutes);
+  }
+  return calculateSleepScoreFromSchedule(sleepTime, wakeUpTime);
+}
+
 export function calculateHealthScore(
   todayPlan: DailyMealPlanOutput | undefined,
   targets: DriOutput | undefined,
   user: { wake_up_time?: string | null; sleep_time?: string | null } | null | undefined,
-  hasPlan: boolean
+  hasPlan: boolean,
+  hkInputs?: HealthKitInputs
 ): HealthScoreResult {
   const nutritionScore = calculateNutritionScore(todayPlan, targets);
-  const exerciseScore = hasPlan ? calculateExerciseScore(todayPlan?.exercise) : 0;
-  const sleepScore = calculateSleepScore(user?.sleep_time, user?.wake_up_time);
+  const exerciseScore = calculateExerciseScore(hasPlan, todayPlan?.exercise, hkInputs);
+  const sleepScore = calculateSleepScore(user?.sleep_time, user?.wake_up_time, hkInputs);
 
   const overall = Math.round(nutritionScore * 0.4 + exerciseScore * 0.3 + sleepScore * 0.3);
 
