@@ -22,9 +22,10 @@ describe('healthkit types', () => {
     expect(keys).toHaveLength(10);
   });
 
-  it('maps app activity types to HealthKit activity names', () => {
-    expect(activityTypeToHK('cardio')).toBe('Running');
-    expect(activityTypeToHK('weightlifting')).toBe('TraditionalStrengthTraining');
+  it('maps backend ExerciseCategory values to HealthKit activity names', () => {
+    expect(activityTypeToHK('Cardio')).toBe('Running');
+    expect(activityTypeToHK('Weight Lifting')).toBe('TraditionalStrengthTraining');
+    expect(activityTypeToHK('toString')).toBe('Other');
     expect(activityTypeToHK('unknown' as never)).toBe('Other');
   });
 });

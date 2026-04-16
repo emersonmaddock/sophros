@@ -1,3 +1,5 @@
+import type { ExerciseCategory } from '@/api/types.gen';
+
 export type Direction = 'off' | 'read' | 'readWrite';
 
 export type MetricKey =
@@ -46,14 +48,12 @@ export interface DietaryResult {
   totalToday: number;
 }
 
-export type AppActivityType = 'cardio' | 'weightlifting';
-
-const ACTIVITY_MAP: Record<AppActivityType, string> = {
-  cardio: 'Running',
-  weightlifting: 'TraditionalStrengthTraining',
+const ACTIVITY_MAP: Record<ExerciseCategory, string> = {
+  Cardio: 'Running',
+  'Weight Lifting': 'TraditionalStrengthTraining',
 };
 
-export function activityTypeToHK(t: AppActivityType | string): string {
-  if (t in ACTIVITY_MAP) return ACTIVITY_MAP[t as AppActivityType];
+export function activityTypeToHK(t: ExerciseCategory | string): string {
+  if (Object.hasOwn(ACTIVITY_MAP, t)) return ACTIVITY_MAP[t as ExerciseCategory];
   return 'Other';
 }
