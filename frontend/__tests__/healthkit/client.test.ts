@@ -47,7 +47,7 @@ describe('healthkit client wrappers', () => {
     expect(r).toBeNull();
   });
 
-  it('saveWeight calls the bridge with kg unit', async () => {
+  it('saveWeight converts kg to grams before calling the bridge', async () => {
     let captured: { value: number; unit: string } | null = null;
     mockImpl.saveWeight = (
       opts: { value: number; unit: string },
@@ -58,7 +58,7 @@ describe('healthkit client wrappers', () => {
     };
     await client.saveWeight({ weightKg: 75, recordedAtISO: new Date().toISOString() });
     expect(captured).not.toBeNull();
-    expect(captured!.value).toBe(75);
+    expect(captured!.value).toBe(75000);
     expect(captured!.unit).toBe('gram');
   });
 });

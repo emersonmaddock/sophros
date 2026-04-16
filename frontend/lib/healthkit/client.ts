@@ -173,10 +173,12 @@ export interface SaveWeightInput {
 
 export async function saveWeight(input: SaveWeightInput): Promise<void> {
   if (!isIOS()) return;
-  // react-native-health's saveWeight default unit is "gram"; passing weightKg as grams*1000 yields kg.
+  // HealthUnit has no 'kilogram' — convert kg to grams before writing so the stored
+  // sample represents the user's real weight in HealthKit.
+  const valueInGrams = input.weightKg * 1000;
   await promisify<string>((cb) =>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AppleHealthKit.saveWeight({ value: input.weightKg, unit: 'gram' as any }, cb as any)
+    AppleHealthKit.saveWeight({ value: valueInGrams, unit: 'gram' } as any, cb as any)
   );
 }
 
