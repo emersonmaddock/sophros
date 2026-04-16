@@ -32,11 +32,11 @@ jest.mock('expo-router', () => ({
 
 // Mock Clerk
 jest.mock('@clerk/expo', () => ({
-  useAuth: () => ({
+  useAuth: jest.fn(() => ({
     isSignedIn: true,
     userId: 'test-user-id',
     getToken: jest.fn().mockResolvedValue('mock-token'),
-  }),
+  })),
   useUser: () => ({
     user: {
       id: 'test-user-id',
@@ -211,3 +211,10 @@ jest.mock('@/constants/theme', () => ({
   Layout: { cardRadius: 16 },
   Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
 }));
+
+// Ensure AppState.addEventListener is a jest.Mock so HealthKit provider tests can capture handlers.
+import { AppState } from 'react-native';
+if (!jest.isMockFunction(AppState.addEventListener)) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (AppState as any).addEventListener = jest.fn(() => ({ remove: jest.fn() }));
+}
