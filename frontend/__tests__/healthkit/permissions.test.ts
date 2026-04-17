@@ -1,38 +1,42 @@
 import { permissionsFor } from '@/lib/healthkit/permissions';
 
 describe('permissionsFor', () => {
-  it('returns empty read and write arrays for off', () => {
+  it('returns empty toRead and toShare arrays for off', () => {
     const p = permissionsFor('off');
-    expect(p.permissions.read).toEqual([]);
-    expect(p.permissions.write).toEqual([]);
+    expect(p.toRead).toEqual([]);
+    expect(p.toShare).toEqual([]);
   });
 
   it('returns all 10 read types and no writes for read', () => {
     const p = permissionsFor('read');
-    expect(p.permissions.read).toEqual(
+    expect(p.toRead).toEqual(
       expect.arrayContaining([
-        'Steps',
-        'ActiveEnergyBurned',
-        'SleepAnalysis',
-        'Workout',
-        'Weight',
-        'BodyFatPercentage',
-        'EnergyConsumed',
-        'Protein',
-        'FatTotal',
-        'Carbohydrates',
+        'HKQuantityTypeIdentifierStepCount',
+        'HKQuantityTypeIdentifierActiveEnergyBurned',
+        'HKCategoryTypeIdentifierSleepAnalysis',
+        'HKWorkoutTypeIdentifier',
+        'HKQuantityTypeIdentifierBodyMass',
+        'HKQuantityTypeIdentifierBodyFatPercentage',
+        'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+        'HKQuantityTypeIdentifierDietaryProtein',
+        'HKQuantityTypeIdentifierDietaryFatTotal',
+        'HKQuantityTypeIdentifierDietaryCarbohydrates',
       ])
     );
-    expect(p.permissions.read).toHaveLength(10);
-    expect(p.permissions.write).toEqual([]);
+    expect(p.toRead).toHaveLength(10);
+    expect(p.toShare).toEqual([]);
   });
 
-  it('returns reads plus Weight, Workout, Carbohydrates for readWrite', () => {
+  it('returns reads plus Body Mass, Workout, Carbohydrates for readWrite', () => {
     const p = permissionsFor('readWrite');
-    expect(p.permissions.read).toHaveLength(10);
-    expect(p.permissions.write).toEqual(
-      expect.arrayContaining(['Weight', 'Workout', 'Carbohydrates'])
+    expect(p.toRead).toHaveLength(10);
+    expect(p.toShare).toEqual(
+      expect.arrayContaining([
+        'HKQuantityTypeIdentifierBodyMass',
+        'HKWorkoutTypeIdentifier',
+        'HKQuantityTypeIdentifierDietaryCarbohydrates',
+      ])
     );
-    expect(p.permissions.write).toHaveLength(3);
+    expect(p.toShare).toHaveLength(3);
   });
 });

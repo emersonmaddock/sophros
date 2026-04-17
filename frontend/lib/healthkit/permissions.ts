@@ -1,34 +1,36 @@
 import type { Direction } from './types';
 
-export interface HealthKitPermissionsSpec {
-  permissions: {
-    read: string[];
-    write: string[];
-  };
+export interface PermissionsSpec {
+  toRead: string[];
+  toShare: string[];
 }
 
 const READS: string[] = [
-  'Steps',
-  'ActiveEnergyBurned',
-  'SleepAnalysis',
-  'Workout',
-  'Weight',
-  'BodyFatPercentage',
-  'EnergyConsumed',
-  'Protein',
-  'FatTotal',
-  'Carbohydrates',
+  'HKQuantityTypeIdentifierStepCount',
+  'HKQuantityTypeIdentifierActiveEnergyBurned',
+  'HKCategoryTypeIdentifierSleepAnalysis',
+  'HKWorkoutTypeIdentifier',
+  'HKQuantityTypeIdentifierBodyMass',
+  'HKQuantityTypeIdentifierBodyFatPercentage',
+  'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+  'HKQuantityTypeIdentifierDietaryProtein',
+  'HKQuantityTypeIdentifierDietaryFatTotal',
+  'HKQuantityTypeIdentifierDietaryCarbohydrates',
 ];
 
-const WRITES: string[] = ['Weight', 'Workout', 'Carbohydrates'];
+const WRITES: string[] = [
+  'HKQuantityTypeIdentifierBodyMass',
+  'HKWorkoutTypeIdentifier',
+  'HKQuantityTypeIdentifierDietaryCarbohydrates',
+];
 
-export function permissionsFor(direction: Direction): HealthKitPermissionsSpec {
+export function permissionsFor(direction: Direction): PermissionsSpec {
   switch (direction) {
     case 'off':
-      return { permissions: { read: [], write: [] } };
+      return { toRead: [], toShare: [] };
     case 'read':
-      return { permissions: { read: [...READS], write: [] } };
+      return { toRead: [...READS], toShare: [] };
     case 'readWrite':
-      return { permissions: { read: [...READS], write: [...WRITES] } };
+      return { toRead: [...READS], toShare: [...WRITES] };
   }
 }

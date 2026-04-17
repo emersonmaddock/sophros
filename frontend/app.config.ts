@@ -46,9 +46,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSHealthUpdateUsageDescription:
         'Sophros records completed workouts, weight, and meals back to Apple Health when you enable two-way sync.',
     },
-    entitlements: {
-      'com.apple.developer.healthkit': true,
-    },
   },
   android: {
     package: 'com.sophros.app',
@@ -86,12 +83,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
-      'react-native-health',
+      '@kingstinct/react-native-healthkit',
       {
-        healthSharePermission:
+        NSHealthShareUsageDescription:
           'Sophros reads your activity, sleep, body metrics, and nutrition to tailor your daily health score.',
-        healthUpdatePermission:
+        NSHealthUpdateUsageDescription:
           'Sophros records completed workouts, weight, and meals back to Apple Health when you enable two-way sync.',
+        background: false,
       },
     ],
   ],

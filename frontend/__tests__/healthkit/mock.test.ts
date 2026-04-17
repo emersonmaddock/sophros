@@ -1,32 +1,30 @@
-import AppleHealthKit from 'react-native-health';
+import * as HealthKit from '@kingstinct/react-native-healthkit';
 
-describe('react-native-health mock', () => {
-  it('exposes Constants.Permissions', () => {
-    expect(AppleHealthKit.Constants).toBeDefined();
-    expect(AppleHealthKit.Constants.Permissions.Steps).toBe('Steps');
-    expect(AppleHealthKit.Constants.Permissions.ActiveEnergyBurned).toBe('ActiveEnergyBurned');
-    expect(AppleHealthKit.Constants.Permissions.SleepAnalysis).toBe('SleepAnalysis');
-    expect(AppleHealthKit.Constants.Permissions.Workout).toBe('Workout');
-    expect(AppleHealthKit.Constants.Permissions.Weight).toBe('Weight');
-    expect(AppleHealthKit.Constants.Permissions.BodyFatPercentage).toBe('BodyFatPercentage');
-    expect(AppleHealthKit.Constants.Permissions.EnergyConsumed).toBe('EnergyConsumed');
-    expect(AppleHealthKit.Constants.Permissions.Protein).toBe('Protein');
-    expect(AppleHealthKit.Constants.Permissions.FatTotal).toBe('FatTotal');
-    expect(AppleHealthKit.Constants.Permissions.Carbohydrates).toBe('Carbohydrates');
+describe('@kingstinct/react-native-healthkit mock', () => {
+  it('exposes the Promise-based functions used by client.ts', () => {
+    expect(typeof HealthKit.isHealthDataAvailable).toBe('function');
+    expect(typeof HealthKit.requestAuthorization).toBe('function');
+    expect(typeof HealthKit.queryQuantitySamples).toBe('function');
+    expect(typeof HealthKit.getMostRecentQuantitySample).toBe('function');
+    expect(typeof HealthKit.queryCategorySamples).toBe('function');
+    expect(typeof HealthKit.queryWorkoutSamples).toBe('function');
+    expect(typeof HealthKit.saveQuantitySample).toBe('function');
+    expect(typeof HealthKit.saveWorkoutSample).toBe('function');
   });
 
-  it('invokes initHealthKit callback with no error by default', (done) => {
-    AppleHealthKit.initHealthKit({ permissions: { read: [], write: [] } }, (err) => {
-      expect(err).toBeNull();
-      done();
-    });
+  it('requestAuthorization resolves to a boolean by default', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (HealthKit.requestAuthorization as any)({ toRead: [], toShare: [] });
+    expect(result).toBe(true);
   });
 
-  it('invokes getStepCount callback with a HealthValue result by default', (done) => {
-    AppleHealthKit.getStepCount({ startDate: new Date().toISOString() }, (err, result) => {
-      expect(err).toBeNull();
-      expect(result).toEqual(expect.objectContaining({ value: expect.any(Number) }));
-      done();
-    });
+  it('queryQuantitySamples resolves to an array by default', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (HealthKit.queryQuantitySamples as any)(
+      'HKQuantityTypeIdentifierStepCount',
+      { limit: 0 }
+    );
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
   });
 });

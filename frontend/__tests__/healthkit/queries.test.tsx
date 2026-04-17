@@ -1,13 +1,13 @@
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react-native';
-import AppleHealthKit from 'react-native-health';
+import * as HealthKit from '@kingstinct/react-native-healthkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HealthKitProvider } from '@/lib/healthkit/provider';
 import { useStepsToday, useActiveEnergyToday } from '@/lib/healthkit/queries';
 import * as SecureStore from 'expo-secure-store';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const mockImpl = (AppleHealthKit as any).__mockImpl as Record<string, unknown>;
+const mockImpl = (HealthKit as any).__mockImpl as Record<string, unknown>;
 
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
@@ -35,8 +35,7 @@ describe('healthkit query hooks', () => {
 
   it('useStepsToday fetches when direction is read', async () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('read');
-    mockImpl.getStepCount = (_o: unknown, cb: (e: string | null, r: { value: number }) => void) =>
-      cb(null, { value: 5000 });
+    mockImpl.queryQuantitySamples = async () => [{ quantity: 3000 }, { quantity: 2000 }];
     const { wrapper } = makeWrapper();
     const { result } = renderHook(() => useStepsToday(), { wrapper });
     await waitFor(() =>
@@ -46,10 +45,7 @@ describe('healthkit query hooks', () => {
 
   it('useActiveEnergyToday fetches when direction is readWrite', async () => {
     (SecureStore.getItemAsync as jest.Mock).mockResolvedValue('readWrite');
-    mockImpl.getActiveEnergyBurned = (
-      _o: unknown,
-      cb: (e: string | null, r: { value: number }) => void
-    ) => cb(null, { value: 250 });
+    mockImpl.queryQuantitySamples = async () => [{ quantity: 250 }];
     const { wrapper } = makeWrapper();
     const { result } = renderHook(() => useActiveEnergyToday(), { wrapper });
     await waitFor(() =>
