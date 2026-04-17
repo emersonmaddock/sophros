@@ -270,30 +270,34 @@ export default function DashboardPage() {
             <View style={styles.scoreHeader}>
               <View>
                 <Text style={styles.scoreLabel}>Health Score</Text>
-                <Text style={styles.scoreValue}>{healthScore.overall}</Text>
+                <Text style={styles.scoreValue}>
+                  {healthScore.overall == null ? '—' : healthScore.overall}
+                </Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>
-                  {healthScore.overall >= 90
-                    ? 'Excellent'
-                    : healthScore.overall >= 70
-                      ? 'Good'
-                      : healthScore.overall >= 50
-                        ? 'Fair'
-                        : 'Needs Work'}
+                  {healthScore.overall == null
+                    ? 'Not measured'
+                    : healthScore.overall >= 90
+                      ? 'Excellent'
+                      : healthScore.overall >= 70
+                        ? 'Good'
+                        : healthScore.overall >= 50
+                          ? 'Fair'
+                          : 'Needs Work'}
                 </Text>
               </View>
             </View>
 
             <View style={styles.scoreDetails}>
               {[
-                { label: 'Nutrition', value: healthScore.nutrition.score },
-                { label: 'Exercise', value: healthScore.exercise.score },
-                { label: 'Sleep', value: healthScore.sleep.score },
+                { label: 'Nutrition', sub: healthScore.nutrition },
+                { label: 'Exercise', sub: healthScore.exercise },
+                { label: 'Sleep', sub: healthScore.sleep },
               ].map((item, i) => (
                 <View key={i} style={styles.scoreItem}>
                   <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
+                    <View style={[styles.progressBarFill, { width: `${item.sub?.score ?? 0}%` }]} />
                   </View>
                   <Text style={styles.scoreItemLabel}>{item.label}</Text>
                 </View>

@@ -1,9 +1,14 @@
-import type { Day } from '@/api/types.gen';
+import type { Day, DailyMealPlanOutput, DriOutput, UserRead } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { calculateHealthScore } from '@/utils/healthScore';
-import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
+import { calculateHealthScore, type SubScoreResult } from '@/utils/healthScore';
+import {
+  useActiveEnergyToday,
+  useHealthKit,
+  useSleepLastNight,
+  useStepsToday,
+} from '@/lib/healthkit';
 import type { HealthKitInputs } from '@/lib/healthkit';
 import { Stack, useRouter } from 'expo-router';
 import { ArrowLeft, Info } from 'lucide-react-native';
@@ -22,9 +27,96 @@ const JS_DAY_TO_API_DAY: Record<number, Day> = {
   6: 'Saturday',
 };
 
+interface PillarRow {
+  label: string;
+  color: string;
+  baseWeightPct: string;
+  result: SubScoreResult | null;
+  source: string;
+  detail: string;
+  target: string;
+  notMeasuredHint: string;
+}
+
+function nutritionRow(
+  plan: DailyMealPlanOutput | undefined,
+  targets: DriOutput | undefined,
+  result: SubScoreResult | null
+): PillarRow {
+  return {
+    label: 'Nutrition',
+    color: Colors.light.secondary,
+    baseWeightPct: '40%',
+    result,
+    source: "Today's meal plan vs your DRI targets",
+    detail:
+      plan && targets
+        ? `${Math.round(plan.total_calories)} / ${Math.round(targets.calories.target)} kcal · P ${Math.round(plan.total_protein)}g · C ${Math.round(plan.total_carbs)}g · F ${Math.round(plan.total_fat)}g`
+        : '',
+    target: 'Average adherence across calories, protein, carbs, fat',
+    notMeasuredHint: 'Generate this week’s meal plan to enable nutrition scoring.',
+  };
+}
+
+function exerciseRow(hk: HealthKitInputs, result: SubScoreResult | null): PillarRow {
+  const bits: string[] = [];
+  if (hk.activeEnergyKcal != null) bits.push(`${Math.round(hk.activeEnergyKcal)} kcal active`);
+  if (hk.stepCount != null) bits.push(`${hk.stepCount.toLocaleString()} steps`);
+  return {
+    label: 'Exercise',
+    color: Colors.light.primary,
+    baseWeightPct: '30%',
+    result,
+    source: 'Apple Health today',
+    detail: bits.join(' · '),
+    target: 'Target: 400 kcal active + 10,000 steps (70/30 blend)',
+    notMeasuredHint: 'Enable Apple Health sync in Profile → Apple Health to track real activity.',
+  };
+}
+
+function sleepRow(
+  user: UserRead | null | undefined,
+  hkSleepMinutes: number | null,
+  result: SubScoreResult | null
+): PillarRow {
+  let source = '';
+  let detail = '';
+
+  if (hkSleepMinutes != null) {
+    const h = Math.floor(hkSleepMinutes / 60);
+    const m = Math.round(hkSleepMinutes % 60);
+    source = 'Apple Health — last night';
+    detail = `${h}h ${m}m in bed`;
+  } else if (user?.sleep_time && user?.wake_up_time) {
+    const sleep = user.sleep_time.substring(0, 5);
+    const wake = user.wake_up_time.substring(0, 5);
+    source = 'Your scheduled window';
+    detail = `${sleep} → ${wake}`;
+  }
+
+  return {
+    label: 'Sleep',
+    color: Colors.light.charts.carbs,
+    baseWeightPct: '30%',
+    result,
+    source,
+    detail,
+    target: 'Target: 8 h · scored asymmetrically (undersleep penalized 2× over)',
+    notMeasuredHint:
+      'Add sleep times in Edit Profile, or enable Apple Health sync for real sleep data.',
+  };
+}
+
+function overallLabel(overall: number | null): string {
+  if (overall == null) return 'Not yet measured';
+  if (overall >= 90) return 'Excellent';
+  if (overall >= 70) return 'Good';
+  if (overall >= 50) return 'Fair';
+  return 'Needs Work';
+}
+
 export default function HealthScorePage() {
   const router = useRouter();
-
   const today = new Date();
 
   const weekStartStr = useMemo(() => {
@@ -39,6 +131,7 @@ export default function HealthScorePage() {
   const { data: targets } = useUserTargetsQuery();
   const { data: user } = useUserQuery();
 
+  const { direction } = useHealthKit();
   const { data: hkActive } = useActiveEnergyToday();
   const { data: hkSteps } = useStepsToday();
   const { data: hkSleep } = useSleepLastNight();
@@ -62,115 +155,109 @@ export default function HealthScorePage() {
     [todayPlan, targets, user, hkInputs]
   );
 
-  const scoreComponents = [
-    {
-      label: 'Nutrition',
-      score: healthScore.nutrition.score,
-      weight: '40%',
-      color: Colors.light.secondary,
-      description: 'Based on calorie and macro adherence',
-      status: healthScore.nutrition.status,
-    },
-    {
-      label: 'Exercise',
-      score: healthScore.exercise.score,
-      weight: '30%',
-      color: Colors.light.primary,
-      description: 'Workout frequency and intensity',
-      status: healthScore.exercise.status,
-    },
-    {
-      label: 'Sleep',
-      score: healthScore.sleep.score,
-      weight: '30%',
-      color: Colors.light.charts.carbs,
-      description: 'Duration and quality of sleep',
-      status: healthScore.sleep.status,
-    },
+  const rows: PillarRow[] = [
+    nutritionRow(todayPlan, targets, healthScore.nutrition),
+    exerciseRow(hkInputs, healthScore.exercise),
+    sleepRow(user, hkInputs.sleepMinutes, healthScore.sleep),
   ];
 
-  const overallStatus =
-    healthScore.overall >= 90
-      ? 'Excellent'
-      : healthScore.overall >= 70
-        ? 'Good'
-        : healthScore.overall >= 50
-          ? 'Fair'
-          : 'Needs Work';
+  const overallStatus = overallLabel(healthScore.overall);
+  const overallValue = healthScore.overall == null ? '—' : `${healthScore.overall}`;
+  const overallPct = healthScore.overall ?? 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <ArrowLeft size={24} color={Colors.light.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Health Score</Text>
-          <TouchableOpacity>
-            <Info size={24} color={Colors.light.text} />
-          </TouchableOpacity>
+          <View style={{ width: 24 }} />
         </View>
 
-        {/* Main Score */}
         <View style={styles.heroCard}>
           <View style={styles.heroContent}>
             <CircularProgress
-              percentage={healthScore.overall}
+              percentage={overallPct}
               size={160}
               color={Colors.light.primary}
               label="Total Score"
-              value={`${healthScore.overall}`}
+              value={overallValue}
             />
           </View>
           <Text style={styles.heroDescription}>
-            Your overall health score is {overallStatus.toLowerCase()}. Keep building healthy
-            habits!
+            {healthScore.overall == null
+              ? 'Nothing measured yet. Generate a plan or connect Apple Health to start scoring.'
+              : `Your overall health score is ${overallStatus.toLowerCase()}. Weighted across measured pillars only.`}
           </Text>
         </View>
 
-        {/* Breakdown */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Score Breakdown</Text>
           <View style={styles.breakdownContainer}>
-            {scoreComponents.map((item, i) => (
-              <View key={i} style={styles.scoreRow}>
-                <View style={[styles.scoreIcon, { backgroundColor: `${item.color}15` }]}>
-                  <Text style={[styles.scoreIconText, { color: item.color }]}>{item.label[0]}</Text>
-                </View>
-                <View style={styles.scoreInfo}>
-                  <View style={styles.scoreHeader}>
-                    <Text style={styles.scoreLabel}>{item.label}</Text>
-                    <Text style={[styles.scoreStatus, { color: item.color }]}>{item.status}</Text>
-                  </View>
-                  <Text style={styles.scoreDesc}>{item.description}</Text>
-                  <View style={styles.scoreMeta}>
-                    <Text style={styles.scoreWeight}>Weight: {item.weight}</Text>
-                    <Text style={styles.scoreValue}>{item.score}/100</Text>
-                  </View>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${item.score}%`, backgroundColor: item.color },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
+            {rows.map((row) => (
+              <PillarCard key={row.label} row={row} />
             ))}
           </View>
         </View>
 
-        <View style={styles.infoBox}>
-          <Info size={20} color={Colors.light.textMuted} />
-          <Text style={styles.infoText}>
-            Your health score is calculated daily based on your activity, nutrition, and sleep data.
-          </Text>
-        </View>
+        {direction === 'off' && (
+          <View style={styles.infoBox}>
+            <Info size={20} color={Colors.light.textMuted} />
+            <Text style={styles.infoText}>
+              Apple Health is off. Exercise and sleep can still be estimated from your schedule, but
+              enabling sync (Profile → Apple Health) yields real measurements.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function PillarCard({ row }: { row: PillarRow }) {
+  const measured = row.result != null;
+  const score = row.result?.score ?? 0;
+  const status = row.result?.status ?? 'Not measured';
+  const statusColor = measured ? row.color : Colors.light.textMuted;
+
+  return (
+    <View style={styles.scoreRow}>
+      <View
+        style={[
+          styles.scoreIcon,
+          { backgroundColor: measured ? `${row.color}15` : `${Colors.light.textMuted}15` },
+        ]}
+      >
+        <Text style={[styles.scoreIconText, { color: statusColor }]}>{row.label[0]}</Text>
+      </View>
+      <View style={styles.scoreInfo}>
+        <View style={styles.scoreHeader}>
+          <Text style={styles.scoreLabel}>{row.label}</Text>
+          <Text style={[styles.scoreStatus, { color: statusColor }]}>{status}</Text>
+        </View>
+        {measured ? (
+          <>
+            <Text style={styles.scoreDesc}>{row.source}</Text>
+            {row.detail.length > 0 && <Text style={styles.scoreDetail}>{row.detail}</Text>}
+            <View style={styles.scoreMeta}>
+              <Text style={styles.scoreWeight}>Baseline weight: {row.baseWeightPct}</Text>
+              <Text style={styles.scoreValue}>{score}/100</Text>
+            </View>
+            <View style={styles.progressBarBg}>
+              <View
+                style={[styles.progressBarFill, { width: `${score}%`, backgroundColor: row.color }]}
+              />
+            </View>
+            <Text style={styles.scoreTarget}>{row.target}</Text>
+          </>
+        ) : (
+          <Text style={styles.scoreHint}>{row.notMeasuredHint}</Text>
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -263,11 +350,15 @@ const styles = StyleSheet.create({
   scoreDesc: {
     fontSize: 13,
     color: Colors.light.textMuted,
-    marginBottom: 4,
+  },
+  scoreDetail: {
+    fontSize: 12,
+    color: Colors.light.text,
   },
   scoreMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: 4,
     marginBottom: 6,
   },
   scoreWeight: {
@@ -288,6 +379,17 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: '100%',
     borderRadius: 3,
+  },
+  scoreTarget: {
+    fontSize: 11,
+    color: Colors.light.textMuted,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  scoreHint: {
+    fontSize: 12,
+    color: Colors.light.textMuted,
+    fontStyle: 'italic',
   },
   infoBox: {
     flexDirection: 'row',
