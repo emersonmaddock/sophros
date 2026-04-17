@@ -237,21 +237,19 @@ export interface SaveMealInput {
 
 export async function saveMeal(input: SaveMealInput): Promise<void> {
   if (!isIOS()) return;
-  // Anchor the meal on a carbohydrates quantity sample and attach calories/protein/fat
-  // in metadata so we can reconstitute the meal later.
+  // Write each macro as its own HKQuantitySample at the same timestamp.
+  // Apple Health's Nutrition view groups same-timestamped samples automatically.
   const at = new Date(input.consumedAtISO);
-  await saveQuantitySample(
-    'HKQuantityTypeIdentifierDietaryCarbohydrates',
-    'g',
-    input.carbsG,
-    at,
-    at,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    {
-      HKWasUserEntered: false,
-      sophrosCaloriesKcal: input.calories,
-      sophrosProteinG: input.proteinG,
-      sophrosFatG: input.fatG,
-    } as any
-  );
+  await Promise.all([
+    saveQuantitySample(
+      'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+      'kcal',
+      input.calories,
+      at,
+      at
+    ),
+    saveQuantitySample('HKQuantityTypeIdentifierDietaryProtein', 'g', input.proteinG, at, at),
+    saveQuantitySample('HKQuantityTypeIdentifierDietaryFatTotal', 'g', input.fatG, at, at),
+    saveQuantitySample('HKQuantityTypeIdentifierDietaryCarbohydrates', 'g', input.carbsG, at, at),
+  ]);
 }

@@ -27,16 +27,19 @@ describe('permissionsFor', () => {
     expect(p.toShare).toEqual([]);
   });
 
-  it('returns reads plus Body Mass, Workout, Carbohydrates for readWrite', () => {
+  it('returns reads plus Body Mass, Workout, and 4 dietary macros for readWrite', () => {
     const p = permissionsFor('readWrite');
     expect(p.toRead).toHaveLength(10);
     expect(p.toShare).toEqual(
       expect.arrayContaining([
         'HKQuantityTypeIdentifierBodyMass',
         'HKWorkoutTypeIdentifier',
+        'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+        'HKQuantityTypeIdentifierDietaryProtein',
+        'HKQuantityTypeIdentifierDietaryFatTotal',
         'HKQuantityTypeIdentifierDietaryCarbohydrates',
       ])
     );
-    expect(p.toShare).toHaveLength(3);
+    expect(p.toShare).toHaveLength(6);
   });
 });

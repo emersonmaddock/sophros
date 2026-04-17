@@ -21,6 +21,9 @@ const READS: string[] = [
 const WRITES: string[] = [
   'HKQuantityTypeIdentifierBodyMass',
   'HKWorkoutTypeIdentifier',
+  'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+  'HKQuantityTypeIdentifierDietaryProtein',
+  'HKQuantityTypeIdentifierDietaryFatTotal',
   'HKQuantityTypeIdentifierDietaryCarbohydrates',
 ];
 
