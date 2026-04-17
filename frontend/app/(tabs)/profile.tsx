@@ -137,9 +137,10 @@ export default function ProfilePage() {
       onPress: () => router.push('/profile/dietary-preferences'),
     },
     {
-      label: 'Sync Health Data',
+      label: 'Apple Health',
       icon: Heart,
-      value: 'Connected',
+      value: 'Manage sync',
+      onPress: () => router.push('/profile/health'),
     },
     {
       label: 'Sync Calendar',

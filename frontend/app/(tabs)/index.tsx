@@ -6,6 +6,8 @@ import { useNow } from '@/hooks/useNow';
 import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
+import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
+import type { HealthKitInputs } from '@/lib/healthkit';
 import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
@@ -65,6 +67,19 @@ export default function DashboardPage() {
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
   const { data: user, isLoading: isLoadingUser } = useUserQuery();
 
+  const { data: hkActive } = useActiveEnergyToday();
+  const { data: hkSteps } = useStepsToday();
+  const { data: hkSleep } = useSleepLastNight();
+
+  const hkInputs: HealthKitInputs = useMemo(
+    () => ({
+      activeEnergyKcal: hkActive?.kcalToday ?? null,
+      stepCount: hkSteps?.valueToday ?? null,
+      sleepMinutes: hkSleep?.minutesLastNight ?? null,
+    }),
+    [hkActive, hkSteps, hkSleep]
+  );
+
   const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
   // Derive today's plan
@@ -75,8 +90,8 @@ export default function DashboardPage() {
 
   // Compute health score
   const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
+    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
+    [todayPlan, targets, user, hkInputs]
   );
 
   // Parse a display time string to minutes-from-midnight
@@ -255,30 +270,34 @@ export default function DashboardPage() {
             <View style={styles.scoreHeader}>
               <View>
                 <Text style={styles.scoreLabel}>Health Score</Text>
-                <Text style={styles.scoreValue}>{healthScore.overall}</Text>
+                <Text style={styles.scoreValue}>
+                  {healthScore.overall == null ? '—' : healthScore.overall}
+                </Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>
-                  {healthScore.overall >= 90
-                    ? 'Excellent'
-                    : healthScore.overall >= 70
-                      ? 'Good'
-                      : healthScore.overall >= 50
-                        ? 'Fair'
-                        : 'Needs Work'}
+                  {healthScore.overall == null
+                    ? 'Not measured'
+                    : healthScore.overall >= 90
+                      ? 'Excellent'
+                      : healthScore.overall >= 70
+                        ? 'Good'
+                        : healthScore.overall >= 50
+                          ? 'Fair'
+                          : 'Needs Work'}
                 </Text>
               </View>
             </View>
 
             <View style={styles.scoreDetails}>
               {[
-                { label: 'Nutrition', value: healthScore.nutrition.score },
-                { label: 'Exercise', value: healthScore.exercise.score },
-                { label: 'Sleep', value: healthScore.sleep.score },
+                { label: 'Nutrition', sub: healthScore.nutrition },
+                { label: 'Exercise', sub: healthScore.exercise },
+                { label: 'Sleep', sub: healthScore.sleep },
               ].map((item, i) => (
                 <View key={i} style={styles.scoreItem}>
                   <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
+                    <View style={[styles.progressBarFill, { width: `${item.sub?.score ?? 0}%` }]} />
                   </View>
                   <Text style={styles.scoreItemLabel}>{item.label}</Text>
                 </View>
