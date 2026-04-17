@@ -1,4 +1,3 @@
-from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -8,7 +7,7 @@ from app.api import deps
 from app.db.session import get_db
 from app.domain.enums import ActivityLevel, ActivityType, PregnancyStatus, Sex
 from app.main import app
-from app.models.meal import Meal, ScheduleItemAlternative
+from app.models.meal import Meal
 from app.models.schedule import ScheduleItem
 
 BASE = "/api/v1/meal-plans"
@@ -52,7 +51,8 @@ async def mock_client() -> AsyncClient:
     app.dependency_overrides[get_db] = lambda: mock_db
     app.dependency_overrides[deps.get_current_user] = lambda: mock_user
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app),
+                           base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -73,8 +73,10 @@ async def test_generate_week_requires_monday(mock_client: AsyncClient):
 async def test_generate_week_calls_service_and_returns_items(mock_client: AsyncClient):
     mock_items = []  # generate_and_persist returns list[ScheduleItem]; empty is valid
 
-    with patch("app.api.endpoints.meal_plans.MealPlanService") as MockService:
-        MockService.return_value.generate_and_persist = AsyncMock(return_value=mock_items)
+    with patch("app.api.endpoints.meal_plans.MealPlanService") as mock_service:
+        mock_service.return_value.generate_and_persist = AsyncMock(
+            return_value=mock_items
+            )
         response = await mock_client.post(
             f"{BASE}/generate-week",
             params={"week_start_date": MONDAY},
@@ -86,8 +88,8 @@ async def test_generate_week_calls_service_and_returns_items(mock_client: AsyncC
 
 @pytest.mark.asyncio
 async def test_generate_week_returns_500_on_service_error(mock_client: AsyncClient):
-    with patch("app.api.endpoints.meal_plans.MealPlanService") as MockService:
-        MockService.return_value.generate_and_persist = AsyncMock(
+    with patch("app.api.endpoints.meal_plans.MealPlanService") as mock_service:
+        mock_service.return_value.generate_and_persist = AsyncMock(
             side_effect=RuntimeError("Spoonacular down")
         )
         response = await mock_client.post(

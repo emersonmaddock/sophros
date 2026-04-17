@@ -1,5 +1,14 @@
+from datetime import datetime as dt_type
+
 import pytest
 from httpx import AsyncClient
+
+from app.domain.enums import ActivityType
+from app.models.meal import Meal, ScheduleItemAlternative
+from app.models.schedule import ScheduleItem
+
+MONDAY = "2025-06-02"  # confirmed Monday
+TUESDAY = "2025-06-03"  # not a Monday
 
 BASE = "/api/v1/schedules"
 
@@ -98,18 +107,6 @@ async def test_delete_schedule_item_not_found(client: AsyncClient):
     assert response.status_code == 404
 
 
-# ── New endpoint tests ──────────────────────────────────────────────────────
-
-from datetime import datetime as dt_type
-
-from app.domain.enums import ActivityType
-from app.models.meal import Meal, ScheduleItemAlternative
-from app.models.schedule import ScheduleItem
-
-MONDAY = "2025-06-02"  # confirmed Monday
-TUESDAY = "2025-06-03"  # not a Monday
-
-
 async def _create_meal(db, **kwargs) -> Meal:
     defaults = dict(
         recipe_id="abc123",
@@ -164,7 +161,8 @@ async def test_get_week_schedule_returns_meal_items(client: AsyncClient, db, moc
 
 
 @pytest.mark.asyncio
-async def test_get_week_schedule_includes_alternatives(client: AsyncClient, db, mock_user):
+async def test_get_week_schedule_includes_alternatives(client: AsyncClient,
+                                                       db, mock_user):
     primary = await _create_meal(db, recipe_id="primary", title="Primary Meal")
     alt_meal = await _create_meal(db, recipe_id="alt", title="Alt Meal")
     item = await _create_meal_schedule_item(db, mock_user.id, 0, primary)
@@ -189,7 +187,8 @@ async def test_get_week_schedule_rejects_non_monday(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_get_week_schedule_empty_week(client: AsyncClient):
-    response = await client.get(f"{BASE}/week", params={"week_start_date": "2025-01-06"})
+    response = await client.get(f"{BASE}/week",
+                                params={"week_start_date": "2025-01-06"})
     assert response.status_code == 200
     assert response.json() == []
 

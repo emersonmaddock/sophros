@@ -4,9 +4,9 @@ import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
-from sqlalchemy.pool import NullPool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
+from sqlalchemy.pool import NullPool
 
 from app.api import deps
 from app.core.config import settings
@@ -107,8 +107,12 @@ async def mock_user(db: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def client(db: AsyncSession, mock_user: User) -> AsyncGenerator[AsyncClient, None]:
-    """AsyncClient with get_db and get_current_user overridden for authenticated endpoints."""
+async def client(db: AsyncSession,
+                 mock_user: User) -> AsyncGenerator[AsyncClient, None]:
+    """
+    AsyncClient with get_db and get_current_user
+    overridden for authenticated endpoints.
+    """
 
     async def override_get_db():
         yield db
@@ -119,7 +123,8 @@ async def client(db: AsyncSession, mock_user: User) -> AsyncGenerator[AsyncClien
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[deps.get_current_user] = override_get_current_user
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app),
+                            base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -127,7 +132,10 @@ async def client(db: AsyncSession, mock_user: User) -> AsyncGenerator[AsyncClien
 
 @pytest_asyncio.fixture
 async def create_user_client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """AsyncClient for POST /users — overrides get_auth_payload instead of get_current_user."""
+    """
+    AsyncClient for POST /users
+    overrides get_auth_payload instead of get_current_user.
+    """
 
     async def override_get_db():
         yield db
@@ -138,7 +146,8 @@ async def create_user_client(db: AsyncSession) -> AsyncGenerator[AsyncClient, No
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[deps.get_auth_payload] = override_get_auth_payload
 
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=app),
+                            base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
