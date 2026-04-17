@@ -12,8 +12,8 @@ from app.models.schedule import ScheduleItem
 
 BASE = "/api/v1/meal-plans"
 
-MONDAY = "2025-06-02"    # confirmed Monday
-TUESDAY = "2025-06-03"   # not a Monday
+MONDAY = "2025-06-02"  # confirmed Monday
+TUESDAY = "2025-06-03"  # not a Monday
 
 
 @pytest.fixture
@@ -51,8 +51,9 @@ async def mock_client() -> AsyncClient:
     app.dependency_overrides[get_db] = lambda: mock_db
     app.dependency_overrides[deps.get_current_user] = lambda: mock_user
 
-    async with AsyncClient(transport=ASGITransport(app=app),
-                           base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -76,7 +77,7 @@ async def test_generate_week_calls_service_and_returns_items(mock_client: AsyncC
     with patch("app.api.endpoints.meal_plans.MealPlanService") as mock_service:
         mock_service.return_value.generate_and_persist = AsyncMock(
             return_value=mock_items
-            )
+        )
         response = await mock_client.post(
             f"{BASE}/generate-week",
             params={"week_start_date": MONDAY},
@@ -114,15 +115,21 @@ async def test_planned_weeks_returns_mondays(client: AsyncClient, db, mock_user)
     from datetime import datetime as dt
 
     meal = Meal(
-        recipe_id="r1", title="T", calories=500, protein=30,
-        carbohydrates=60, fat=15, ingredients=[], tags=[],
+        recipe_id="r1",
+        title="T",
+        calories=500,
+        protein=30,
+        carbohydrates=60,
+        fat=15,
+        ingredients=[],
+        tags=[],
     )
     db.add(meal)
     await db.flush()
 
     item = ScheduleItem(
         user_id=mock_user.id,
-        date=dt(2025, 6, 4, 8, 0),   # Wednesday in week starting 2025-06-02
+        date=dt(2025, 6, 4, 8, 0),  # Wednesday in week starting 2025-06-02
         activity_type=ActivityType.MEAL,
         duration_minutes=30,
         is_completed=False,
@@ -134,7 +141,7 @@ async def test_planned_weeks_returns_mondays(client: AsyncClient, db, mock_user)
     response = await client.get(f"{BASE}/planned-weeks")
     assert response.status_code == 200
     weeks = response.json()
-    assert "2025-06-02" in weeks   # Monday of that week
+    assert "2025-06-02" in weeks  # Monday of that week
 
 
 @pytest.mark.asyncio

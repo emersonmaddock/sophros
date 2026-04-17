@@ -23,7 +23,9 @@ router = APIRouter()
 def _meal_load() -> list:
     return [
         selectinload(ScheduleItem.meal),
-        selectinload(ScheduleItem.alternatives).selectinload(ScheduleItemAlternative.meal),
+        selectinload(ScheduleItem.alternatives).selectinload(
+            ScheduleItemAlternative.meal
+        ),
     ]
 
 
@@ -136,11 +138,7 @@ async def swap_schedule_item_meal(
     db: AsyncSession = Depends(deps.get_db),
 ):
     """Swap the active meal on a slot. meal_id must be in the item's alternatives."""
-    stmt = (
-        select(ScheduleItem)
-        .where(ScheduleItem.id == item_id)
-        .options(*_meal_load())
-    )
+    stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -162,9 +160,7 @@ async def swap_schedule_item_meal(
     db.expire(item)
 
     fresh_stmt = (
-        select(ScheduleItem)
-        .where(ScheduleItem.id == item_id)
-        .options(*_meal_load())
+        select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
     )
     result = await db.execute(fresh_stmt)
     return result.scalar_one()

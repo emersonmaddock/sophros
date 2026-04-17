@@ -54,4 +54,3 @@ async def test_update_user_me_scalar_fields(client: AsyncClient):
     data = response.json()
     assert data["age"] == 35
     assert data["weight"] == 80.0
-

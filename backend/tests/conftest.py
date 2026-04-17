@@ -107,8 +107,9 @@ async def mock_user(db: AsyncSession) -> User:
 
 
 @pytest_asyncio.fixture
-async def client(db: AsyncSession,
-                 mock_user: User) -> AsyncGenerator[AsyncClient, None]:
+async def client(
+    db: AsyncSession, mock_user: User
+) -> AsyncGenerator[AsyncClient, None]:
     """
     AsyncClient with get_db and get_current_user
     overridden for authenticated endpoints.
@@ -123,8 +124,9 @@ async def client(db: AsyncSession,
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[deps.get_current_user] = override_get_current_user
 
-    async with AsyncClient(transport=ASGITransport(app=app),
-                            base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
         yield ac
 
     app.dependency_overrides.clear()
@@ -146,8 +148,9 @@ async def create_user_client(db: AsyncSession) -> AsyncGenerator[AsyncClient, No
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[deps.get_auth_payload] = override_get_auth_payload
 
-    async with AsyncClient(transport=ASGITransport(app=app),
-                            base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
         yield ac
 
     app.dependency_overrides.clear()
