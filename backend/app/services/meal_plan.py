@@ -1,31 +1,28 @@
 import asyncio
 import logging
 import random
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime
+from datetime import time
 from datetime import time as time_type
+from datetime import timedelta
 from typing import Any
-
-from sqlalchemy import delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 
 from app.domain.enums import ActivityType, Day, MealSlot
 from app.models.meal import Meal, ScheduleItemAlternative
 from app.models.schedule import ScheduleItem as ScheduleItemORM
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import (
-    DailyMealPlan,
-    MealOption,
-    MealSlotTarget,
-    WeeklyMealPlan,
-)
+from app.schemas.meal_plan import (DailyMealPlan, MealOption, MealSlotTarget,
+                                   WeeklyMealPlan)
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import BusyTime, User, UserSchedule
 from app.services.exercise_service import ExercisePlanService
 from app.services.meal_allocator import MealAllocator
 from app.services.nutrient_calculator import NutrientCalculator
 from app.services.spoonacular import MealType, SpoonacularClient
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger(__name__)
 
@@ -475,15 +472,15 @@ class MealPlanService:
             for slot in plan.slots:
                 if slot.is_leftover or not slot.plan or not slot.plan.alternatives:
                     continue
-                schedule_item = plan_slot_to_item.get((plan.day, slot.slot_name))
-                if not schedule_item:
+                alt_schedule_item = plan_slot_to_item.get((plan.day, slot.slot_name))
+                if not alt_schedule_item:
                     continue
                 for alt_recipe in slot.plan.alternatives:
                     alt_meal = recipe_id_to_meal.get(alt_recipe.id)
                     if alt_meal:
                         db.add(
                             ScheduleItemAlternative(
-                                schedule_item_id=schedule_item.id,
+                                schedule_item_id=alt_schedule_item.id,
                                 meal_id=alt_meal.id,
                             )
                         )
