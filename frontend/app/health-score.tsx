@@ -11,8 +11,8 @@ import {
 } from '@/lib/healthkit';
 import type { HealthKitInputs } from '@/lib/healthkit';
 import { Stack, useRouter } from 'expo-router';
-import { ArrowLeft, Info } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import { ArrowLeft, ChevronDown, Info } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircularProgress } from '../components/ui/circular-progress';
@@ -30,12 +30,11 @@ const JS_DAY_TO_API_DAY: Record<number, Day> = {
 interface PillarRow {
   label: string;
   color: string;
-  baseWeightPct: string;
   result: SubScoreResult | null;
-  source: string;
-  detail: string;
-  target: string;
-  notMeasuredHint: string;
+  detail: string; // short, shown always when measured
+  source: string; // shown on expand
+  target: string; // shown on expand
+  notMeasuredHint: string; // shown instead of score when not measured
 }
 
 function nutritionRow(
@@ -46,13 +45,12 @@ function nutritionRow(
   return {
     label: 'Nutrition',
     color: Colors.light.secondary,
-    baseWeightPct: '40%',
     result,
-    source: "Today's meal plan vs your DRI targets",
     detail:
       plan && targets
-        ? `${Math.round(plan.total_calories)} / ${Math.round(targets.calories.target)} kcal · P ${Math.round(plan.total_protein)}g · C ${Math.round(plan.total_carbs)}g · F ${Math.round(plan.total_fat)}g`
+        ? `${Math.round(plan.total_calories)} / ${Math.round(targets.calories.target)} kcal`
         : '',
+    source: "Today's meal plan vs your DRI targets",
     target: 'Average adherence across calories, protein, carbs, fat',
     notMeasuredHint: 'Generate this week’s meal plan to enable nutrition scoring.',
   };
@@ -60,15 +58,14 @@ function nutritionRow(
 
 function exerciseRow(hk: HealthKitInputs, result: SubScoreResult | null): PillarRow {
   const bits: string[] = [];
-  if (hk.activeEnergyKcal != null) bits.push(`${Math.round(hk.activeEnergyKcal)} kcal active`);
+  if (hk.activeEnergyKcal != null) bits.push(`${Math.round(hk.activeEnergyKcal)} kcal`);
   if (hk.stepCount != null) bits.push(`${hk.stepCount.toLocaleString()} steps`);
   return {
     label: 'Exercise',
     color: Colors.light.primary,
-    baseWeightPct: '30%',
     result,
-    source: 'Apple Health today',
     detail: bits.join(' · '),
+    source: 'Apple Health — today',
     target: 'Target: 400 kcal active + 10,000 steps (70/30 blend)',
     notMeasuredHint: 'Enable Apple Health sync in Profile → Apple Health to track real activity.',
   };
@@ -79,29 +76,28 @@ function sleepRow(
   hkSleepMinutes: number | null,
   result: SubScoreResult | null
 ): PillarRow {
-  let source = '';
   let detail = '';
+  let source = '';
 
   if (hkSleepMinutes != null) {
     const h = Math.floor(hkSleepMinutes / 60);
     const m = Math.round(hkSleepMinutes % 60);
+    detail = `${h}h ${m}m`;
     source = 'Apple Health — last night';
-    detail = `${h}h ${m}m in bed`;
   } else if (user?.sleep_time && user?.wake_up_time) {
     const sleep = user.sleep_time.substring(0, 5);
     const wake = user.wake_up_time.substring(0, 5);
-    source = 'Your scheduled window';
     detail = `${sleep} → ${wake}`;
+    source = 'Your scheduled window';
   }
 
   return {
     label: 'Sleep',
     color: Colors.light.charts.carbs,
-    baseWeightPct: '30%',
     result,
-    source,
     detail,
-    target: 'Target: 8 h · scored asymmetrically (undersleep penalized 2× over)',
+    source,
+    target: 'Target: 8 h · undersleep penalized 2× over-sleep',
     notMeasuredHint:
       'Add sleep times in Edit Profile, or enable Apple Health sync for real sleep data.',
   };
@@ -164,6 +160,7 @@ export default function HealthScorePage() {
   const overallStatus = overallLabel(healthScore.overall);
   const overallValue = healthScore.overall == null ? '—' : `${healthScore.overall}`;
   const overallPct = healthScore.overall ?? 0;
+  const [expandedLabel, setExpandedLabel] = useState<string | null>(null);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -178,19 +175,24 @@ export default function HealthScorePage() {
         </View>
 
         <View style={styles.heroCard}>
-          <View style={styles.heroContent}>
-            <CircularProgress
-              percentage={overallPct}
-              size={160}
-              color={Colors.light.primary}
-              label="Total Score"
-              value={overallValue}
-            />
+          <CircularProgress
+            percentage={overallPct}
+            size={200}
+            strokeWidth={14}
+            color={Colors.light.primary}
+            trackColor={`${Colors.light.primary}18`}
+            value={overallValue}
+            showValueInRing
+          />
+          <View style={[styles.statusPill, { backgroundColor: `${Colors.light.primary}18` }]}>
+            <Text style={[styles.statusPillText, { color: Colors.light.primary }]}>
+              {overallStatus}
+            </Text>
           </View>
           <Text style={styles.heroDescription}>
             {healthScore.overall == null
               ? 'Nothing measured yet. Generate a plan or connect Apple Health to start scoring.'
-              : `Your overall health score is ${overallStatus.toLowerCase()}. Weighted across measured pillars only.`}
+              : 'Weighted across measured pillars only.'}
           </Text>
         </View>
 
@@ -198,7 +200,12 @@ export default function HealthScorePage() {
           <Text style={styles.sectionTitle}>Score Breakdown</Text>
           <View style={styles.breakdownContainer}>
             {rows.map((row) => (
-              <PillarCard key={row.label} row={row} />
+              <PillarCard
+                key={row.label}
+                row={row}
+                expanded={expandedLabel === row.label}
+                onToggle={() => setExpandedLabel((prev) => (prev === row.label ? null : row.label))}
+              />
             ))}
           </View>
         </View>
@@ -207,8 +214,8 @@ export default function HealthScorePage() {
           <View style={styles.infoBox}>
             <Info size={20} color={Colors.light.textMuted} />
             <Text style={styles.infoText}>
-              Apple Health is off. Exercise and sleep can still be estimated from your schedule, but
-              enabling sync (Profile → Apple Health) yields real measurements.
+              Apple Health is off. Exercise and sleep still score from your schedule and plan, but
+              enabling sync (Profile → Apple Health) gives real measurements.
             </Text>
           </View>
         )}
@@ -217,47 +224,79 @@ export default function HealthScorePage() {
   );
 }
 
-function PillarCard({ row }: { row: PillarRow }) {
+function PillarCard({
+  row,
+  expanded,
+  onToggle,
+}: {
+  row: PillarRow;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const measured = row.result != null;
   const score = row.result?.score ?? 0;
   const status = row.result?.status ?? 'Not measured';
   const statusColor = measured ? row.color : Colors.light.textMuted;
 
+  if (!measured) {
+    return (
+      <View style={styles.scoreRow}>
+        <View style={[styles.scoreIcon, { backgroundColor: `${Colors.light.textMuted}15` }]}>
+          <Text style={[styles.scoreIconText, { color: statusColor }]}>{row.label[0]}</Text>
+        </View>
+        <View style={styles.scoreInfo}>
+          <View style={styles.scoreHeader}>
+            <Text style={styles.scoreLabel}>{row.label}</Text>
+            <Text style={[styles.scoreStatus, { color: statusColor }]}>{status}</Text>
+          </View>
+          <Text style={styles.scoreHint}>{row.notMeasuredHint}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.scoreRow}>
-      <View
-        style={[
-          styles.scoreIcon,
-          { backgroundColor: measured ? `${row.color}15` : `${Colors.light.textMuted}15` },
-        ]}
-      >
-        <Text style={[styles.scoreIconText, { color: statusColor }]}>{row.label[0]}</Text>
+    <TouchableOpacity onPress={onToggle} activeOpacity={0.7} style={styles.scoreRow}>
+      <View style={[styles.scoreIcon, { backgroundColor: `${row.color}15` }]}>
+        <Text style={[styles.scoreIconText, { color: row.color }]}>{row.label[0]}</Text>
       </View>
       <View style={styles.scoreInfo}>
         <View style={styles.scoreHeader}>
-          <Text style={styles.scoreLabel}>{row.label}</Text>
-          <Text style={[styles.scoreStatus, { color: statusColor }]}>{status}</Text>
+          <View style={styles.scoreHeaderLeft}>
+            <Text style={styles.scoreLabel}>{row.label}</Text>
+            <ChevronDown
+              size={14}
+              color={Colors.light.textMuted}
+              style={expanded ? styles.chevronOpen : undefined}
+            />
+          </View>
+          <Text style={[styles.scoreStatus, { color: row.color }]}>{status}</Text>
         </View>
-        {measured ? (
-          <>
-            <Text style={styles.scoreDesc}>{row.source}</Text>
-            {row.detail.length > 0 && <Text style={styles.scoreDetail}>{row.detail}</Text>}
-            <View style={styles.scoreMeta}>
-              <Text style={styles.scoreWeight}>Baseline weight: {row.baseWeightPct}</Text>
-              <Text style={styles.scoreValue}>{score}/100</Text>
+        <View style={styles.scoreMeta}>
+          <Text style={styles.scoreDetail}>{row.detail || ' '}</Text>
+          <Text style={styles.scoreValue}>{score}/100</Text>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View
+            style={[styles.progressBarFill, { width: `${score}%`, backgroundColor: row.color }]}
+          />
+        </View>
+        {expanded && (
+          <View style={styles.expandedBlock}>
+            {row.source.length > 0 && (
+              <View style={styles.expandedLine}>
+                <Text style={styles.expandedKey}>Source</Text>
+                <Text style={styles.expandedValue}>{row.source}</Text>
+              </View>
+            )}
+            <View style={styles.expandedLine}>
+              <Text style={styles.expandedKey}>Target</Text>
+              <Text style={styles.expandedValue}>{row.target}</Text>
             </View>
-            <View style={styles.progressBarBg}>
-              <View
-                style={[styles.progressBarFill, { width: `${score}%`, backgroundColor: row.color }]}
-              />
-            </View>
-            <Text style={styles.scoreTarget}>{row.target}</Text>
-          </>
-        ) : (
-          <Text style={styles.scoreHint}>{row.notMeasuredHint}</Text>
+          </View>
         )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -288,9 +327,16 @@ const styles = StyleSheet.create({
   heroCard: {
     alignItems: 'center',
     marginBottom: 32,
+    gap: 12,
   },
-  heroContent: {
-    marginBottom: 16,
+  statusPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusPillText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   heroDescription: {
     fontSize: 16,
@@ -338,6 +384,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  scoreHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  chevronOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
   scoreLabel: {
     fontSize: 16,
     fontWeight: '600',
@@ -347,26 +401,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  scoreDesc: {
+  scoreDetail: {
     fontSize: 13,
     color: Colors.light.textMuted,
-  },
-  scoreDetail: {
-    fontSize: 12,
-    color: Colors.light.text,
   },
   scoreMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
-    marginBottom: 6,
-  },
-  scoreWeight: {
-    fontSize: 11,
-    color: Colors.light.textMuted,
+    alignItems: 'baseline',
+    marginTop: 6,
+    marginBottom: 8,
   },
   scoreValue: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.light.text,
   },
@@ -380,11 +427,30 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  scoreTarget: {
+  expandedBlock: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.light.background,
+    gap: 6,
+  },
+  expandedLine: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  expandedKey: {
     fontSize: 11,
+    fontWeight: '700',
     color: Colors.light.textMuted,
-    marginTop: 6,
-    fontStyle: 'italic',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    width: 52,
+  },
+  expandedValue: {
+    fontSize: 12,
+    color: Colors.light.text,
+    flex: 1,
+    lineHeight: 16,
   },
   scoreHint: {
     fontSize: 12,
