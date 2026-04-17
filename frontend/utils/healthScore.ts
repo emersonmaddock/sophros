@@ -66,7 +66,7 @@ export function calculateHealthScore(
   user: { wake_up_time?: string | null; sleep_time?: string | null } | null | undefined,
   hasPlan: boolean
 ): HealthScoreResult {
-  const nutritionScore = hasPlan ? calculateNutritionScore(todayTotals, targets) : 0;
+  const nutritionScore = calculateNutritionScore(todayTotals, targets);
   const exerciseScore = hasPlan ? 70 : 0; // exercise score requires schedule exercise items (future)
   const sleepScore = calculateSleepScore(user?.sleep_time, user?.wake_up_time);
   const overall = Math.round(nutritionScore * 0.4 + exerciseScore * 0.3 + sleepScore * 0.3);
