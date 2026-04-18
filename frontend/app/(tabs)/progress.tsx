@@ -1,14 +1,23 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useAchievements } from '@/hooks/useAchievements';
 import { useStreak } from '@/hooks/useStreak';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { Award, ChevronDown, ChevronUp } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProgressPage() {
+  const weekStartStr = useMemo(() => {
+    const d = new Date();
+    const dow = d.getDay();
+    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+    return d.toISOString().split('T')[0];
+  }, []);
+
+  const { data: scheduleItems = [] } = useWeekScheduleQuery(weekStartStr);
   const streak = useStreak();
-  const achievements = useAchievements();
+  const achievements = useAchievements(scheduleItems);
   const [showLocked, setShowLocked] = useState(false);
 
   const unlocked = achievements.filter((a) => a.unlocked);

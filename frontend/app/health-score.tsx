@@ -1,6 +1,5 @@
-import type { Day } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { calculateHealthScore } from '@/utils/healthScore';
 import { Stack, useRouter } from 'expo-router';
@@ -9,16 +8,6 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircularProgress } from '../components/ui/circular-progress';
-
-const JS_DAY_TO_API_DAY: Record<number, Day> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
 
 export default function HealthScorePage() {
   const router = useRouter();
@@ -33,19 +22,43 @@ export default function HealthScorePage() {
     return d.toISOString().split('T')[0];
   }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: scheduleItems = [] } = useWeekScheduleQuery(weekStartStr);
   const { data: targets } = useUserTargetsQuery();
   const { data: user } = useUserQuery();
 
-  const todayPlan = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
-  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
+  const todayMealItems = useMemo(() => {
+    const today = new Date();
+    return scheduleItems.filter((item) => {
+      const d = new Date(item.date);
+      return (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate() &&
+        item.activity_type === 'meal'
+      );
+    });
+  }, [scheduleItems]);
 
-  const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
-  );
+  const healthScore = useMemo(() => {
+    const completedMeals = todayMealItems.filter((i) => i.is_completed && i.meal);
+    const totalCalories = completedMeals.reduce((s, i) => s + (i.meal?.calories ?? 0), 0);
+    const totalProtein = completedMeals.reduce((s, i) => s + (i.meal?.protein ?? 0), 0);
+    const totalCarbs = completedMeals.reduce((s, i) => s + (i.meal?.carbohydrates ?? 0), 0);
+    const totalFat = completedMeals.reduce((s, i) => s + (i.meal?.fat ?? 0), 0);
+    const hasPlan = todayMealItems.length > 0;
+
+    return calculateHealthScore(
+      {
+        total_calories: totalCalories,
+        total_protein: totalProtein,
+        total_carbs: totalCarbs,
+        total_fat: totalFat,
+      },
+      targets,
+      user,
+      hasPlan
+    );
+  }, [todayMealItems, targets, user]);
 
   const scoreComponents = [
     {

@@ -20,11 +20,21 @@ class ScheduleItem(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     prep_time_minutes: Mapped[int] = mapped_column(Integer, default=0)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
-    recipe_id: Mapped[str | None] = mapped_column(
-        String, nullable=True
-    )  # Linked recipe if it's a meal
+
+    # Meal link (nullable — non-meal items leave these null)
+    meal_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("meals.id", ondelete="SET NULL"), nullable=True
+    )
+    # Self-referential FK: set when this slot is a leftover from another slot
+    source_schedule_item_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Relationships
-    # Use string of class name
-    # https://sqlmodel.tiangolo.com/tutorial/relationship-attributes/type-annotation-strings/
     user: Mapped["User"] = relationship("User", back_populates="schedules")  # type: ignore[name-defined] # noqa: F821
+    meal: Mapped["Meal | None"] = relationship("Meal")  # type: ignore[name-defined] # noqa: F821
+    alternatives: Mapped[list["ScheduleItemAlternative"]] = relationship(  # type: ignore[name-defined] # noqa: F821
+        "ScheduleItemAlternative",
+        foreign_keys="ScheduleItemAlternative.schedule_item_id",
+        cascade="all, delete-orphan",
+    )

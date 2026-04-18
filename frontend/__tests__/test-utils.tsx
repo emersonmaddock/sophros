@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react-native';
-import { ConfirmationsProvider } from '@/contexts/ConfirmationsContext';
 import React from 'react';
 
 export function createQueryClient() {
@@ -24,10 +23,5 @@ export function renderWithProviders(
   options?: Omit<RenderOptions, 'wrapper'>
 ) {
   const queryClient = createQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <ConfirmationsProvider>{ui}</ConfirmationsProvider>
-    </QueryClientProvider>,
-    options
-  );
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>, options);
 }

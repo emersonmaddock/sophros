@@ -1,16 +1,23 @@
-import type { Recipe } from '@/api/types.gen';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
 import { ArrowRight, Edit, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+interface RecipeData {
+  title?: string;
+  nutrients?: { calories?: number; protein?: number; carbohydrates?: number; fat?: number };
+  ingredients?: string[];
+  source_url?: string;
+  preparation_time_minutes?: number;
+}
+
 interface MealData {
   time: string;
   title?: string;
   subtitle?: string;
   type: string;
-  recipe?: Recipe;
+  recipe?: RecipeData;
   [key: string]: unknown;
 }
 

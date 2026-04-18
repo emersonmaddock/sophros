@@ -12,19 +12,17 @@ import type {
   DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
-  GenerateMealPlanApiV1MealPlansGeneratePostData,
-  GenerateMealPlanApiV1MealPlansGeneratePostErrors,
-  GenerateMealPlanApiV1MealPlansGeneratePostResponses,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData,
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
   GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponses,
-  GetWeekPlanApiV1MealPlansWeekGetData,
-  GetWeekPlanApiV1MealPlansWeekGetErrors,
-  GetWeekPlanApiV1MealPlansWeekGetResponses,
+  GetWeekScheduleApiV1SchedulesWeekGetData,
+  GetWeekScheduleApiV1SchedulesWeekGetErrors,
+  GetWeekScheduleApiV1SchedulesWeekGetResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
@@ -34,9 +32,9 @@ import type {
   ReadUserTargetsApiV1UsersMeTargetsGetResponses,
   RootGetData,
   RootGetResponses,
-  SaveMealPlanApiV1MealPlansSavePostData,
-  SaveMealPlanApiV1MealPlansSavePostErrors,
-  SaveMealPlanApiV1MealPlansSavePostResponses,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
@@ -146,9 +144,26 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
   });
 
 /**
- * Get Schedule Items
+ * Get Week Schedule
  *
- * Fetch schedule items for the current user within a date range.
+ * Return all schedule items for the 7-day week starting on week_start_date (Monday).
+ * Includes meal and alternatives for meal-type items.
+ */
+export const getWeekScheduleApiV1SchedulesWeekGet = <ThrowOnError extends boolean = false>(
+  options: Options<GetWeekScheduleApiV1SchedulesWeekGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetWeekScheduleApiV1SchedulesWeekGetResponses,
+    GetWeekScheduleApiV1SchedulesWeekGetErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/schedules/week',
+    ...options,
+  });
+
+/**
+ * Get Schedule Items
  */
 export const getScheduleItemsApiV1SchedulesGet = <ThrowOnError extends boolean = false>(
   options: Options<GetScheduleItemsApiV1SchedulesGetData, ThrowOnError>
@@ -165,8 +180,6 @@ export const getScheduleItemsApiV1SchedulesGet = <ThrowOnError extends boolean =
 
 /**
  * Create Schedule Item
- *
- * Create a new schedule item for the current user.
  */
 export const createScheduleItemApiV1SchedulesPost = <ThrowOnError extends boolean = false>(
   options: Options<CreateScheduleItemApiV1SchedulesPostData, ThrowOnError>
@@ -187,8 +200,6 @@ export const createScheduleItemApiV1SchedulesPost = <ThrowOnError extends boolea
 
 /**
  * Delete Schedule Item
- *
- * Delete a schedule item by ID (must belong to the current user).
  */
 export const deleteScheduleItemApiV1SchedulesItemIdDelete = <ThrowOnError extends boolean = false>(
   options: Options<DeleteScheduleItemApiV1SchedulesItemIdDeleteData, ThrowOnError>
@@ -205,8 +216,6 @@ export const deleteScheduleItemApiV1SchedulesItemIdDelete = <ThrowOnError extend
 
 /**
  * Update Schedule Item
- *
- * Update a schedule item by ID (must belong to the current user).
  */
 export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends boolean = false>(
   options: Options<UpdateScheduleItemApiV1SchedulesItemIdPutData, ThrowOnError>
@@ -226,68 +235,22 @@ export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends b
   });
 
 /**
- * Generate Meal Plan
+ * Swap Schedule Item Meal
  *
- * Generate a complete daily meal plan for the current user.
- *
- * Uses:
- * - NutrientCalculator to determine daily targets
- * - MealAllocator to split targets into timed meal slots
- * - SpoonacularClient to fetch suitable recipes
- *
- * Returns a populated DailyMealPlan with recipes for Breakfast, Lunch, Dinner.
+ * Swap the active meal on a slot. meal_id must be in the item's alternatives.
  */
-export const generateMealPlanApiV1MealPlansGeneratePost = <ThrowOnError extends boolean = false>(
-  options?: Options<GenerateMealPlanApiV1MealPlansGeneratePostData, ThrowOnError>
-) =>
-  (options?.client ?? client).post<
-    GenerateMealPlanApiV1MealPlansGeneratePostResponses,
-    GenerateMealPlanApiV1MealPlansGeneratePostErrors,
-    ThrowOnError
-  >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/meal-plans/generate',
-    ...options,
-  });
-
-/**
- * Generate Week Plan
- *
- * Generate a complete weekly meal plan for the current user.
- *
- * Runs all 7 days in parallel via asyncio.gather.
- * Returns a WeeklyMealPlan with recipes for every slot of every day.
- */
-export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <
+export const swapScheduleItemMealApiV1SchedulesItemIdSwapPost = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>
-) =>
-  (options?.client ?? client).post<
-    GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
-    unknown,
-    ThrowOnError
-  >({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/meal-plans/generate-week',
-    ...options,
-  });
-
-/**
- * Save Meal Plan
- *
- * Upsert a confirmed weekly meal plan. week_start_date must be a Monday.
- */
-export const saveMealPlanApiV1MealPlansSavePost = <ThrowOnError extends boolean = false>(
-  options: Options<SaveMealPlanApiV1MealPlansSavePostData, ThrowOnError>
+  options: Options<SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData, ThrowOnError>
 ) =>
   (options.client ?? client).post<
-    SaveMealPlanApiV1MealPlansSavePostResponses,
-    SaveMealPlanApiV1MealPlansSavePostErrors,
+    SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
+    SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
     ThrowOnError
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/meal-plans/save',
+    url: '/api/v1/schedules/{item_id}/swap',
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -296,27 +259,32 @@ export const saveMealPlanApiV1MealPlansSavePost = <ThrowOnError extends boolean 
   });
 
 /**
- * Get Week Plan
+ * Generate Week Plan
  *
- * Get a saved meal plan for a specific week, or null if none exists.
+ * Generate a full weekly meal plan and persist it as ScheduleItem rows.
+ *
+ * Replaces any existing meal-type schedule items for the given week.
+ * week_start_date must be a Monday.
  */
-export const getWeekPlanApiV1MealPlansWeekGet = <ThrowOnError extends boolean = false>(
-  options: Options<GetWeekPlanApiV1MealPlansWeekGetData, ThrowOnError>
+export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>
 ) =>
-  (options.client ?? client).get<
-    GetWeekPlanApiV1MealPlansWeekGetResponses,
-    GetWeekPlanApiV1MealPlansWeekGetErrors,
+  (options.client ?? client).post<
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
     ThrowOnError
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/v1/meal-plans/week',
+    url: '/api/v1/meal-plans/generate-week',
     ...options,
   });
 
 /**
  * Get Planned Weeks
  *
- * List all week_start_dates the user has planned.
+ * Return the Monday start date for every week that has meal-type schedule items.
  */
 export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extends boolean = false>(
   options?: Options<GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData, ThrowOnError>

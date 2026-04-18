@@ -1,12 +1,8 @@
-import type { Day } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useConfirmations } from '@/contexts/ConfirmationsContext';
 import { useNow } from '@/hooks/useNow';
-import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { calculateHealthScore } from '@/utils/healthScore';
-import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
@@ -21,22 +17,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const JS_DAY_TO_API_DAY: Record<number, Day> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+function formatDisplayTime(isoDatetime: string): string {
+  const d = new Date(isoDatetime);
+  const h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayH}:${m} ${period}`;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
-  const { confirmations } = useConfirmations();
 
   const now = useNow();
   const day = now.getDate();
@@ -54,102 +48,73 @@ export default function DashboardPage() {
     return d.toISOString().split('T')[0];
   }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const todayDateStr = useMemo(() => {
-    const y = now.getFullYear();
-    const m = (now.getMonth() + 1).toString().padStart(2, '0');
-    const d = now.getDate().toString().padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: scheduleItems = [], isLoading: isLoadingPlan } = useWeekScheduleQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
-  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+  const { isLoading: isLoadingUser } = useUserQuery();
 
   const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
-  // Derive today's plan
-  const todayPlan = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[now.getDay()];
-    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
-  }, [savedPlan, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Compute health score
-  const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
-  );
-
-  // Parse a display time string to minutes-from-midnight
-  const parseDisplayMins = (displayTime: string): number => {
-    const [timePart, period] = displayTime.split(' ');
-    const [h, m] = timePart.split(':').map(Number);
-    let hours = h;
-    if (period === 'PM' && h !== 12) hours += 12;
-    if (period === 'AM' && h === 12) hours = 0;
-    return hours * 60 + (m || 0);
-  };
-
   const nowMins = currentHour * 60 + currentMinute;
 
-  // Derive upcoming meals (items whose time is still in the future and not confirmed missed)
+  const todayMealItems = useMemo(() => {
+    return scheduleItems.filter((item) => {
+      const d = new Date(item.date);
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate() &&
+        item.activity_type === 'meal'
+      );
+    });
+  }, [scheduleItems, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Compute health score
+  const healthScore = useMemo(() => {
+    const completedMeals = todayMealItems.filter((i) => i.is_completed);
+    const totalMeals = todayMealItems.length;
+    const nutritionScore =
+      totalMeals > 0 ? Math.round((completedMeals.length / totalMeals) * 100) : 0;
+    const overall = Math.round(nutritionScore * 0.4 + 70 * 0.6); // sleep+exercise default to 70
+    return {
+      overall,
+      nutrition: { score: nutritionScore },
+      exercise: { score: 70 },
+      sleep: { score: 70 },
+    };
+  }, [todayMealItems]);
+
+  // Derive upcoming meals (items whose time is still in the future and not completed)
   const upcomingItems = useMemo(() => {
-    if (!todayPlan) return [];
-
-    const mapped = mapDailyPlanToScheduleItems(todayPlan);
-
-    return mapped
+    return todayMealItems
       .filter((item) => {
-        const conf = confirmations[item.id];
-        // Only honour confirmations that belong to today
-        const isToday = !conf || conf.dateStr === todayDateStr;
-        if (isToday && conf?.status === 'missed') return false;
-        if (isToday && conf?.status === 'done') return false;
-        return parseDisplayMins(item.time) >= nowMins;
+        if (item.is_completed) return false;
+        const itemMins = new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
+        return itemMins >= nowMins;
       })
       .slice(0, 3)
       .map((item) => ({
-        time: item.time,
-        title: item.title,
-        subtitle: item.subtitle || '',
+        time: formatDisplayTime(item.date),
+        title: item.meal?.title ?? 'Meal',
+        subtitle: item.meal ? `${item.meal.calories} cal` : '',
         icon: Utensils,
         color: Colors.light.secondary,
       }));
-  }, [todayPlan, confirmations, nowMins, todayDateStr]);
+  }, [todayMealItems, nowMins]);
 
-  // Sum nutrients of confirmed-done items for today only.
-  // Filter by dateStr to avoid counting confirmations from other days
-  // (same recipe ID can appear across multiple days in a rotation).
+  // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
-    if (!todayPlan) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
-
-    let calories = 0;
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-
-    for (const slot of todayPlan.slots) {
-      const recipeId = slot.plan?.main_recipe?.id?.toString();
-      if (!recipeId) continue;
-      const conf = confirmations[recipeId];
-      if (conf?.status !== 'done') continue;
-      if (conf.dateStr !== todayDateStr) continue; // only today's confirmations
-
-      const n = slot.plan?.main_recipe?.nutrients;
-      if (n) {
-        calories += n.calories;
-        protein += n.protein;
-        carbs += n.carbohydrates;
-        fat += n.fat;
-      } else {
-        calories += slot.calories;
-        protein += slot.protein;
-        carbs += slot.carbohydrates;
-        fat += slot.fat;
-      }
-    }
-
-    return { calories, protein, carbs, fat };
-  }, [todayPlan, confirmations, todayDateStr]);
+    return todayMealItems
+      .filter((item) => item.is_completed && item.meal)
+      .reduce(
+        (acc, item) => ({
+          calories: acc.calories + (item.meal?.calories ?? 0),
+          protein: acc.protein + (item.meal?.protein ?? 0),
+          carbs: acc.carbs + (item.meal?.carbohydrates ?? 0),
+          fat: acc.fat + (item.meal?.fat ?? 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+  }, [todayMealItems]);
 
   // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {
@@ -161,7 +126,7 @@ export default function DashboardPage() {
     const carbTarget = targets?.carbohydrates.target;
     const fatTarget = targets?.fat.target;
 
-    if (!todayPlan) {
+    if (todayMealItems.length === 0) {
       return {
         calories: {
           value: '--',
@@ -190,7 +155,7 @@ export default function DashboardPage() {
       };
     }
 
-    // Always show confirmed-consumed amounts. Progress bar shows consumed vs target.
+    // Always show consumed amounts. Progress bar shows consumed vs target.
     return {
       calories: {
         value: `${consumedTotals.calories}`,
@@ -217,7 +182,7 @@ export default function DashboardPage() {
         subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
       },
     };
-  }, [todayPlan, targets, consumedTotals]);
+  }, [todayMealItems, targets, consumedTotals]);
 
   // Determine greeting based on time of day
   const greeting =

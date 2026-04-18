@@ -89,62 +89,6 @@ export type DriOutput = {
 };
 
 /**
- * DailyMealPlan
- */
-export type DailyMealPlanInput = {
-  day: Day;
-  /**
-   * Slots
-   */
-  slots: Array<MealSlotTargetInput>;
-  exercise?: ExerciseRecommendation | null;
-  /**
-   * Total Calories
-   */
-  total_calories: number;
-  /**
-   * Total Protein
-   */
-  total_protein: number;
-  /**
-   * Total Carbs
-   */
-  total_carbs: number;
-  /**
-   * Total Fat
-   */
-  total_fat: number;
-};
-
-/**
- * DailyMealPlan
- */
-export type DailyMealPlanOutput = {
-  day: Day;
-  /**
-   * Slots
-   */
-  slots: Array<MealSlotTargetOutput>;
-  exercise?: ExerciseRecommendation | null;
-  /**
-   * Total Calories
-   */
-  total_calories: number;
-  /**
-   * Total Protein
-   */
-  total_protein: number;
-  /**
-   * Total Carbs
-   */
-  total_carbs: number;
-  /**
-   * Total Fat
-   */
-  total_fat: number;
-};
-
-/**
  * Day
  */
 export type Day =
@@ -157,34 +101,6 @@ export type Day =
   | 'Sunday';
 
 /**
- * ExerciseCategory
- */
-export type ExerciseCategory = 'Cardio' | 'Weight Lifting';
-
-/**
- * ExerciseRecommendation
- */
-export type ExerciseRecommendation = {
-  category: ExerciseCategory;
-  /**
-   * Duration Minutes
-   */
-  duration_minutes: number;
-  /**
-   * Time
-   */
-  time?: string | null;
-  /**
-   * Calories Burned
-   */
-  calories_burned?: number;
-  /**
-   * Muscle Gain Estimate Kg
-   */
-  muscle_gain_estimate_kg?: number;
-};
-
-/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -195,37 +111,29 @@ export type HttpValidationError = {
 };
 
 /**
- * MealOption
+ * MealRead
  */
-export type MealOptionInput = {
-  main_recipe?: Recipe | null;
+export type MealRead = {
   /**
-   * Alternatives
+   * Id
    */
-  alternatives?: Array<Recipe>;
-};
-
-/**
- * MealOption
- */
-export type MealOptionOutput = {
-  main_recipe?: Recipe | null;
+  id: number;
   /**
-   * Alternatives
+   * Recipe Id
    */
-  alternatives?: Array<Recipe>;
-};
-
-/**
- * MealSlot
- */
-export type MealSlot = 'Breakfast' | 'Lunch' | 'Dinner';
-
-/**
- * MealSlotTarget
- */
-export type MealSlotTargetInput = {
-  slot_name: MealSlot;
+  recipe_id: string;
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Image Url
+   */
+  image_url?: string | null;
+  /**
+   * Source Url
+   */
+  source_url?: string | null;
   /**
    * Calories
    */
@@ -243,58 +151,17 @@ export type MealSlotTargetInput = {
    */
   fat: number;
   /**
-   * Time
-   */
-  time?: string | null;
-  plan?: MealOptionInput | null;
-  /**
-   * Is Leftover
-   */
-  is_leftover?: boolean;
-  leftover_from_day?: Day | null;
-  leftover_from_slot?: MealSlot | null;
-  /**
    * Prep Time Minutes
    */
-  prep_time_minutes?: number;
-};
-
-/**
- * MealSlotTarget
- */
-export type MealSlotTargetOutput = {
-  slot_name: MealSlot;
+  prep_time_minutes?: number | null;
   /**
-   * Calories
+   * Ingredients
    */
-  calories: number;
+  ingredients?: Array<string>;
   /**
-   * Protein
+   * Tags
    */
-  protein: number;
-  /**
-   * Carbohydrates
-   */
-  carbohydrates: number;
-  /**
-   * Fat
-   */
-  fat: number;
-  /**
-   * Time
-   */
-  time?: string | null;
-  plan?: MealOptionOutput | null;
-  /**
-   * Is Leftover
-   */
-  is_leftover?: boolean;
-  leftover_from_day?: Day | null;
-  leftover_from_slot?: MealSlot | null;
-  /**
-   * Prep Time Minutes
-   */
-  prep_time_minutes?: number;
+  tags?: Array<string>;
 };
 
 /**
@@ -329,105 +196,6 @@ export type PregnancyStatus =
   | 'partially_breastfeeding';
 
 /**
- * Recipe
- */
-export type Recipe = {
-  /**
-   * Id
-   */
-  id: string;
-  /**
-   * Title
-   */
-  title: string;
-  /**
-   * Description
-   */
-  description?: string | null;
-  nutrients: RecipeNutrients;
-  /**
-   * Tags
-   */
-  tags?: Array<string>;
-  /**
-   * Ingredients
-   */
-  ingredients?: Array<string>;
-  /**
-   * Warnings
-   */
-  warnings?: Array<string>;
-  /**
-   * Preparation Time Minutes
-   */
-  preparation_time_minutes?: number | null;
-  /**
-   * Source Url
-   */
-  source_url?: string | null;
-  /**
-   * Image Url
-   */
-  image_url?: string | null;
-};
-
-/**
- * RecipeNutrients
- */
-export type RecipeNutrients = {
-  /**
-   * Calories
-   */
-  calories: number;
-  /**
-   * Protein
-   */
-  protein: number;
-  /**
-   * Carbohydrates
-   */
-  carbohydrates: number;
-  /**
-   * Fat
-   */
-  fat: number;
-};
-
-/**
- * SaveMealPlanRequest
- */
-export type SaveMealPlanRequest = {
-  /**
-   * Week Start Date
-   */
-  week_start_date: string;
-  plan_data: WeeklyMealPlanInput;
-};
-
-/**
- * SavedMealPlanResponse
- */
-export type SavedMealPlanResponse = {
-  /**
-   * Id
-   */
-  id: number;
-  /**
-   * Week Start Date
-   */
-  week_start_date: string;
-  plan_data: WeeklyMealPlanOutput;
-  /**
-   * Created At
-   */
-  created_at: string;
-  /**
-   * Updated At
-   */
-  updated_at: string;
-};
-
-/**
  * ScheduleItemCreate
  */
 export type ScheduleItemCreate = {
@@ -444,6 +212,10 @@ export type ScheduleItemCreate = {
    * Is Completed
    */
   is_completed?: boolean;
+  /**
+   * Meal Id
+   */
+  meal_id?: number | null;
 };
 
 /**
@@ -471,6 +243,19 @@ export type ScheduleItemRead = {
    * User Id
    */
   user_id: string;
+  /**
+   * Meal Id
+   */
+  meal_id?: number | null;
+  /**
+   * Source Schedule Item Id
+   */
+  source_schedule_item_id?: number | null;
+  meal?: MealRead | null;
+  /**
+   * Alternatives
+   */
+  alternatives?: Array<MealRead>;
 };
 
 /**
@@ -496,6 +281,16 @@ export type ScheduleItemUpdate = {
  * Sex
  */
 export type Sex = 'male' | 'female';
+
+/**
+ * SwapMealRequest
+ */
+export type SwapMealRequest = {
+  /**
+   * Meal Id
+   */
+  meal_id: number;
+};
 
 /**
  * UserCreate
@@ -788,34 +583,6 @@ export type ValidationError = {
   };
 };
 
-/**
- * WeeklyMealPlan
- */
-export type WeeklyMealPlanInput = {
-  /**
-   * Daily Plans
-   */
-  daily_plans: Array<DailyMealPlanInput>;
-  /**
-   * Total Weekly Calories
-   */
-  total_weekly_calories: number;
-};
-
-/**
- * WeeklyMealPlan
- */
-export type WeeklyMealPlanOutput = {
-  /**
-   * Daily Plans
-   */
-  daily_plans: Array<DailyMealPlanOutput>;
-  /**
-   * Total Weekly Calories
-   */
-  total_weekly_calories: number;
-};
-
 export type CreateUserApiV1UsersPostData = {
   body: UserCreate;
   path?: never;
@@ -915,20 +682,52 @@ export type ReadUserTargetsApiV1UsersMeTargetsGetResponses = {
 export type ReadUserTargetsApiV1UsersMeTargetsGetResponse =
   ReadUserTargetsApiV1UsersMeTargetsGetResponses[keyof ReadUserTargetsApiV1UsersMeTargetsGetResponses];
 
+export type GetWeekScheduleApiV1SchedulesWeekGetData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Week Start Date
+     *
+     * Monday of the week (YYYY-MM-DD)
+     */
+    week_start_date: string;
+  };
+  url: '/api/v1/schedules/week';
+};
+
+export type GetWeekScheduleApiV1SchedulesWeekGetErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type GetWeekScheduleApiV1SchedulesWeekGetError =
+  GetWeekScheduleApiV1SchedulesWeekGetErrors[keyof GetWeekScheduleApiV1SchedulesWeekGetErrors];
+
+export type GetWeekScheduleApiV1SchedulesWeekGetResponses = {
+  /**
+   * Response Get Week Schedule Api V1 Schedules Week Get
+   *
+   * Successful Response
+   */
+  200: Array<ScheduleItemRead>;
+};
+
+export type GetWeekScheduleApiV1SchedulesWeekGetResponse =
+  GetWeekScheduleApiV1SchedulesWeekGetResponses[keyof GetWeekScheduleApiV1SchedulesWeekGetResponses];
+
 export type GetScheduleItemsApiV1SchedulesGetData = {
   body?: never;
   path?: never;
   query: {
     /**
      * Start Date
-     *
-     * Start of the date range (inclusive)
      */
     start_date: string;
     /**
      * End Date
-     *
-     * End of the date range (inclusive)
      */
     end_date: string;
   };
@@ -1048,114 +847,73 @@ export type UpdateScheduleItemApiV1SchedulesItemIdPutResponses = {
 export type UpdateScheduleItemApiV1SchedulesItemIdPutResponse =
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses[keyof UpdateScheduleItemApiV1SchedulesItemIdPutResponses];
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostData = {
-  body?: never;
-  path?: never;
-  query?: {
-    day?: Day;
+export type SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData = {
+  body: SwapMealRequest;
+  path: {
+    /**
+     * Item Id
+     */
+    item_id: number;
   };
-  url: '/api/v1/meal-plans/generate';
+  query?: never;
+  url: '/api/v1/schedules/{item_id}/swap';
 };
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostErrors = {
+export type SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors = {
   /**
    * Validation Error
    */
   422: HttpValidationError;
 };
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostError =
-  GenerateMealPlanApiV1MealPlansGeneratePostErrors[keyof GenerateMealPlanApiV1MealPlansGeneratePostErrors];
+export type SwapScheduleItemMealApiV1SchedulesItemIdSwapPostError =
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors[keyof SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors];
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostResponses = {
+export type SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses = {
   /**
    * Successful Response
    */
-  200: DailyMealPlanOutput;
+  200: ScheduleItemRead;
 };
 
-export type GenerateMealPlanApiV1MealPlansGeneratePostResponse =
-  GenerateMealPlanApiV1MealPlansGeneratePostResponses[keyof GenerateMealPlanApiV1MealPlansGeneratePostResponses];
+export type SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponse =
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses[keyof SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses];
 
 export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: '/api/v1/meal-plans/generate-week';
-};
-
-export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: WeeklyMealPlanOutput;
-};
-
-export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponse =
-  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses[keyof GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses];
-
-export type SaveMealPlanApiV1MealPlansSavePostData = {
-  body: SaveMealPlanRequest;
-  path?: never;
-  query?: never;
-  url: '/api/v1/meal-plans/save';
-};
-
-export type SaveMealPlanApiV1MealPlansSavePostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type SaveMealPlanApiV1MealPlansSavePostError =
-  SaveMealPlanApiV1MealPlansSavePostErrors[keyof SaveMealPlanApiV1MealPlansSavePostErrors];
-
-export type SaveMealPlanApiV1MealPlansSavePostResponses = {
-  /**
-   * Successful Response
-   */
-  200: SavedMealPlanResponse;
-};
-
-export type SaveMealPlanApiV1MealPlansSavePostResponse =
-  SaveMealPlanApiV1MealPlansSavePostResponses[keyof SaveMealPlanApiV1MealPlansSavePostResponses];
-
-export type GetWeekPlanApiV1MealPlansWeekGetData = {
   body?: never;
   path?: never;
   query: {
     /**
      * Week Start Date
      *
-     * Monday of the week to fetch
+     * Monday of the week to generate (YYYY-MM-DD)
      */
     week_start_date: string;
   };
-  url: '/api/v1/meal-plans/week';
+  url: '/api/v1/meal-plans/generate-week';
 };
 
-export type GetWeekPlanApiV1MealPlansWeekGetErrors = {
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors = {
   /**
    * Validation Error
    */
   422: HttpValidationError;
 };
 
-export type GetWeekPlanApiV1MealPlansWeekGetError =
-  GetWeekPlanApiV1MealPlansWeekGetErrors[keyof GetWeekPlanApiV1MealPlansWeekGetErrors];
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostError =
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors[keyof GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors];
 
-export type GetWeekPlanApiV1MealPlansWeekGetResponses = {
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses = {
   /**
-   * Response Get Week Plan Api V1 Meal Plans Week Get
+   * Response Generate Week Plan Api V1 Meal Plans Generate Week Post
    *
    * Successful Response
    */
-  200: SavedMealPlanResponse | null;
+  200: Array<ScheduleItemRead>;
 };
 
-export type GetWeekPlanApiV1MealPlansWeekGetResponse =
-  GetWeekPlanApiV1MealPlansWeekGetResponses[keyof GetWeekPlanApiV1MealPlansWeekGetResponses];
+export type GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponse =
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses[keyof GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses];
 
 export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData = {
   body?: never;

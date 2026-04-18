@@ -66,6 +66,3 @@ class User(Base):
     user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "UserBusyTime", back_populates="user", cascade="all, delete-orphan"
     )
-    saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "SavedMealPlan", back_populates="user", cascade="all, delete-orphan"
-    )
