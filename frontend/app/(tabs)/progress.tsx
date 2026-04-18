@@ -1,15 +1,20 @@
+import { ProgressCard } from '@/components/ProgressCard';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useAchievements } from '@/hooks/useAchievements';
+import { useProgressData } from '@/hooks/useProgressData';
 import { useStreak } from '@/hooks/useStreak';
+import { useUserQuery } from '@/lib/queries/user';
 import { Award, ChevronDown, ChevronUp } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProgressPage() {
   const streak = useStreak();
   const achievements = useAchievements();
   const [showLocked, setShowLocked] = useState(false);
+  const { data: user } = useUserQuery();
+  const { snapshot, isLoading: isProgressLoading, reload } = useProgressData();
 
   const unlocked = achievements.filter((a) => a.unlocked);
   const locked = achievements.filter((a) => !a.unlocked);
@@ -37,6 +42,22 @@ export default function ProgressPage() {
             </View>
           </View>
           <Text style={styles.streakFooter}>Keep it up! You&apos;re on fire 🔥</Text>
+        </View>
+
+        {/* Health Progress */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Health Progress</Text>
+          {isProgressLoading ? (
+            <View style={styles.progressLoading}>
+              <ActivityIndicator size="small" color={Colors.light.primary} />
+            </View>
+          ) : snapshot ? (
+            <ProgressCard
+              snapshot={snapshot}
+              showImperial={user?.show_imperial ?? false}
+              onLogged={reload}
+            />
+          ) : null}
         </View>
 
         {/* Achievements */}
@@ -110,9 +131,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
     paddingBottom: 120,
+    gap: 24,
   },
-  header: {
-    marginBottom: 24,
+  header: {},
+  section: {
+    gap: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  progressLoading: {
+    paddingVertical: 32,
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 28,
@@ -128,7 +160,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.success,
     borderRadius: Layout.cardRadius,
     padding: 24,
-    marginBottom: 24,
     ...Shadows.card,
   },
   streakRow: {
@@ -160,19 +191,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: 'rgba(255,255,255,0.9)',
   },
-  section: {
-    marginBottom: 24,
-  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.light.text,
   },
   achievementCount: {
     fontSize: 14,
