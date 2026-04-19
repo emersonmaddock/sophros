@@ -33,9 +33,9 @@ type Props = {
   stabilityBand: StabilityBand | null;
   showImperial: boolean;
   width: number;
-  startDate: string;   // YYYY-MM-DD — goal start (x-axis left edge)
-  targetDate: string;  // YYYY-MM-DD — goal end  (x-axis right edge)
-  today: string;       // YYYY-MM-DD — current date
+  startDate: string; // YYYY-MM-DD — goal start (x-axis left edge)
+  targetDate: string; // YYYY-MM-DD — goal end  (x-axis right edge)
+  today: string; // YYYY-MM-DD — current date
 };
 
 // ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ type Props = {
 // ---------------------------------------------------------------------------
 
 const HEIGHT = 150;
-const PAD_LEFT = 38;  // y-axis label space
+const PAD_LEFT = 38; // y-axis label space
 const PAD_RIGHT = 10;
 const PAD_TOP = 8;
 const PAD_BOTTOM = 4; // tiny gap; x-axis labels live outside the SVG
@@ -115,9 +115,9 @@ export function WeightChart({
   const chartH = HEIGHT - PAD_TOP - PAD_BOTTOM;
 
   // --- Stage 1: x-domain metadata (literal goal span) ----------------------
-  const startMs  = dateToMs(startDate);
+  const startMs = dateToMs(startDate);
   const targetMs = dateToMs(targetDate);
-  const spanMs   = targetMs - startMs || 1; // guard against same-day goals
+  const spanMs = targetMs - startMs || 1; // guard against same-day goals
 
   // Small inset so startDate/targetDate don't sit flush against the axis edges.
   const X_INSET = 10;
@@ -130,16 +130,16 @@ export function WeightChart({
   const todayX = toX(today); // only used when todayInDomain
 
   // --- Stage 2: daily axis tick dates (startDate → min(today, targetDate)) -
-  const axisEndDate  = today <= targetDate ? today : targetDate;
-  const dailyDates   = useMemo(
+  const axisEndDate = today <= targetDate ? today : targetDate;
+  const dailyDates = useMemo(
     () => buildDailyAxisDates(startDate, axisEndDate),
-    [startDate, axisEndDate],
+    [startDate, axisEndDate]
   );
 
   // --- Stage 3: visible chart points filtered to [startDate, targetDate] ---
   const { points, targetY, bandRect, yLabels } = useMemo(() => {
     const visibleHistory = weightHistory.filter((e) =>
-      isDateInDomain(e.date, startDate, targetDate),
+      isDateInDomain(e.date, startDate, targetDate)
     );
 
     // Y-range is based only on visible data + target + band references.
@@ -148,14 +148,14 @@ export function WeightChart({
       targetWeightKg,
       ...(stabilityBand ? [stabilityBand.low, stabilityBand.high] : []),
     ];
-    const dataMin   = Math.min(...allValues);
-    const dataMax   = Math.max(...allValues);
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues);
     const dataRange = dataMax - dataMin || 1;
 
     // Snap axis bounds to nice step multiples with one full step of margin.
     const step = niceStep(dataRange / 3);
-    const lo   = Math.floor(dataMin / step) * step - step;
-    const hi   = Math.ceil(dataMax / step) * step + step;
+    const lo = Math.floor(dataMin / step) * step - step;
+    const hi = Math.ceil(dataMax / step) * step + step;
     const span = hi - lo;
 
     const toY = (kg: number) => PAD_TOP + chartH * (1 - (kg - lo) / span);
@@ -172,7 +172,7 @@ export function WeightChart({
     let band = null;
     if (stabilityBand) {
       const bHigh = toY(stabilityBand.high);
-      const bLow  = toY(stabilityBand.low);
+      const bLow = toY(stabilityBand.low);
       band = { x: PAD_LEFT, y: bHigh, w: chartW, h: bLow - bHigh };
     }
 
@@ -182,8 +182,8 @@ export function WeightChart({
     }
 
     return { points: pts, targetY: tY, bandRect: band, yLabels: labels };
-  // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weightHistory, targetWeightKg, stabilityBand, chartW, chartH, startDate, targetDate]);
 
   const fmtWeight = (kg: number) =>
@@ -193,23 +193,18 @@ export function WeightChart({
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
 
   // Today ring only if the user actually logged weight on today's date.
-  const todayEntry = todayInDomain
-    ? (points.find((p) => p.date === today) ?? null)
-    : null;
+  const todayEntry = todayInDomain ? (points.find((p) => p.date === today) ?? null) : null;
 
   const axisBottom = PAD_TOP + chartH;
 
   // Avoid today label overlapping the start/end edge labels (within 36 px).
   const todayLabelVisible =
-    todayInDomain &&
-    todayX > PAD_LEFT + 36 &&
-    todayX < PAD_LEFT + chartW - 36;
+    todayInDomain && todayX > PAD_LEFT + 36 && todayX < PAD_LEFT + chartW - 36;
 
   return (
     <View style={styles.container}>
       <View style={{ height: HEIGHT + 14, position: 'relative' }}>
         <Svg width={width} height={HEIGHT}>
-
           {/* Horizontal grid lines */}
           {yLabels.map((label, i) => (
             <Line
@@ -247,8 +242,8 @@ export function WeightChart({
               startDate and today get taller, more opaque ticks for visibility. */}
           {dailyDates.map((d) => {
             const x = toX(d);
-            const isToday   = d === today;
-            const isStart   = d === startDate;
+            const isToday = d === today;
+            const isStart = d === startDate;
             const prominent = isToday || isStart;
             return (
               <Line
@@ -318,7 +313,7 @@ export function WeightChart({
           {points.map((p, i) =>
             p.date === today ? null : (
               <Circle key={i} cx={p.x} cy={p.y} r={3} fill={Colors.light.primary} />
-            ),
+            )
           )}
 
           {/* Today ring — only when the user has a log entry for today */}
@@ -355,10 +350,7 @@ export function WeightChart({
           </Text>
         )}
 
-        <Text
-          style={[styles.xLabel, { left: PAD_LEFT + chartW - 16 }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.xLabel, { left: PAD_LEFT + chartW - 16 }]} numberOfLines={1}>
           {shortDate(targetDate)}
         </Text>
       </View>

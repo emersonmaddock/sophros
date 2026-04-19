@@ -19,10 +19,7 @@
 import { WeightLogForm } from '@/components/WeightLogForm';
 import { Colors, Layout } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
-import {
-  clearFutureSleepData,
-  shouldShowSleepPrompt,
-} from '@/components/SleepWakePrompt';
+import { clearFutureSleepData, shouldShowSleepPrompt } from '@/components/SleepWakePrompt';
 import {
   getWeightPromptState,
   isWeightPromptDismissedToday,
@@ -121,9 +118,7 @@ export function DailyCheckinPrompt({ showImperial, onWeightLogged }: Props) {
 
   const handleWeightLogged = () => {
     // Weight logged — remove urgent state and call parent
-    setState((prev) =>
-      prev && { ...prev, weightState: 'optional', weightDismissedToday: false }
-    );
+    setState((prev) => prev && { ...prev, weightState: 'optional', weightDismissedToday: false });
     setShowWeightForm(false);
     onWeightLogged?.();
   };
@@ -145,11 +140,7 @@ export function DailyCheckinPrompt({ showImperial, onWeightLogged }: Props) {
   // Combined sleep + weight
   return (
     <View style={styles.banner}>
-      <TouchableOpacity
-        onPress={handleSleepDismiss}
-        hitSlop={10}
-        style={styles.closeButton}
-      >
+      <TouchableOpacity onPress={handleSleepDismiss} hitSlop={10} style={styles.closeButton}>
         <X size={16} color={Colors.light.textMuted} />
       </TouchableOpacity>
 
@@ -187,9 +178,7 @@ export function DailyCheckinPrompt({ showImperial, onWeightLogged }: Props) {
               It&apos;s been a while — log your weight to keep your progress accurate.
             </Text>
           ) : (
-            <Text style={styles.weightOptionalText}>
-              Optional: log your weight today
-            </Text>
+            <Text style={styles.weightOptionalText}>Optional: log your weight today</Text>
           )}
         </View>
         {weightState === 'urgent' && !weightDismissedToday && (
@@ -208,10 +197,7 @@ export function DailyCheckinPrompt({ showImperial, onWeightLogged }: Props) {
           <Text style={styles.weightLogButtonText}>Log Weight</Text>
         </TouchableOpacity>
       ) : (
-        <WeightLogForm
-          showImperial={showImperial}
-          onLogged={handleWeightLogged}
-        />
+        <WeightLogForm showImperial={showImperial} onLogged={handleWeightLogged} />
       )}
     </View>
   );
@@ -252,11 +238,7 @@ function WeightOnlyBanner({
         </Text>
       </View>
       {!showForm ? (
-        <TouchableOpacity
-          style={styles.weightLogButton}
-          onPress={onToggleForm}
-          activeOpacity={0.8}
-        >
+        <TouchableOpacity style={styles.weightLogButton} onPress={onToggleForm} activeOpacity={0.8}>
           <Text style={styles.weightLogButtonText}>Log Weight</Text>
         </TouchableOpacity>
       ) : (

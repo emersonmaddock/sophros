@@ -23,20 +23,9 @@ import {
 import { localDateStr } from '@/lib/progress/storage';
 import { kgToLbs } from '@/utils/units';
 import { useRouter } from 'expo-router';
-import {
-  Activity,
-  ChevronRight,
-  Settings,
-  TrendingUp,
-} from 'lucide-react-native';
+import { Activity, ChevronRight, Settings, TrendingUp } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -115,10 +104,7 @@ function CompletedGoalCard({
       </View>
 
       <View style={styles.statsRow}>
-        <StatBox
-          label="Started"
-          value={fmt(archived.goalSnapshot.startWeightKg)}
-        />
+        <StatBox label="Started" value={fmt(archived.goalSnapshot.startWeightKg)} />
         <StatBox label="Result" value={changeStr} highlight />
         <StatBox label="Target" value={fmt(archived.goalSnapshot.targetWeightKg)} />
       </View>
@@ -146,11 +132,7 @@ function CompletedGoalCard({
 // Active goal card
 // ---------------------------------------------------------------------------
 
-function ActiveGoalCard({
-  snapshot,
-  showImperial,
-  onLogged,
-}: Props) {
+function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
   const now = useNow();
   const today = localDateStr(now);
   const { width } = useWindowDimensions();
@@ -187,10 +169,9 @@ function ActiveGoalCard({
 
   const targetDateStr = snapshot.targetDate ? formatDate(snapshot.targetDate) : '';
 
-  const latestBf =
-    snapshot.hasBodyFatData
-      ? snapshot.bodyFatHistory[snapshot.bodyFatHistory.length - 1].bodyFatPercent
-      : null;
+  const latestBf = snapshot.hasBodyFatData
+    ? snapshot.bodyFatHistory[snapshot.bodyFatHistory.length - 1].bodyFatPercent
+    : null;
 
   return (
     <View style={styles.card}>
@@ -211,9 +192,7 @@ function ActiveGoalCard({
             </Text>
           </TouchableOpacity>
         </View>
-        {targetDateStr ? (
-          <Text style={styles.targetDateText}>Target: {targetDateStr}</Text>
-        ) : null}
+        {targetDateStr ? <Text style={styles.targetDateText}>Target: {targetDateStr}</Text> : null}
       </View>
 
       {/* Confidence explainer — shown on badge tap */}
@@ -250,9 +229,7 @@ function ActiveGoalCard({
           <Activity size={13} color={Colors.light.charts.carbs} />
           <Text style={styles.bfText}>
             Body fat: {latestBf.toFixed(1)}%
-            {snapshot.bodyFatHistory.length > 1
-              ? ` · ${bfChangeStr(snapshot.bodyFatHistory)}`
-              : ''}
+            {snapshot.bodyFatHistory.length > 1 ? ` · ${bfChangeStr(snapshot.bodyFatHistory)}` : ''}
           </Text>
         </View>
       )}
@@ -267,9 +244,7 @@ function ActiveGoalCard({
           }}
           activeOpacity={0.8}
         >
-          <Text style={styles.logActionText}>
-            {showWeightForm ? 'Cancel' : 'Log weight'}
-          </Text>
+          <Text style={styles.logActionText}>{showWeightForm ? 'Cancel' : 'Log weight'}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.logActionButton, styles.logActionButtonSecondary]}
@@ -316,9 +291,7 @@ export function ProgressCard({ snapshot, showImperial, onLogged }: Props) {
   if (snapshot.goalComplete && snapshot.archivedGoal) {
     return <CompletedGoalCard snapshot={snapshot} showImperial={showImperial} />;
   }
-  return (
-    <ActiveGoalCard snapshot={snapshot} showImperial={showImperial} onLogged={onLogged} />
-  );
+  return <ActiveGoalCard snapshot={snapshot} showImperial={showImperial} onLogged={onLogged} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -337,9 +310,7 @@ function StatBox({
   return (
     <View style={styles.statBox}>
       <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>
-        {value}
-      </Text>
+      <Text style={[styles.statValue, highlight && styles.statValueHighlight]}>{value}</Text>
     </View>
   );
 }
@@ -352,15 +323,23 @@ function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   const [y, m, d] = dateStr.split('-').map(Number);
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return `${months[m - 1]} ${d}, ${y}`;
 }
 
-function bfChangeStr(
-  history: { bodyFatPercent: number }[]
-): string {
+function bfChangeStr(history: { bodyFatPercent: number }[]): string {
   const first = history[0].bodyFatPercent;
   const last = history[history.length - 1].bodyFatPercent;
   const diff = last - first;

@@ -118,14 +118,13 @@ export function useProgressData(): {
       }
 
       // Step 3: load logs
-      const [weightLog, bfLog, storedSnapshot, achievements, sleepCount] =
-        await Promise.all([
-          getWeightLog(),
-          getBodyFatLog(),
-          getGoalSnapshot(),
-          readAchievementsData(),
-          getSleepLogCount(),
-        ]);
+      const [weightLog, bfLog, storedSnapshot, achievements, sleepCount] = await Promise.all([
+        getWeightLog(),
+        getBodyFatLog(),
+        getGoalSnapshot(),
+        readAchievementsData(),
+        getSleepLogCount(),
+      ]);
 
       // Step 4: seed baseline from backend user weight if no local weight log exists
       let finalWeightLog = weightLog;
@@ -142,8 +141,7 @@ export function useProgressData(): {
       // Step 5: manage goal snapshot
       let activeSnapshot = storedSnapshot;
       const goalChanged =
-        storedSnapshot !== null &&
-        hasGoalChanged(storedSnapshot, targetWeightKg, targetDate);
+        storedSnapshot !== null && hasGoalChanged(storedSnapshot, targetWeightKg, targetDate);
 
       if (storedSnapshot === null || goalChanged) {
         // First use or goal changed — start a new goal period
@@ -166,13 +164,7 @@ export function useProgressData(): {
         const existing = await getLatestArchivedGoal();
         if (!existing || existing.id !== id) {
           // First detection of completion — build and store the summary
-          const summary = buildArchivedGoalSummary(
-            id,
-            activeSnapshot!,
-            finalWeightLog,
-            bfLog,
-            now
-          );
+          const summary = buildArchivedGoalSummary(id, activeSnapshot!, finalWeightLog, bfLog, now);
           await archiveGoal(summary);
           archivedGoal = summary;
         } else {
@@ -198,8 +190,7 @@ export function useProgressData(): {
       const confLevel = toConfidenceLevel(confidenceScore);
 
       const band = goalMode === 'maintain' ? computeStabilityBand(targetWeightKg) : null;
-      const maintainInRange =
-        band !== null ? isMaintainInRange(latestWeight, band) : null;
+      const maintainInRange = band !== null ? isMaintainInRange(latestWeight, band) : null;
 
       if (!cancelled) {
         setSnapshot({

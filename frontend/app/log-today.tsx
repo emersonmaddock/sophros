@@ -12,13 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Moon, Scale, X } from 'lucide-react-native';
 import React, { useState } from 'react';
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const SLEEP_STORAGE_KEY = 'sleep_wake_prompt_date';
@@ -65,22 +59,12 @@ export default function LogTodayPage() {
           <View style={styles.pickerRow}>
             <View style={styles.pickerWrap}>
               <Text style={styles.pickerLabel}>Slept at</Text>
-              <TimePickerInput
-                label=""
-                value={sleepTime}
-                onChange={setSleepTime}
-                format="24h"
-              />
+              <TimePickerInput label="" value={sleepTime} onChange={setSleepTime} format="24h" />
             </View>
             <View style={styles.pickerDivider} />
             <View style={styles.pickerWrap}>
               <Text style={styles.pickerLabel}>Woke up at</Text>
-              <TimePickerInput
-                label=""
-                value={wakeTime}
-                onChange={setWakeTime}
-                format="24h"
-              />
+              <TimePickerInput label="" value={wakeTime} onChange={setWakeTime} format="24h" />
             </View>
           </View>
 
@@ -90,9 +74,7 @@ export default function LogTodayPage() {
             activeOpacity={0.8}
             disabled={sleepLogged}
           >
-            <Text style={styles.logButtonText}>
-              {sleepLogged ? 'Sleep logged' : 'Log Sleep'}
-            </Text>
+            <Text style={styles.logButtonText}>{sleepLogged ? 'Sleep logged' : 'Log Sleep'}</Text>
           </TouchableOpacity>
         </View>
 

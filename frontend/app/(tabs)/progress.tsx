@@ -6,7 +6,14 @@ import { useStreak } from '@/hooks/useStreak';
 import { useUserQuery } from '@/lib/queries/user';
 import { Award, ChevronDown, ChevronUp } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProgressPage() {

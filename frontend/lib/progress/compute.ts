@@ -120,8 +120,7 @@ export function computeConfidenceScore(params: {
   const mealScore = Math.min(1, mealConfirmedCount / (windowDays * 3)) * 25;
 
   // Workouts: ~3 per week
-  const workoutScore =
-    Math.min(1, workoutConfirmedCount / Math.ceil((windowDays / 7) * 3)) * 25;
+  const workoutScore = Math.min(1, workoutConfirmedCount / Math.ceil((windowDays / 7) * 3)) * 25;
 
   return Math.round(weightScore + sleepScore + mealScore + workoutScore);
 }
@@ -180,8 +179,7 @@ export function buildArchivedGoalSummary(
   const sorted = [...weightHistory].sort((a, b) => a.date.localeCompare(b.date));
   const finalWeight = sorted.length > 0 ? sorted[sorted.length - 1].weightKg : null;
   const sortedBf = [...bodyFatHistory].sort((a, b) => a.date.localeCompare(b.date));
-  const finalBodyFat =
-    sortedBf.length > 0 ? sortedBf[sortedBf.length - 1].bodyFatPercent : null;
+  const finalBodyFat = sortedBf.length > 0 ? sortedBf[sortedBf.length - 1].bodyFatPercent : null;
 
   return {
     id,
@@ -189,8 +187,7 @@ export function buildArchivedGoalSummary(
     endDate: goalSnapshot.targetDate,
     finalWeightKg: finalWeight,
     finalBodyFatPercent: finalBodyFat,
-    weightChangeKg:
-      finalWeight !== null ? finalWeight - goalSnapshot.startWeightKg : null,
+    weightChangeKg: finalWeight !== null ? finalWeight - goalSnapshot.startWeightKg : null,
     archivedAt: localDateStr(now),
   };
 }
