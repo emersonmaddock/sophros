@@ -113,6 +113,7 @@ export default function WeekPlanningScreen() {
         console.error('[WeekPlanning] Generation error:', error);
       },
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileLoading, backendUser]);
 
   const handleRegenerate = () => {

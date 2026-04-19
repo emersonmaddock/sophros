@@ -10,7 +10,7 @@ import { useUserQuery } from '@/lib/queries/user';
 import { localDateStr } from '@/lib/progress/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { Moon, Scale, Sun, X } from 'lucide-react-native';
+import { Moon, Scale, X } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {
   ScrollView,

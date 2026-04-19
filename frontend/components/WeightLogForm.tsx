@@ -9,7 +9,7 @@
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
 import { localDateStr, upsertWeightEntry } from '@/lib/progress/storage';
-import { kgToLbs, lbsToKg } from '@/utils/units';
+import { lbsToKg } from '@/utils/units';
 import { Scale } from 'lucide-react-native';
 import React, { useState } from 'react';
 import {

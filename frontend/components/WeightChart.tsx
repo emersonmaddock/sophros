@@ -68,21 +68,6 @@ function isDateInDomain(dateStr: string, start: string, end: string): boolean {
 }
 
 /**
- * Maps a pre-computed timestamp to an x pixel position within the chart area.
- * Clamps to [padLeft, padLeft + chartW].
- */
-function mapDateToX(
-  dateMs: number,
-  startMs: number,
-  spanMs: number,
-  chartW: number,
-  padLeft: number,
-): number {
-  const ratio = (dateMs - startMs) / spanMs;
-  return padLeft + Math.max(0, Math.min(1, ratio)) * chartW;
-}
-
-/**
  * Returns every YYYY-MM-DD date string from startDate through endDate inclusive.
  * Uses local-date arithmetic so the result matches displayed dates on the device.
  */
@@ -197,6 +182,8 @@ export function WeightChart({
     }
 
     return { points: pts, targetY: tY, bandRect: band, yLabels: labels };
+  // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weightHistory, targetWeightKg, stabilityBand, chartW, chartH, startDate, targetDate]);
 
   const fmtWeight = (kg: number) =>
