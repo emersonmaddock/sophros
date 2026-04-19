@@ -1,11 +1,6 @@
 import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { MissedItemModal } from '@/components/MissedItemModal';
-import {
-  SleepWakePrompt,
-  clearFutureSleepData,
-  shouldShowSleepPrompt,
-} from '@/components/SleepWakePrompt';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { useConfirmations } from '@/contexts/ConfirmationsContext';
 import { Colors } from '@/constants/theme';
@@ -16,7 +11,7 @@ import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Plus, Utensils } from 'lucide-react-native';
 import { useNow } from '@/hooks/useNow';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -92,16 +87,6 @@ export default function SchedulePage() {
   const now = useNow();
   const todayDayOfWeek = now.getDay();
   const currentHour = now.getHours();
-
-  // Sleep/wake daily prompt — re-evaluated whenever the current date changes
-  // (including dev time override). clearFutureSleepData wipes stored dates that
-  // are ahead of `now` so that going backwards in time re-triggers the prompt.
-  const [showSleepPrompt, setShowSleepPrompt] = useState(false);
-  useEffect(() => {
-    clearFutureSleepData(now)
-      .then(() => shouldShowSleepPrompt(now))
-      .then(setShowSleepPrompt);
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute which day index to default to
   // For current week, default to today; for other weeks, default to Monday (index 0)
@@ -397,11 +382,6 @@ export default function SchedulePage() {
             );
           })}
         </View>
-
-        {/* Sleep/wake daily prompt — only shown when viewing today */}
-        {showSleepPrompt && isToday && (
-          <SleepWakePrompt onDismiss={() => setShowSleepPrompt(false)} />
-        )}
 
         {/* Timeline */}
         {isLoadingPlan ? (

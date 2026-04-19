@@ -246,6 +246,16 @@ export default function DashboardPage() {
             </Text>
           </View>
 
+          {/* Daily log button */}
+          <TouchableOpacity
+            style={styles.logTodayButton}
+            onPress={() => router.push('/log-today')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.logTodayText}>Log Today</Text>
+            <Text style={styles.logTodaySubtext}>Sleep · Weight</Text>
+          </TouchableOpacity>
+
           {/* Health Score Card */}
           <TouchableOpacity
             style={styles.scoreCard}
@@ -523,5 +533,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.light.textMuted,
     textAlign: 'center',
+  },
+  logTodayButton: {
+    backgroundColor: Colors.light.surface,
+    borderRadius: Layout.cardRadius,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: Colors.light.primary,
+    ...Shadows.card,
+  },
+  logTodayText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.light.primary,
+  },
+  logTodaySubtext: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
   },
 });
