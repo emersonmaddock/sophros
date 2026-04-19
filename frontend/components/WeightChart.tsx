@@ -1,16 +1,17 @@
 /**
  * WeightChart — SVG line chart for the progress graph.
  *
- * X-axis spans from goal startDate (origin) to targetDate (right edge).
- * Today's position is marked with a vertical dashed line and a highlighted
- * dot on the axis. Weight entries are placed proportionally by date.
+ * X-axis is a literal date axis spanning [startDate, targetDate].
+ * Every date→x mapping uses the same transform so dots, the today marker,
+ * and daily axis ticks are always consistent with one another.
  *
  * Shows:
  *   - Horizontal grid lines at each y-label
  *   - Solid x and y axis lines
- *   - Weight history line placed by date
+ *   - Daily tick marks from startDate through min(today, targetDate)
+ *   - Weight history line (in-domain entries only)
  *   - Dashed target-weight reference line
- *   - Today marker (vertical dashed line + dot)
+ *   - Today vertical marker
  *   - Maintain-mode stability band
  *   - Legend below the chart area
  */
@@ -32,9 +33,9 @@ type Props = {
   stabilityBand: StabilityBand | null;
   showImperial: boolean;
   width: number;
-  startDate: string;   // YYYY-MM-DD — goal start (x-axis origin)
-  targetDate: string;  // YYYY-MM-DD — goal end (x-axis right)
-  today: string;       // YYYY-MM-DD — current date marker
+  startDate: string;   // YYYY-MM-DD — goal start (x-axis left edge)
+  targetDate: string;  // YYYY-MM-DD — goal end  (x-axis right edge)
+  today: string;       // YYYY-MM-DD — current date
 };
 
 // ---------------------------------------------------------------------------
@@ -45,12 +46,13 @@ const HEIGHT = 150;
 const PAD_LEFT = 38;  // y-axis label space
 const PAD_RIGHT = 10;
 const PAD_TOP = 8;
-const PAD_BOTTOM = 20; // x-axis label space
+const PAD_BOTTOM = 4; // tiny gap; x-axis labels live outside the SVG
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Pure helpers
 // ---------------------------------------------------------------------------
 
+/** Noon-anchored to avoid DST drift in date comparisons. */
 function dateToMs(dateStr: string): number {
   return new Date(`${dateStr}T12:00:00`).getTime();
 }
@@ -58,6 +60,56 @@ function dateToMs(dateStr: string): number {
 function shortDate(dateStr: string): string {
   const parts = dateStr.split('-');
   return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+}
+
+/** Returns true when dateStr is within the closed [startDate, targetDate] interval. */
+function isDateInDomain(dateStr: string, start: string, end: string): boolean {
+  return dateStr >= start && dateStr <= end;
+}
+
+/**
+ * Maps a pre-computed timestamp to an x pixel position within the chart area.
+ * Clamps to [padLeft, padLeft + chartW].
+ */
+function mapDateToX(
+  dateMs: number,
+  startMs: number,
+  spanMs: number,
+  chartW: number,
+  padLeft: number,
+): number {
+  const ratio = (dateMs - startMs) / spanMs;
+  return padLeft + Math.max(0, Math.min(1, ratio)) * chartW;
+}
+
+/**
+ * Returns every YYYY-MM-DD date string from startDate through endDate inclusive.
+ * Uses local-date arithmetic so the result matches displayed dates on the device.
+ */
+function buildDailyAxisDates(startDate: string, endDate: string): string[] {
+  const dates: string[] = [];
+  // Work with UTC-noon timestamps so incrementing by 86400s always advances one day.
+  const startMs = dateToMs(startDate);
+  const endMs = dateToMs(endDate);
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  for (let ms = startMs; ms <= endMs; ms += DAY_MS) {
+    const d = new Date(ms);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${day}`);
+  }
+  return dates;
+}
+
+/** Smallest "nice" step (1, 2, 5, 10, …) ≥ roughStep. */
+function niceStep(roughStep: number): number {
+  const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const norm = roughStep / mag;
+  if (norm <= 1) return mag;
+  if (norm <= 2) return 2 * mag;
+  if (norm <= 5) return 5 * mag;
+  return 10 * mag;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,33 +129,53 @@ export function WeightChart({
   const chartW = width - PAD_LEFT - PAD_RIGHT;
   const chartH = HEIGHT - PAD_TOP - PAD_BOTTOM;
 
-  const startMs = dateToMs(startDate);
-  const endMs = dateToMs(targetDate);
-  const spanMs = endMs - startMs || 1;
+  // --- Stage 1: x-domain metadata (literal goal span) ----------------------
+  const startMs  = dateToMs(startDate);
+  const targetMs = dateToMs(targetDate);
+  const spanMs   = targetMs - startMs || 1; // guard against same-day goals
 
-  // Map a YYYY-MM-DD date to an x pixel position
+  // Small inset so startDate/targetDate don't sit flush against the axis edges.
+  const X_INSET = 10;
   const toX = (dateStr: string) => {
     const ratio = (dateToMs(dateStr) - startMs) / spanMs;
-    return PAD_LEFT + Math.max(0, Math.min(1, ratio)) * chartW;
+    return PAD_LEFT + X_INSET + Math.max(0, Math.min(1, ratio)) * (chartW - 2 * X_INSET);
   };
 
+  const todayInDomain = isDateInDomain(today, startDate, targetDate);
+  const todayX = toX(today); // only used when todayInDomain
+
+  // --- Stage 2: daily axis tick dates (startDate → min(today, targetDate)) -
+  const axisEndDate  = today <= targetDate ? today : targetDate;
+  const dailyDates   = useMemo(
+    () => buildDailyAxisDates(startDate, axisEndDate),
+    [startDate, axisEndDate],
+  );
+
+  // --- Stage 3: visible chart points filtered to [startDate, targetDate] ---
   const { points, targetY, bandRect, yLabels } = useMemo(() => {
+    const visibleHistory = weightHistory.filter((e) =>
+      isDateInDomain(e.date, startDate, targetDate),
+    );
+
+    // Y-range is based only on visible data + target + band references.
     const allValues = [
-      ...weightHistory.map((e) => e.weightKg),
+      ...visibleHistory.map((e) => e.weightKg),
       targetWeightKg,
       ...(stabilityBand ? [stabilityBand.low, stabilityBand.high] : []),
     ];
-    const minV = Math.min(...allValues);
-    const maxV = Math.max(...allValues);
-    const range = maxV - minV || 1;
-    const pad = range * 0.15;
-    const lo = minV - pad;
-    const hi = maxV + pad;
+    const dataMin   = Math.min(...allValues);
+    const dataMax   = Math.max(...allValues);
+    const dataRange = dataMax - dataMin || 1;
+
+    // Snap axis bounds to nice step multiples with one full step of margin.
+    const step = niceStep(dataRange / 3);
+    const lo   = Math.floor(dataMin / step) * step - step;
+    const hi   = Math.ceil(dataMax / step) * step + step;
     const span = hi - lo;
 
     const toY = (kg: number) => PAD_TOP + chartH * (1 - (kg - lo) / span);
 
-    const pts = weightHistory.map((e) => ({
+    const pts = visibleHistory.map((e) => ({
       x: toX(e.date),
       y: toY(e.weightKg),
       kg: e.weightKg,
@@ -115,38 +187,40 @@ export function WeightChart({
     let band = null;
     if (stabilityBand) {
       const bHigh = toY(stabilityBand.high);
-      const bLow = toY(stabilityBand.low);
+      const bLow  = toY(stabilityBand.low);
       band = { x: PAD_LEFT, y: bHigh, w: chartW, h: bLow - bHigh };
     }
 
-    const labels = [hi, (hi + lo) / 2, lo].map((v) => ({
-      val: v,
-      y: toY(v),
-    }));
+    const labels: { val: number; y: number }[] = [];
+    for (let v = lo; v <= hi + step * 0.001; v += step) {
+      labels.push({ val: v, y: toY(v) });
+    }
 
-    return { points: pts, minVal: lo, maxVal: hi, targetY: tY, bandRect: band, yLabels: labels };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weightHistory, targetWeightKg, stabilityBand, chartW, chartH, startMs, endMs]);
+    return { points: pts, targetY: tY, bandRect: band, yLabels: labels };
+  }, [weightHistory, targetWeightKg, stabilityBand, chartW, chartH, startDate, targetDate]);
 
   const fmtWeight = (kg: number) =>
     showImperial ? `${kgToLbs(kg).toFixed(0)}` : `${kg.toFixed(1)}`;
   const unit = showImperial ? 'lbs' : 'kg';
 
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
-  const startPt = points[0];
-  const latestPt = points[points.length - 1];
 
-  // Today marker — only draw if today falls within the goal window
-  const todayMs = dateToMs(today);
-  const todayInRange = todayMs >= startMs && todayMs <= endMs;
-  const todayX = toX(today);
+  // Today ring only if the user actually logged weight on today's date.
+  const todayEntry = todayInDomain
+    ? (points.find((p) => p.date === today) ?? null)
+    : null;
 
   const axisBottom = PAD_TOP + chartH;
 
+  // Avoid today label overlapping the start/end edge labels (within 36 px).
+  const todayLabelVisible =
+    todayInDomain &&
+    todayX > PAD_LEFT + 36 &&
+    todayX < PAD_LEFT + chartW - 36;
+
   return (
     <View style={styles.container}>
-      {/* Bounded inner view so absolute x-labels don't overlap the legend */}
-      <View style={{ height: HEIGHT + 18, position: 'relative' }}>
+      <View style={{ height: HEIGHT + 14, position: 'relative' }}>
         <Svg width={width} height={HEIGHT}>
 
           {/* Horizontal grid lines */}
@@ -182,6 +256,27 @@ export function WeightChart({
             strokeWidth={1.5}
           />
 
+          {/* Daily tick marks — one per logged day from startDate → min(today, targetDate).
+              startDate and today get taller, more opaque ticks for visibility. */}
+          {dailyDates.map((d) => {
+            const x = toX(d);
+            const isToday   = d === today;
+            const isStart   = d === startDate;
+            const prominent = isToday || isStart;
+            return (
+              <Line
+                key={`tick-${d}`}
+                x1={x}
+                y1={axisBottom}
+                x2={x}
+                y2={axisBottom + (prominent ? 5 : 3)}
+                stroke={isToday ? Colors.light.primary : '#9CA3AF'}
+                strokeWidth={prominent ? 1.5 : 1}
+                opacity={isToday ? 0.8 : isStart ? 0.7 : 0.4}
+              />
+            );
+          })}
+
           {/* Maintain stability band */}
           {bandRect && (
             <Rect
@@ -206,81 +301,75 @@ export function WeightChart({
           />
 
           {/* Today vertical marker */}
-          {todayInRange && (
-            <>
-              <Line
-                x1={todayX}
-                y1={PAD_TOP}
-                x2={todayX}
-                y2={axisBottom}
-                stroke={Colors.light.primary}
-                strokeWidth={1}
-                strokeDasharray="3,3"
-                opacity={0.5}
-              />
-              {/* Dot on x-axis */}
-              <Circle
-                cx={todayX}
-                cy={axisBottom}
-                r={3.5}
-                fill={Colors.light.primary}
-              />
-            </>
+          {todayInDomain && (
+            <Line
+              x1={todayX}
+              y1={PAD_TOP}
+              x2={todayX}
+              y2={axisBottom}
+              stroke={Colors.light.primary}
+              strokeWidth={1}
+              strokeDasharray="3,3"
+              opacity={0.5}
+            />
           )}
 
-          {/* Weight history line */}
+          {/* Weight history line — in-domain points only */}
           {points.length >= 2 && (
             <Polyline
               points={polylinePoints}
               fill="none"
               stroke={Colors.light.primary}
-              strokeWidth={2.5}
+              strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           )}
 
-          {/* Start dot */}
-          {startPt && (
+          {/* Data point dots — each at its real logged date x position.
+              Today's entry gets the open ring; all others get a small filled dot. */}
+          {points.map((p, i) =>
+            p.date === today ? null : (
+              <Circle key={i} cx={p.x} cy={p.y} r={3} fill={Colors.light.primary} />
+            ),
+          )}
+
+          {/* Today ring — only when the user has a log entry for today */}
+          {todayEntry && (
             <Circle
-              cx={startPt.x}
-              cy={startPt.y}
-              r={5}
+              cx={todayX}
+              cy={todayEntry.y}
+              r={6}
               fill={Colors.light.surface}
               stroke={Colors.light.primary}
               strokeWidth={2}
             />
           )}
-
-          {/* Latest dot */}
-          {latestPt && latestPt !== startPt && (
-            <Circle cx={latestPt.x} cy={latestPt.y} r={5} fill={Colors.light.primary} />
-          )}
         </Svg>
 
-        {/* Y-axis labels — tightly right-aligned to the axis */}
+        {/* Y-axis labels */}
         {yLabels.map((label, i) => (
           <Text key={i} style={[styles.yLabel, { top: label.y - 7 }]} numberOfLines={1}>
             {fmtWeight(label.val)}
           </Text>
         ))}
 
-        {/* X-axis labels: start (left), today (middle, colored), target (right) */}
-        <Text style={[styles.xLabel, { left: PAD_LEFT - 14 }]} numberOfLines={1}>
+        {/* X-axis labels: start (left), today (proportional), target (right) */}
+        <Text style={[styles.xLabel, { left: PAD_LEFT - 16 }]} numberOfLines={1}>
           {shortDate(startDate)}
         </Text>
 
-        {todayInRange && (
+        {todayLabelVisible && (
           <Text
-            style={[styles.xLabel, styles.xLabelToday, { left: todayX - 14 }]}
+            style={[styles.xLabel, styles.xLabelToday, { left: todayX - 20, width: 40 }]}
             numberOfLines={1}
           >
-            {shortDate(today)}
+            Today
           </Text>
         )}
 
         <Text
-          style={[styles.xLabel, { left: PAD_LEFT + chartW - 14 }]}
+          style={[styles.xLabel, { left: PAD_LEFT + chartW - 16 }]}
           numberOfLines={1}
         >
           {shortDate(targetDate)}
@@ -297,9 +386,9 @@ export function WeightChart({
           <View style={[styles.legendDash, { backgroundColor: Colors.light.secondary }]} />
           <Text style={styles.legendText}>Target</Text>
         </View>
-        {todayInRange && (
+        {todayInDomain && (
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: Colors.light.primary, opacity: 0.5 }]} />
+            <View style={styles.legendRing} />
             <Text style={styles.legendText}>Today</Text>
           </View>
         )}
@@ -335,7 +424,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     fontSize: 10,
     color: Colors.light.textMuted,
-    width: 28,
+    width: 32,
     textAlign: 'center',
   },
   xLabelToday: {
@@ -357,6 +446,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  legendRing: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: Colors.light.primary,
+    backgroundColor: 'transparent',
   },
   legendDash: {
     width: 12,
