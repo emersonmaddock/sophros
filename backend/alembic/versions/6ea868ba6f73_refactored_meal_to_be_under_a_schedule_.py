@@ -7,8 +7,8 @@ Create Date: 2026-04-18 17:59:53.954275
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
@@ -69,8 +69,8 @@ def downgrade() -> None:
                type_=postgresql.TIMESTAMP(),
                existing_nullable=True)
     op.add_column('schedules', sa.Column('recipe_id', sa.VARCHAR(), autoincrement=False, nullable=True))
-    op.drop_constraint(None, 'schedules', type_='foreignkey')
-    op.drop_constraint(None, 'schedules', type_='foreignkey')
+    op.drop_constraint('schedules_source_schedule_item_id_fkey', 'schedules', type_='foreignkey')
+    op.drop_constraint('schedules_meal_id_fkey', 'schedules', type_='foreignkey')
     op.drop_column('schedules', 'source_schedule_item_id')
     op.drop_column('schedules', 'meal_id')
     op.create_table('saved_meal_plans',
