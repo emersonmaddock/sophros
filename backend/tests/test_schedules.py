@@ -273,3 +273,61 @@ async def test_delete_primary_cascades_to_leftovers(client, db, mock_user):
 
     remaining = await db.get(ScheduleItem, leftover_id)
     assert remaining is None, "leftover should have been deleted along with its source"
+
+
+@pytest.mark.asyncio
+async def test_swap_primary_cascades_to_leftovers(
+    client, db, mock_user
+):
+    meal_a = Meal(
+        recipe_id="a",
+        title="Chili",
+        calories=500, protein=30, carbohydrates=40, fat=20,
+        ingredients=[], tags=[],
+    )
+    meal_b = Meal(
+        recipe_id="b",
+        title="Soup",
+        calories=300, protein=20, carbohydrates=30, fat=10,
+        ingredients=[], tags=[],
+    )
+    db.add_all([meal_a, meal_b])
+    await db.flush()
+
+    source = ScheduleItem(
+        user_id=mock_user.id,
+        date=datetime(2026, 4, 20, 18, 0),
+        activity_type=ActivityType.MEAL,
+        duration_minutes=30,
+        meal_id=meal_a.id,
+    )
+    db.add(source)
+    await db.flush()
+
+    # Register meal_b as an alternative for the source
+    db.add(ScheduleItemAlternative(schedule_item_id=source.id, meal_id=meal_b.id))
+
+    leftover = ScheduleItem(
+        user_id=mock_user.id,
+        date=datetime(2026, 4, 21, 12, 0),
+        activity_type=ActivityType.MEAL,
+        duration_minutes=10,
+        meal_id=meal_a.id,
+        source_schedule_item_id=source.id,
+    )
+    db.add(leftover)
+    await db.commit()
+
+    leftover_id = leftover.id
+    source_id = source.id
+
+    resp = await client.post(
+        f"/api/v1/schedules/{source_id}/swap", json={"meal_id": meal_b.id}
+    )
+    assert resp.status_code == 200
+
+    await db.refresh(source)
+    refreshed = await db.get(ScheduleItem, leftover_id)
+    assert source.meal_id == meal_b.id
+    assert refreshed is not None
+    assert refreshed.meal_id == meal_b.id, "leftover's meal_id should follow the source"

@@ -2,7 +2,7 @@
 from datetime import datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -155,6 +155,12 @@ async def swap_schedule_item_meal(
         )
 
     item.meal_id = body.meal_id
+    # Cascade new meal_id to all downstream leftovers
+    await db.execute(
+        update(ScheduleItem)
+        .where(ScheduleItem.source_schedule_item_id == item_id)
+        .values(meal_id=body.meal_id)
+    )
     db.add(item)
     await db.commit()
     db.expire(item)
