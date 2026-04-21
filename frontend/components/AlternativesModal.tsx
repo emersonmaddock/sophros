@@ -66,15 +66,13 @@ export function AlternativesModal({
               This is a leftover of &quot;{leftoverSourceTitle}&quot;
             </Text>
             <Text style={styles.noticeBody}>
-              Leftovers follow their source meal. To change what you&apos;re eating, open the
-              source meal and swap or edit it there.
+              Leftovers follow their source meal. To change what you&apos;re eating, open the source
+              meal and swap or edit it there.
             </Text>
           </View>
         ) : (
           <>
-            {currentMealTitle && (
-              <Text style={styles.current}>Current: {currentMealTitle}</Text>
-            )}
+            {currentMealTitle && <Text style={styles.current}>Current: {currentMealTitle}</Text>}
             {alternatives.length === 0 ? (
               <Text style={styles.empty}>No alternatives available</Text>
             ) : (

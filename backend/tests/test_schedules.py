@@ -276,20 +276,26 @@ async def test_delete_primary_cascades_to_leftovers(client, db, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_swap_primary_cascades_to_leftovers(
-    client, db, mock_user
-):
+async def test_swap_primary_cascades_to_leftovers(client, db, mock_user):
     meal_a = Meal(
         recipe_id="a",
         title="Chili",
-        calories=500, protein=30, carbohydrates=40, fat=20,
-        ingredients=[], tags=[],
+        calories=500,
+        protein=30,
+        carbohydrates=40,
+        fat=20,
+        ingredients=[],
+        tags=[],
     )
     meal_b = Meal(
         recipe_id="b",
         title="Soup",
-        calories=300, protein=20, carbohydrates=30, fat=10,
-        ingredients=[], tags=[],
+        calories=300,
+        protein=20,
+        carbohydrates=30,
+        fat=10,
+        ingredients=[],
+        tags=[],
     )
     db.add_all([meal_a, meal_b])
     await db.flush()

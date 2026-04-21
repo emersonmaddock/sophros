@@ -126,8 +126,7 @@ export default function DashboardPage() {
       .filter((item) => {
         if (!item.meal) return false;
         if (item.is_completed) return true;
-        const itemMins =
-          new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
+        const itemMins = new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
         return itemMins <= nowMins;
       })
       .reduce(
