@@ -8,6 +8,7 @@ interface CircularProgressProps {
   size?: number;
   strokeWidth?: number;
   color?: string;
+  trackColor?: string;
   label?: string;
   value?: string;
   subtitle?: string;
@@ -19,6 +20,7 @@ export const CircularProgress = ({
   size = 60,
   strokeWidth = 6,
   color = Colors.light.primary,
+  trackColor,
   label,
   value,
   subtitle,
@@ -44,7 +46,7 @@ export const CircularProgress = ({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={Colors.light.background} // Track color
+            stroke={trackColor ?? Colors.light.background}
             strokeWidth={strokeWidth}
           />
           <Circle
@@ -62,7 +64,7 @@ export const CircularProgress = ({
         <View style={styles.percentageContainer}>
           {showValueInRing && value ? (
             <Text
-              style={[styles.ringValueText, { fontSize: size * 0.2 }]}
+              style={[styles.ringValueText, { fontSize: size * 0.28 }]}
               numberOfLines={1}
               adjustsFontSizeToFit
             >

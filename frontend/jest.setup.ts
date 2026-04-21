@@ -32,11 +32,11 @@ jest.mock('expo-router', () => ({
 
 // Mock Clerk
 jest.mock('@clerk/expo', () => ({
-  useAuth: () => ({
+  useAuth: jest.fn(() => ({
     isSignedIn: true,
     userId: 'test-user-id',
     getToken: jest.fn().mockResolvedValue('mock-token'),
-  }),
+  })),
   useUser: () => ({
     user: {
       id: 'test-user-id',
@@ -114,6 +114,37 @@ jest.mock('@/contexts/DevTimeContext', () => ({
   DevTimeProvider: ({ children }: { children: unknown }) => children,
 }));
 
+// Mock @kingstinct/react-native-healthkit — controllable stub used across HealthKit tests.
+// All methods are Promise-based named exports. Tests override behavior per-method via
+// `(require('@kingstinct/react-native-healthkit') as any).__mockImpl.<fnName> = async (...) => ...`.
+jest.mock('@kingstinct/react-native-healthkit', () => {
+  const defaults: Record<string, (...args: unknown[]) => unknown> = {
+    isHealthDataAvailable: async () => true,
+    requestAuthorization: async () => true,
+    queryQuantitySamples: async () => [],
+    getMostRecentQuantitySample: async () => undefined,
+    queryCategorySamples: async () => [],
+    getMostRecentCategorySample: async () => undefined,
+    queryWorkoutSamples: async () => [],
+    saveQuantitySample: async () => ({ uuid: 'test' }),
+    saveWorkoutSample: async () => ({ uuid: 'test' }),
+    saveCategorySample: async () => ({ uuid: 'test' }),
+  };
+  const mockImpl: Record<string, (...args: unknown[]) => unknown> = { ...defaults };
+
+  // Build the module object: every known function delegates through mockImpl so tests
+  // can swap individual implementations at runtime.
+  const moduleExports: Record<string, unknown> = { __mockImpl: mockImpl };
+  for (const name of Object.keys(defaults)) {
+    moduleExports[name] = (...args: unknown[]) => {
+      const fn = mockImpl[name] ?? defaults[name];
+      return fn(...args);
+    };
+  }
+
+  return { __esModule: true, ...moduleExports };
+});
+
 // theme.ts calls Platform.select at module-init level; mock to avoid ordering issues.
 jest.mock('@/constants/theme', () => ({
   Colors: {
@@ -135,3 +166,10 @@ jest.mock('@/constants/theme', () => ({
   Layout: { cardRadius: 16 },
   Fonts: { sans: 'system-ui', serif: 'serif', rounded: 'normal', mono: 'monospace' },
 }));
+
+// Ensure AppState.addEventListener is a jest.Mock so HealthKit provider tests can capture handlers.
+import { AppState } from 'react-native';
+if (!jest.isMockFunction(AppState.addEventListener)) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (AppState as any).addEventListener = jest.fn(() => ({ remove: jest.fn() }));
+}
