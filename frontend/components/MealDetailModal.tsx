@@ -3,21 +3,14 @@ import { Colors } from '@/constants/theme';
 import { ArrowRight, Edit, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-interface RecipeData {
-  title?: string;
-  nutrients?: { calories?: number; protein?: number; carbohydrates?: number; fat?: number };
-  ingredients?: string[];
-  source_url?: string;
-  preparation_time_minutes?: number;
-}
+import type { MealRead } from '@/api/types.gen';
 
 interface MealData {
   time: string;
   title?: string;
   subtitle?: string;
   type: string;
-  recipe?: RecipeData;
+  meal?: MealRead | null;
   [key: string]: unknown;
 }
 
@@ -61,12 +54,16 @@ export const MealDetailModal = ({
 
   if (!meal) return null;
 
-  const recipe = meal.recipe;
-  const title = recipe?.title || meal.title || 'Meal';
-  const nutrients = recipe?.nutrients;
-  const ingredients = recipe?.ingredients || [];
-  const sourceUrl = recipe?.source_url;
-  const prepTime = recipe?.preparation_time_minutes;
+  const m = meal.meal;
+  const title = m?.title || meal.title || 'Meal';
+  const calories = m?.calories;
+  const protein = m?.protein;
+  const carbs = m?.carbohydrates;
+  const fat = m?.fat;
+  const ingredients = m?.ingredients ?? [];
+  const sourceUrl = m?.source_url ?? null;
+  const prepTime = m?.prep_time_minutes ?? null;
+  const showMacros = calories != null || protein != null || carbs != null || fat != null;
 
   return (
     <BottomSheetModal
@@ -83,29 +80,29 @@ export const MealDetailModal = ({
           {prepTime ? ` · ${prepTime} min prep` : ''}
         </Text>
 
-        {nutrients && (
+        {showMacros && (
           <View style={styles.sectionBox}>
             <Text style={styles.sectionHeader}>MACRONUTRIENTS</Text>
             <View style={styles.macrosGrid}>
               <View style={styles.macroItem}>
-                <Text style={styles.macroValue}>{nutrients.calories}</Text>
+                <Text style={styles.macroValue}>{calories ?? '—'}</Text>
                 <Text style={styles.macroLabel}>Calories</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: Colors.light.primary }]}>
-                  {nutrients.protein}g
+                  {protein != null ? `${protein}g` : '—'}
                 </Text>
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: Colors.light.charts.carbs }]}>
-                  {nutrients.carbohydrates}g
+                  {carbs != null ? `${carbs}g` : '—'}
                 </Text>
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
               <View style={styles.macroItem}>
                 <Text style={[styles.macroValue, { color: Colors.light.charts.fats }]}>
-                  {nutrients.fat}g
+                  {fat != null ? `${fat}g` : '—'}
                 </Text>
                 <Text style={styles.macroLabel}>Fats</Text>
               </View>
