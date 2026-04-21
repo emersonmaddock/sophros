@@ -501,6 +501,11 @@ export default function SchedulePage() {
                               <Text style={styles.doneBadgeText}>Done</Text>
                             </View>
                           )}
+                          {item.source_schedule_item_id != null && (
+                            <View style={styles.leftoverPill}>
+                              <Text style={styles.leftoverPillText}>Leftover</Text>
+                            </View>
+                          )}
                         </View>
                         <View style={styles.durationBadge}>
                           <Text style={styles.durationText}>{durationDisplay}</Text>
@@ -841,5 +846,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.light.text,
+  },
+  leftoverPill: {
+    backgroundColor: Colors.light.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  leftoverPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
   },
 });

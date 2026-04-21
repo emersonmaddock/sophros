@@ -54,6 +54,7 @@ export default function WeekPlanningScreen() {
 
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
   const [swapItem, setSwapItem] = useState<ScheduleItemRead | null>(null);
+  const [leftoverSourceTitle, setLeftoverSourceTitle] = useState<string | null>(null);
 
   const { backendUser, loading: profileLoading } = useUserProfile();
   const { data: scheduleItems = [], isLoading } = useWeekScheduleQuery(weekStart);
@@ -111,6 +112,13 @@ export default function WeekPlanningScreen() {
   };
 
   const handleSwap = (item: ScheduleItemRead) => {
+    if (item.source_schedule_item_id != null) {
+      const sourceItem = scheduleItems.find((i) => i.id === item.source_schedule_item_id);
+      setLeftoverSourceTitle(sourceItem?.meal?.title ?? 'the source meal');
+      setSwapItem(item);
+      return;
+    }
+    setLeftoverSourceTitle(null);
     if (!item.alternatives || item.alternatives.length === 0) {
       Alert.alert('No Alternatives', 'No alternative meals available for this slot.');
       return;
@@ -252,7 +260,8 @@ export default function WeekPlanningScreen() {
                   )}
                 </View>
                 <View style={styles.itemActions}>
-                  {item.alternatives && item.alternatives.length > 0 && (
+                  {(item.source_schedule_item_id != null ||
+                    (item.alternatives && item.alternatives.length > 0)) && (
                     <TouchableOpacity
                       onPress={() => handleSwap(item)}
                       style={[
@@ -282,10 +291,14 @@ export default function WeekPlanningScreen() {
 
       <AlternativesModal
         visible={swapItem !== null}
-        onClose={() => setSwapItem(null)}
+        onClose={() => {
+          setSwapItem(null);
+          setLeftoverSourceTitle(null);
+        }}
         currentMealTitle={swapItem?.meal?.title ?? null}
         alternatives={(swapItem?.alternatives ?? []) as MealRead[]}
         onSelect={handleSelectAlternative}
+        leftoverSourceTitle={leftoverSourceTitle}
       />
     </SafeAreaView>
   );
