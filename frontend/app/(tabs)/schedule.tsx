@@ -169,15 +169,20 @@ export default function SchedulePage() {
   }, []);
 
   const handleMealModify = useCallback(
-    (meal: { time: string; title?: string; subtitle?: string; type: string }) => {
+    (mealData: { time: string; title?: string; subtitle?: string; type: string }) => {
       if (!selectedItem) return;
+      const m = selectedItem.meal;
       setEditModalItem({
         id: String(selectedItem.id),
-        time: meal.time,
-        title: meal.title || 'Meal',
-        subtitle: meal.subtitle,
+        time: mealData.time,
+        title: mealData.title || 'Meal',
+        subtitle: mealData.subtitle,
         duration: getDurationDisplay(selectedItem.duration_minutes),
         type: 'meal',
+        calories: m?.calories,
+        protein: m?.protein,
+        carbs: m?.carbohydrates,
+        fat: m?.fat,
       });
       setEditModalMode('edit');
       setEditModalItemType('meal');
