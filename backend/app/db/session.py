@@ -13,7 +13,15 @@ def get_engine():
     """Get or create the async engine (lazy initialization)."""
     global _engine
     if _engine is None:
-        _engine = create_async_engine(settings.DATABASE_URL, echo=True, future=True)
+        _engine = create_async_engine(
+            settings.DATABASE_URL,
+            echo=True,
+            future=True,
+            # Neon pgbouncer-style pooler invalidates prepared statements across
+            # reconnects; disable asyncpg's statement cache to avoid
+            # InvalidCachedStatementError after any schema change.
+            connect_args={"statement_cache_size": 0},
+        )
     return _engine
 
 
