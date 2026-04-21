@@ -123,7 +123,13 @@ export default function DashboardPage() {
   // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
     return todayMealItems
-      .filter((item) => item.is_completed && item.meal)
+      .filter((item) => {
+        if (!item.meal) return false;
+        if (item.is_completed) return true;
+        const itemMins =
+          new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
+        return itemMins <= nowMins;
+      })
       .reduce(
         (acc, item) => ({
           calories: acc.calories + (item.meal?.calories ?? 0),
@@ -133,7 +139,7 @@ export default function DashboardPage() {
         }),
         { calories: 0, protein: 0, carbs: 0, fat: 0 }
       );
-  }, [todayMealItems]);
+  }, [todayMealItems, nowMins]);
 
   // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {
