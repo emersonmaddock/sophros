@@ -237,7 +237,10 @@ export default function SchedulePage() {
 
         // Rebuild date from modal's time string + the original item's day
         const originalItem = scheduleItems.find((i) => i.id === itemId);
-        if (!originalItem) return;
+        if (!originalItem) {
+          Alert.alert('Error', 'Schedule item no longer exists. Refresh and try again.');
+          return;
+        }
         const originalDate = new Date(originalItem.date);
 
         const [timePart, period] = updatedItem.time.split(' ');
