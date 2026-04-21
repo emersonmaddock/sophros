@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   current: { fontSize: 13, color: Colors.light.textMuted, marginBottom: 8 },
   empty: { fontSize: 14, color: Colors.light.textMuted, textAlign: 'center', marginTop: 20 },
   option: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.light.background,
     borderRadius: Layout.cardRadius,
     padding: 16,
     gap: 4,
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   optionTitle: { fontSize: 16, fontWeight: '600', color: Colors.light.text },
   optionMacros: { fontSize: 13, color: Colors.light.textMuted },
   noticeBox: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.light.background,
     borderRadius: Layout.cardRadius,
     padding: 16,
     gap: 6,

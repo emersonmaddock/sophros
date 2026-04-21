@@ -1,9 +1,11 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useUser } from '@/contexts/UserContext';
 import { useNow } from '@/hooks/useNow';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { calculateHealthScore, type DailyNutritionTotals } from '@/utils/healthScore';
+import { mondayOf } from '@/utils/date';
+import { calculateHealthScore } from '@/utils/healthScore';
 import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
 import type { HealthKitInputs } from '@/lib/healthkit';
 import { useUser as useClerkUser } from '@clerk/expo';
@@ -43,17 +45,12 @@ export default function DashboardPage() {
   const currentMinute = now.getMinutes();
 
   // Compute this week's Monday to fetch the saved plan
-  const weekStartStr = useMemo(() => {
-    const d = new Date(now);
-    const dow = d.getDay();
-    const diff = dow === 0 ? -6 : 1 - dow;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const weekStartStr = useMemo(() => mondayOf(now), [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: scheduleItems = [], isLoading: isLoadingPlan } = useWeekScheduleQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
-  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+  const { isLoading: isLoadingUser } = useUserQuery();
+  const { user: backendUser } = useUser();
 
   const { data: hkActive } = useActiveEnergyToday();
   const { data: hkSteps } = useStepsToday();
@@ -84,23 +81,22 @@ export default function DashboardPage() {
     });
   }, [scheduleItems, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derive today's nutrition totals from schedule items for health score
-  const todayPlan = useMemo((): DailyNutritionTotals | undefined => {
-    const mealsWithData = todayMealItems.filter((i) => i.meal != null);
-    if (mealsWithData.length === 0) return undefined;
-    return {
-      total_calories: mealsWithData.reduce((s, i) => s + (i.meal?.calories ?? 0), 0),
-      total_protein: mealsWithData.reduce((s, i) => s + (i.meal?.protein ?? 0), 0),
-      total_carbs: mealsWithData.reduce((s, i) => s + (i.meal?.carbohydrates ?? 0), 0),
-      total_fat: mealsWithData.reduce((s, i) => s + (i.meal?.fat ?? 0), 0),
-    };
-  }, [todayMealItems]);
-
-  // Compute health score
-  const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
-    [todayPlan, targets, user, hkInputs]
-  );
+  // Compute health score — uses the same calculator as the detail page so the
+  // two screens never disagree.
+  const healthScore = useMemo(() => {
+    const completed = todayMealItems.filter((i) => i.is_completed && i.meal);
+    const totals = completed.reduce(
+      (acc, i) => ({
+        total_calories: acc.total_calories + (i.meal?.calories ?? 0),
+        total_protein: acc.total_protein + (i.meal?.protein ?? 0),
+        total_carbs: acc.total_carbs + (i.meal?.carbohydrates ?? 0),
+        total_fat: acc.total_fat + (i.meal?.fat ?? 0),
+      }),
+      { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+    );
+    const hasPlan = todayMealItems.length > 0;
+    return calculateHealthScore(totals, targets, backendUser, hasPlan, hkInputs);
+  }, [todayMealItems, targets, backendUser, hkInputs]);
 
   // Derive upcoming meals (items whose time is still in the future and not completed)
   const upcomingItems = useMemo(() => {

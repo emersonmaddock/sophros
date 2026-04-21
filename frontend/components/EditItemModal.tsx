@@ -281,7 +281,16 @@ export function EditItemModal({
         )}
 
         <View style={styles.field}>
-          <DurationPickerInput label="Duration" value={duration} onChange={setDuration} />
+          {currentType === 'meal' ? (
+            <>
+              <Text style={styles.label}>Duration</Text>
+              <View style={[styles.input, styles.readonly]}>
+                <Text style={styles.readonlyText}>{duration}</Text>
+              </View>
+            </>
+          ) : (
+            <DurationPickerInput label="Duration" value={duration} onChange={setDuration} />
+          )}
         </View>
       </BottomSheetScrollView>
 

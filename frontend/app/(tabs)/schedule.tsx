@@ -23,6 +23,7 @@ import { useNow } from '@/hooks/useNow';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { toLocalDateStr as formatDateStr } from '@/utils/date';
 
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -35,10 +36,6 @@ function getMonday(weekOffset: number): Date {
   monday.setDate(today.getDate() + diff + weekOffset * 7);
   monday.setHours(0, 0, 0, 0);
   return monday;
-}
-
-function formatDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
 }
 
 /** Derive a display time string (e.g. "7:30 AM") from an ISO date string */
@@ -211,6 +208,13 @@ export default function SchedulePage() {
 
   const handleEditSave = useCallback(
     (updatedItem: WeeklyScheduleItem) => {
+      // Build a naive ISO string from local components so it round-trips
+      // cleanly into the backend's TIMESTAMP WITHOUT TIME ZONE column.
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const toNaiveIso = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+        `T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
       if (editModalMode === 'add') {
         // Compute the date for the selected day
         const dayDate = weekDates[selectedDayIndex];
@@ -230,7 +234,7 @@ export default function SchedulePage() {
 
         createMutation.mutate({
           body: {
-            date: itemDate.toISOString(),
+            date: toNaiveIso(itemDate),
             activity_type: activityType,
             duration_minutes: durationMinutes,
           },
@@ -257,12 +261,17 @@ export default function SchedulePage() {
         const newDate = new Date(originalDate);
         newDate.setHours(hours, m || 0, 0, 0);
 
-        const durationMinutes = parseInt(updatedItem.duration) || originalItem.duration_minutes;
+        // For meals, duration is read-only (comes from the recipe); keep the
+        // original value so the user can't change it accidentally via edit.
+        const isMeal = originalItem.activity_type === 'meal';
+        const durationMinutes = isMeal
+          ? originalItem.duration_minutes
+          : parseInt(updatedItem.duration) || originalItem.duration_minutes;
 
         updateMutation.mutate({
           itemId,
           body: {
-            date: newDate.toISOString(),
+            date: toNaiveIso(newDate),
             duration_minutes: durationMinutes,
           },
           weekStartDate: weekStartStr,
@@ -501,17 +510,19 @@ export default function SchedulePage() {
                               <Text style={styles.doneBadgeText}>Done</Text>
                             </View>
                           )}
-                          {item.source_schedule_item_id != null && (
-                            <View style={styles.leftoverPill}>
-                              <Text style={styles.leftoverPillText}>Leftover</Text>
-                            </View>
-                          )}
                         </View>
                         <View style={styles.durationBadge}>
                           <Text style={styles.durationText}>{durationDisplay}</Text>
                         </View>
                       </View>
 
+                      {item.source_schedule_item_id != null && (
+                        <View style={styles.leftoverPillRow}>
+                          <View style={styles.leftoverPill}>
+                            <Text style={styles.leftoverPillText}>Leftover</Text>
+                          </View>
+                        </View>
+                      )}
                       {item.meal?.tags && item.meal.tags.length > 0 && (
                         <Text style={styles.eventSubtitle}>
                           {item.meal.tags.slice(0, 3).join(', ')}
@@ -847,11 +858,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
   },
+  leftoverPillRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
   leftoverPill: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.light.background,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
+    alignSelf: 'flex-start',
   },
   leftoverPillText: {
     fontSize: 11,

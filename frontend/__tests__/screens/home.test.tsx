@@ -48,7 +48,11 @@ jest.mock('@/lib/queries/user', () => ({
 }));
 
 // Note: the home screen imports useUser from @clerk/expo (as useClerkUser alias),
-// not from @/contexts/UserContext — the global mock in jest.setup.ts covers this.
+// but also reads from our UserContext for health-score calculation; stub the
+// context module so the test doesn't need a real UserProvider wrapper.
+jest.mock('@/contexts/UserContext', () => ({
+  useUser: jest.fn(() => ({ user: null, isOnboarded: false, loading: false })),
+}));
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
