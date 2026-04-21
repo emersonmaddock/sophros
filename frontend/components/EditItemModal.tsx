@@ -54,7 +54,6 @@ export function EditItemModal({
   const [fat, setFat] = useState(item?.fat?.toString() || '');
   const [workoutType, setWorkoutType] = useState(item?.workoutType || '');
   const [caloriesBurned, setCaloriesBurned] = useState('');
-  const [muscleGain, setMuscleGain] = useState('');
   const [targetHours, setTargetHours] = useState(item?.targetHours?.toString() || '8');
   const [touched, setTouched] = useState(false);
 
@@ -73,7 +72,7 @@ export function EditItemModal({
       if (isNaN(h) || h < 1 || h > 24) e.targetHours = 'Must be 1–24';
     }
     return e;
-  }, [title, calories, protein, carbs, fat, targetHours, currentType]);
+  }, [title, targetHours, currentType]);
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -88,7 +87,6 @@ export function EditItemModal({
       setFat(item?.fat?.toString() || '');
       setWorkoutType(item?.workoutType || '');
       setCaloriesBurned(item?.type === 'workout' ? item?.calories?.toString() || '' : '');
-      setMuscleGain('');
       setTargetHours(item?.targetHours?.toString() || '8');
       setTouched(false);
       bottomSheetRef.current?.present();
@@ -259,17 +257,6 @@ export function EditItemModal({
                   value={caloriesBurned}
                   onChangeText={setCaloriesBurned}
                   placeholder="300"
-                  keyboardType="numeric"
-                  placeholderTextColor={Colors.light.textMuted}
-                />
-              </View>
-              <View style={[styles.field, styles.macroField]}>
-                <Text style={styles.macroLabel}>Muscle Gain (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={muscleGain}
-                  onChangeText={setMuscleGain}
-                  placeholder="20"
                   keyboardType="numeric"
                   placeholderTextColor={Colors.light.textMuted}
                 />
