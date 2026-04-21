@@ -10,7 +10,7 @@ import {
   useWeekScheduleQuery,
 } from '@/lib/queries/schedule';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, RefreshCw, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw } from 'lucide-react-native';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,14 +22,16 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { toLocalDateStr } from '@/utils/date';
 
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getNextMonday(): string {
   const today = new Date();
   const d = new Date(today);
   d.setDate(today.getDate() + ((8 - today.getDay()) % 7 || 7));
-  return d.toISOString().split('T')[0];
+  return toLocalDateStr(d);
 }
 
 function formatDisplayTime(isoDatetime: string): string {
@@ -56,7 +58,7 @@ export default function WeekPlanningScreen() {
   const [swapItem, setSwapItem] = useState<ScheduleItemRead | null>(null);
   const [leftoverSourceTitle, setLeftoverSourceTitle] = useState<string | null>(null);
 
-  const { backendUser, loading: profileLoading } = useUserProfile();
+  const { loading: profileLoading } = useUserProfile();
   const { data: scheduleItems = [], isLoading } = useWeekScheduleQuery(weekStart);
   const generateMutation = useGenerateWeekPlanMutation();
   const swapMutation = useSwapMealMutation();
@@ -67,10 +69,11 @@ export default function WeekPlanningScreen() {
     [scheduleItems]
   );
 
-  // Auto-generate if no meal items exist for this week
+  // Auto-generate if no meal items exist for this week.
+  // Profile completeness is enforced in onboarding, so we don't gate on it here
+  // — a transient null backendUser (e.g. API hiccup) shouldn't block generation.
   useEffect(() => {
     if (profileLoading || isLoading) return;
-    if (!backendUser?.target_weight || !backendUser?.target_date) return;
     if (mealItems.length > 0) return;
     if (generateMutation.isPending || generateMutation.isError) return;
 
@@ -147,26 +150,6 @@ export default function WeekPlanningScreen() {
     );
   }
 
-  if (!backendUser?.target_weight || !backendUser?.target_date) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.center}>
-          <Sparkles size={48} color={Colors.light.secondary} style={{ marginBottom: 16 }} />
-          <Text style={styles.heading}>Complete Your Profile</Text>
-          <Text style={styles.subtext}>
-            Set your target weight and goal date to generate a personalized meal plan.
-          </Text>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => router.push('/profile/edit')}
-          >
-            <Text style={styles.primaryButtonText}>Go to Profile Settings</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   const isGenerating = generateMutation.isPending || (isLoading && mealItems.length === 0);
 
   if (isGenerating) {
@@ -191,46 +174,44 @@ export default function WeekPlanningScreen() {
           <ArrowLeft size={24} color={Colors.light.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Week Planning</Text>
-        <TouchableOpacity
-          onPress={handleRegenerate}
-          style={styles.iconButton}
-          disabled={generateMutation.isPending}
-        >
-          {generateMutation.isPending ? (
-            <ActivityIndicator size="small" color={Colors.light.primary} />
-          ) : (
-            <RefreshCw size={20} color={Colors.light.primary} />
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handleRegenerate}
+            style={styles.iconButton}
+            disabled={generateMutation.isPending}
+          >
+            {generateMutation.isPending ? (
+              <ActivityIndicator size="small" color={Colors.light.primary} />
+            ) : (
+              <RefreshCw size={20} color={Colors.light.primary} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.back()} style={styles.doneButton}>
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Day Selector */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.daySelector}
-        contentContainerStyle={styles.daySelectorContent}
-      >
-        {DAY_NAMES.map((name, i) => {
+      {/* Day Selector — matches schedule tab's compact cards */}
+      <View style={styles.daySelector}>
+        {DAY_NAMES_SHORT.map((short, i) => {
           const d = new Date(weekStart + 'T00:00:00');
           d.setDate(d.getDate() + i);
-          const label = `${d.toLocaleDateString('en-US', { month: 'short' })} ${d.getDate()}`;
+          const isSelected = selectedDayIndex === i;
           return (
             <TouchableOpacity
-              key={name}
-              style={[styles.dayCard, selectedDayIndex === i && styles.activeDayCard]}
+              key={i}
+              style={[styles.dayCard, isSelected && styles.activeDayCard]}
               onPress={() => setSelectedDayIndex(i)}
             >
-              <Text style={[styles.dayName, selectedDayIndex === i && styles.activeDayName]}>
-                {name.slice(0, 3)}
-              </Text>
-              <Text style={[styles.dayDate, selectedDayIndex === i && styles.activeDayDate]}>
-                {label}
+              <Text style={[styles.dayText, isSelected && styles.activeDayText]}>{short}</Text>
+              <Text style={[styles.dateText, isSelected && styles.activeDateText]}>
+                {d.getDate()}
               </Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
       {/* Schedule Items */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -335,22 +316,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  daySelector: { maxHeight: 90, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  daySelectorContent: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  doneButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+  daySelector: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
   dayCard: {
-    minWidth: 80,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: Layout.cardRadius,
+    minWidth: 44,
+    height: 68,
+    borderRadius: 16,
     backgroundColor: Colors.light.surface,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  activeDayCard: { backgroundColor: Colors.light.primary },
-  dayName: { fontSize: 13, fontWeight: '600', color: Colors.light.text },
-  activeDayName: { color: '#FFF' },
-  dayDate: { fontSize: 11, color: Colors.light.textMuted },
-  activeDayDate: { color: 'rgba(255,255,255,0.8)' },
+  activeDayCard: { backgroundColor: Colors.light.primary, elevation: 4 },
+  dayText: { fontSize: 12, fontWeight: '500', color: Colors.light.textMuted },
+  activeDayText: { color: 'rgba(255,255,255,0.8)' },
+  dateText: { fontSize: 18, fontWeight: '700', color: Colors.light.text },
+  activeDateText: { color: '#FFFFFF' },
   scrollContent: { padding: 20, paddingBottom: 100 },
   sectionHeader: {
     flexDirection: 'row',
