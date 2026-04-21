@@ -346,8 +346,9 @@ class MealPlanService:
         """
         Generate a weekly meal plan and persist it to the database.
 
-        Deletes any existing meal-type ScheduleItems for the given week first,
-        then creates Meal rows, ScheduleItem rows, and ScheduleItemAlternative rows.
+        Deletes any existing meal- and exercise-type ScheduleItems for the given week
+        first, then creates Meal rows, ScheduleItem rows (meals + workouts), and
+        ScheduleItemAlternative rows.
         Returns the persisted ScheduleItems with meal + alternatives eager-loaded.
         """
         weekly_plan = await self.generate_weekly_plan(user)
@@ -373,7 +374,9 @@ class MealPlanService:
         await db.execute(
             delete(ScheduleItemORM).where(
                 ScheduleItemORM.user_id == user_id,
-                ScheduleItemORM.activity_type == ActivityType.MEAL,
+                ScheduleItemORM.activity_type.in_(
+                    [ActivityType.MEAL, ActivityType.EXERCISE]
+                ),
                 ScheduleItemORM.date >= week_start_dt,
                 ScheduleItemORM.date <= week_end_dt,
             )
@@ -457,6 +460,24 @@ class MealPlanService:
 
         await db.flush()  # Assign ScheduleItem.id values
 
+        # Step 3b: Create exercise ScheduleItem rows
+        for plan in daily_plans:
+            if not plan.exercise:
+                continue
+            offset = _DAY_OFFSETS[plan.day]
+            slot_date = week_start_date + timedelta(days=offset)
+            exercise_time = plan.exercise.time or time_type(7, 0)
+            db.add(
+                ScheduleItemORM(
+                    user_id=user_id,
+                    date=datetime.combine(slot_date, exercise_time),
+                    activity_type=ActivityType.EXERCISE,
+                    duration_minutes=plan.exercise.duration_minutes,
+                    prep_time_minutes=0,
+                    is_completed=False,
+                )
+            )
+
         # Step 4: Resolve leftover links (source_schedule_item_id + meal_id)
         for plan in daily_plans:
             for slot in plan.slots:
@@ -495,7 +516,9 @@ class MealPlanService:
             select(ScheduleItemORM)
             .where(
                 ScheduleItemORM.user_id == user_id,
-                ScheduleItemORM.activity_type == ActivityType.MEAL,
+                ScheduleItemORM.activity_type.in_(
+                    [ActivityType.MEAL, ActivityType.EXERCISE]
+                ),
                 ScheduleItemORM.date >= week_start_dt,
                 ScheduleItemORM.date <= week_end_dt,
             )
