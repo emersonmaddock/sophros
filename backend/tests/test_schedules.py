@@ -1,4 +1,4 @@
-from datetime import datetime as dt_type
+from datetime import datetime
 
 import pytest
 from httpx import AsyncClient
@@ -127,7 +127,7 @@ async def _create_meal(db, **kwargs) -> Meal:
 async def _create_meal_schedule_item(
     db, user_id: str, day_offset: int, meal: Meal
 ) -> ScheduleItem:
-    monday = dt_type(2025, 6, 2)
+    monday = datetime(2025, 6, 2)
     item_dt = monday.replace(day=monday.day + day_offset, hour=8)
     item = ScheduleItem(
         user_id=user_id,
@@ -227,3 +227,49 @@ async def test_swap_meal_invalid_meal_id(client: AsyncClient, db, mock_user):
 async def test_swap_meal_not_found(client: AsyncClient):
     response = await client.post(f"{BASE}/99999/swap", json={"meal_id": 1})
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_primary_cascades_to_leftovers(client, db, mock_user):
+    meal = Meal(
+        recipe_id="r1",
+        title="Chili",
+        calories=500,
+        protein=30,
+        carbohydrates=40,
+        fat=20,
+        ingredients=[],
+        tags=[],
+    )
+    db.add(meal)
+    await db.flush()
+
+    source = ScheduleItem(
+        user_id=mock_user.id,
+        date=datetime(2026, 4, 20, 18, 0),
+        activity_type=ActivityType.MEAL,
+        duration_minutes=30,
+        meal_id=meal.id,
+    )
+    db.add(source)
+    await db.flush()
+
+    leftover = ScheduleItem(
+        user_id=mock_user.id,
+        date=datetime(2026, 4, 21, 12, 0),
+        activity_type=ActivityType.MEAL,
+        duration_minutes=10,
+        meal_id=meal.id,
+        source_schedule_item_id=source.id,
+    )
+    db.add(leftover)
+    await db.commit()
+
+    leftover_id = leftover.id
+    source_id = source.id
+
+    resp = await client.delete(f"/api/v1/schedules/{source_id}")
+    assert resp.status_code == 204
+
+    remaining = await db.get(ScheduleItem, leftover_id)
+    assert remaining is None, "leftover should have been deleted along with its source"

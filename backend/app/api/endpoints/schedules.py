@@ -2,7 +2,7 @@
 from datetime import datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -178,5 +178,9 @@ async def delete_schedule_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
         )
 
+    # Cascade: remove any downstream leftovers that point at this item
+    await db.execute(
+        delete(ScheduleItem).where(ScheduleItem.source_schedule_item_id == item_id)
+    )
     await db.delete(item)
     await db.commit()
