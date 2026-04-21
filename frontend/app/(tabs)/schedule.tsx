@@ -233,14 +233,32 @@ export default function SchedulePage() {
         });
       } else if (editModalItem) {
         const itemId = parseInt(editModalItem.id);
-        if (!isNaN(itemId)) {
-          const durationMinutes = parseInt(updatedItem.duration) || 30;
-          updateMutation.mutate({
-            itemId,
-            body: { duration_minutes: durationMinutes },
-            weekStartDate: weekStartStr,
-          });
-        }
+        if (isNaN(itemId)) return;
+
+        // Rebuild date from modal's time string + the original item's day
+        const originalItem = scheduleItems.find((i) => i.id === itemId);
+        if (!originalItem) return;
+        const originalDate = new Date(originalItem.date);
+
+        const [timePart, period] = updatedItem.time.split(' ');
+        const [h, m] = timePart.split(':').map(Number);
+        let hours = h;
+        if (period === 'PM' && h !== 12) hours += 12;
+        if (period === 'AM' && h === 12) hours = 0;
+
+        const newDate = new Date(originalDate);
+        newDate.setHours(hours, m || 0, 0, 0);
+
+        const durationMinutes = parseInt(updatedItem.duration) || originalItem.duration_minutes;
+
+        updateMutation.mutate({
+          itemId,
+          body: {
+            date: newDate.toISOString(),
+            duration_minutes: durationMinutes,
+          },
+          weekStartDate: weekStartStr,
+        });
       }
     },
     [
@@ -251,6 +269,7 @@ export default function SchedulePage() {
       selectedDayIndex,
       weekDates,
       weekStartStr,
+      scheduleItems,
     ]
   );
 
