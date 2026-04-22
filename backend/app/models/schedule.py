@@ -1,9 +1,9 @@
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
-from sqlalchemy import Enum as SAEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-
 from app.db.base_class import Base
 from app.domain.enums import ActivityType, ExerciseCategory
+from sqlalchemy import Boolean, DateTime
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class ScheduleItem(Base):
@@ -23,6 +23,8 @@ class ScheduleItem(Base):
     exercise_category: Mapped[ExerciseCategory | None] = mapped_column(
         SAEnum(ExerciseCategory, name="exercise_category_enum"), nullable=True
     )
+    exercise_calorie_burn: Mapped[int] = mapped_column(Integer, default=0)
+    exercise_muscle_gain: Mapped[float] = mapped_column(Float, default=0.0)
 
     # Meal link (nullable — non-meal items leave these null)
     meal_id: Mapped[int | None] = mapped_column(
