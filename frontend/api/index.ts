@@ -41,6 +41,7 @@ export type {
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponse,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
   DriOutput,
+  ExerciseCategory,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostError,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
