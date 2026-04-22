@@ -3,7 +3,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.domain.enums import ActivityType
+from app.domain.enums import ActivityType, ExerciseCategory
 
 
 class ScheduleItem(Base):
@@ -20,6 +20,9 @@ class ScheduleItem(Base):
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     prep_time_minutes: Mapped[int] = mapped_column(Integer, default=0)
     is_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    exercise_category: Mapped[ExerciseCategory | None] = mapped_column(
+        SAEnum(ExerciseCategory, name="exercise_category_enum"), nullable=True
+    )
 
     # Meal link (nullable — non-meal items leave these null)
     meal_id: Mapped[int | None] = mapped_column(
