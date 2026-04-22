@@ -1,9 +1,9 @@
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base_class import Base
 from app.domain.enums import ActivityType, ExerciseCategory
-from sqlalchemy import Boolean, DateTime
-from sqlalchemy import Enum as SAEnum
-from sqlalchemy import Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class ScheduleItem(Base):

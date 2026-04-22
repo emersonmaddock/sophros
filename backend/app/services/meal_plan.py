@@ -1,28 +1,31 @@
 import asyncio
 import logging
 import random
-from datetime import date, datetime
-from datetime import time
+from datetime import date, datetime, time, timedelta
 from datetime import time as time_type
-from datetime import timedelta
 from typing import Any
+
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.domain.enums import ActivityType, Day, MealSlot
 from app.models.meal import Meal, ScheduleItemAlternative
 from app.models.schedule import ScheduleItem as ScheduleItemORM
 from app.schemas.dietary import DietaryConstraints
-from app.schemas.meal_plan import (DailyMealPlan, MealOption, MealSlotTarget,
-                                   WeeklyMealPlan)
+from app.schemas.meal_plan import (
+    DailyMealPlan,
+    MealOption,
+    MealSlotTarget,
+    WeeklyMealPlan,
+)
 from app.schemas.recipe import Recipe, RecipeNutrients
 from app.schemas.user import BusyTime, User, UserSchedule
 from app.services.exercise_service import ExercisePlanService
 from app.services.meal_allocator import MealAllocator
 from app.services.nutrient_calculator import NutrientCalculator
 from app.services.spoonacular import MealType, SpoonacularClient
-from sqlalchemy import delete
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,9 @@
 from datetime import datetime
 
+from pydantic import BaseModel, ConfigDict, field_validator
+
 from app.domain.enums import ActivityType, ExerciseCategory
 from app.schemas.meal import MealRead
-from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class ScheduleItemBase(BaseModel):
