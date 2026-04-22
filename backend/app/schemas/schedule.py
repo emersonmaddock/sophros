@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from app.domain.enums import ActivityType
+from app.domain.enums import ActivityType, ExerciseCategory
 from app.schemas.meal import MealRead
 
 
@@ -11,6 +11,7 @@ class ScheduleItemBase(BaseModel):
     activity_type: ActivityType
     duration_minutes: int
     is_completed: bool = False
+    exercise_category: ExerciseCategory | None = None
 
 
 class ScheduleItemCreate(ScheduleItemBase):
@@ -22,6 +23,7 @@ class ScheduleItemUpdate(BaseModel):
     activity_type: ActivityType | None = None
     duration_minutes: int | None = None
     is_completed: bool | None = None
+    exercise_category: ExerciseCategory | None = None
 
 
 class SwapMealRequest(BaseModel):

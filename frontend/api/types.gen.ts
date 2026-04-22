@@ -101,6 +101,11 @@ export type Day =
   | 'Sunday';
 
 /**
+ * ExerciseCategory
+ */
+export type ExerciseCategory = 'Cardio' | 'Weight Lifting';
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -212,6 +217,7 @@ export type ScheduleItemCreate = {
    * Is Completed
    */
   is_completed?: boolean;
+  exercise_category?: ExerciseCategory | null;
   /**
    * Meal Id
    */
@@ -235,6 +241,7 @@ export type ScheduleItemRead = {
    * Is Completed
    */
   is_completed?: boolean;
+  exercise_category?: ExerciseCategory | null;
   /**
    * Id
    */
@@ -275,6 +282,7 @@ export type ScheduleItemUpdate = {
    * Is Completed
    */
   is_completed?: boolean | null;
+  exercise_category?: ExerciseCategory | null;
 };
 
 /**
