@@ -46,7 +46,7 @@ function nutritionRow(
         : '',
     source: "Today's meal plan vs your DRI targets",
     target: 'Average adherence across calories, protein, carbs, fat',
-    notMeasuredHint: 'Generate this week's meal plan to enable nutrition scoring.',
+    notMeasuredHint: "Generate this week's meal plan to enable nutrition scoring.",
   };
 }
 
