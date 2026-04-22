@@ -219,6 +219,14 @@ export type ScheduleItemCreate = {
   is_completed?: boolean;
   exercise_category?: ExerciseCategory | null;
   /**
+   * Exercise Calorie Burn
+   */
+  exercise_calorie_burn?: number;
+  /**
+   * Exercise Muscle Gain
+   */
+  exercise_muscle_gain?: number;
+  /**
    * Meal Id
    */
   meal_id?: number | null;
@@ -242,6 +250,14 @@ export type ScheduleItemRead = {
    */
   is_completed?: boolean;
   exercise_category?: ExerciseCategory | null;
+  /**
+   * Exercise Calorie Burn
+   */
+  exercise_calorie_burn?: number;
+  /**
+   * Exercise Muscle Gain
+   */
+  exercise_muscle_gain?: number;
   /**
    * Id
    */
