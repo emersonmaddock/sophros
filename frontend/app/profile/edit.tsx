@@ -4,6 +4,7 @@ import { SelectionCard } from '@/components/SelectionCard';
 import { TimePickerInput } from '@/components/TimePickerInput';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useLogWeight } from '@/lib/healthkit';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { getSleepWarning } from '@/utils/sleep-validation';
 import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
@@ -58,6 +59,7 @@ function parseFloatOrNull(value: string): number | null {
 export default function EditProfileScreen() {
   const router = useRouter();
   const { backendUser, loading, updateUserProfile } = useUserProfile();
+  const logWeight = useLogWeight();
   const [form, setForm] = React.useState<ProfileEditForm | null>(null);
   const [saving, setSaving] = React.useState(false);
 
@@ -444,6 +446,17 @@ export default function EditProfileScreen() {
       const success = await updateUserProfile(updates);
 
       if (success) {
+        if (typeof updates.weight === 'number') {
+          try {
+            await logWeight.mutateAsync({
+              weightKg: updates.weight,
+              recordedAtISO: new Date().toISOString(),
+            });
+          } catch (err) {
+            // Non-blocking: profile save already succeeded. Log and continue.
+            console.warn('[HealthKit] failed to log weight:', err);
+          }
+        }
         Alert.alert('Success', 'Profile updated successfully.');
         router.back();
       } else {

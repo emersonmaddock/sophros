@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 import { queryClient } from '@/config/queryClient';
 import { DevTimeProvider } from '@/contexts/DevTimeContext';
 import { OnboardingProvider } from '@/contexts/onboarding-context';
+import { HealthKitProvider } from '@/lib/healthkit';
 import { UserProvider } from '@/contexts/UserContext';
 import { client } from '../api/client.gen';
 
@@ -41,25 +42,28 @@ export default function RootLayout() {
           <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
             <UserProvider>
               <OnboardingProvider>
-                <BottomSheetModalProvider>
-                  <ThemeProvider value={DefaultTheme}>
-                    <Stack>
-                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                      <Stack.Screen name="index" options={{ headerShown: false }} />
-                      <Stack.Screen name="welcome" options={{ headerShown: false }} />
-                      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-                      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                      <Stack.Screen name="week-planning" options={{ headerShown: false }} />
-                      <Stack.Screen name="health-score" options={{ headerShown: false }} />
-                      <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
-                      <Stack.Screen
-                        name="profile/dietary-preferences"
-                        options={{ headerShown: false }}
-                      />
-                    </Stack>
-                    <StatusBar style="dark" />
-                  </ThemeProvider>
-                </BottomSheetModalProvider>
+                <HealthKitProvider>
+                  <BottomSheetModalProvider>
+                    <ThemeProvider value={DefaultTheme}>
+                      <Stack>
+                        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                        <Stack.Screen name="index" options={{ headerShown: false }} />
+                        <Stack.Screen name="welcome" options={{ headerShown: false }} />
+                        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+                        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                        <Stack.Screen name="week-planning" options={{ headerShown: false }} />
+                        <Stack.Screen name="health-score" options={{ headerShown: false }} />
+                        <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
+                        <Stack.Screen
+                          name="profile/dietary-preferences"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen name="profile/health" options={{ headerShown: false }} />
+                      </Stack>
+                      <StatusBar style="dark" />
+                    </ThemeProvider>
+                  </BottomSheetModalProvider>
+                </HealthKitProvider>
               </OnboardingProvider>
             </UserProvider>
           </ClerkProvider>

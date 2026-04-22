@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderOptions } from '@testing-library/react-native';
+import { HealthKitProvider } from '@/lib/healthkit';
 import React from 'react';
 
 export function createQueryClient() {
@@ -23,5 +24,10 @@ export function renderWithProviders(
   options?: Omit<RenderOptions, 'wrapper'>
 ) {
   const queryClient = createQueryClient();
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>, options);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <HealthKitProvider>{ui}</HealthKitProvider>
+    </QueryClientProvider>,
+    options
+  );
 }
