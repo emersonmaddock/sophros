@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -29,6 +31,14 @@ class ScheduleItem(Base):
     source_schedule_item_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True
     )
+
+    # Source metadata — identifies where this row came from
+    # "sophros" for app-generated rows; "google_calendar" for imported busy blocks
+    source_type: Mapped[str] = mapped_column(String, nullable=False, default="sophros")
+    source_calendar_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_external_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    source_sync_batch_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    imported_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="schedules")  # type: ignore[name-defined] # noqa: F821

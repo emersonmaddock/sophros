@@ -349,15 +349,92 @@ class MealPlanService:
         Deletes any existing meal- and exercise-type ScheduleItems for the given week
         first, then creates Meal rows, ScheduleItem rows (meals + workouts), and
         ScheduleItemAlternative rows.
+
+        Imported Google Calendar busy blocks (source_type='google_calendar') are
+        loaded from the DB and fed into the planner as busy times so that generated
+        meals/workouts avoid those windows. Google blocks are never deleted here.
+
         Returns the persisted ScheduleItems with meal + alternatives eager-loaded.
         """
-        weekly_plan = await self.generate_weekly_plan(user)
+        week_start_dt = datetime.combine(week_start_date, time_type(0, 0, 0))
+        week_end_dt = datetime.combine(
+            week_start_date + timedelta(days=6), time_type(23, 59, 59)
+        )
+
+        google_result = await db.execute(
+            select(ScheduleItemORM).where(
+                ScheduleItemORM.user_id == user.id,
+                ScheduleItemORM.source_type == "google_calendar",
+                ScheduleItemORM.date >= week_start_dt,
+                ScheduleItemORM.date <= week_end_dt,
+            )
+        )
+        google_blocks = google_result.scalars().all()
+
+        extra_busy = self._google_blocks_to_busy_times(google_blocks)
+        if extra_busy:
+            planning_user = user.model_copy(
+                update={"busy_times": list(user.busy_times) + extra_busy}
+            )
+        else:
+            planning_user = user
+
+        weekly_plan = await self.generate_weekly_plan(planning_user)
         return await self._persist_weekly_plan(
             daily_plans=weekly_plan.daily_plans,
             user_id=user.id,
             week_start_date=week_start_date,
             db=db,
         )
+
+    @staticmethod
+    def _google_blocks_to_busy_times(blocks: list) -> list[BusyTime]:
+        """
+        Convert Google Calendar ScheduleItem rows to BusyTime entries.
+
+        Maps each block to the day-of-week for the week being generated.
+        Cross-midnight blocks are split at 23:59 / 00:00.
+        """
+        day_enum_map = {
+            0: Day.MONDAY,
+            1: Day.TUESDAY,
+            2: Day.WEDNESDAY,
+            3: Day.THURSDAY,
+            4: Day.FRIDAY,
+            5: Day.SATURDAY,
+            6: Day.SUNDAY,
+        }
+        busy: list[BusyTime] = []
+        for block in blocks:
+            start_dt: datetime = block.date
+            end_dt: datetime = block.date + timedelta(minutes=block.duration_minutes)
+
+            # Split at midnight if the block spans multiple days
+            current = start_dt
+            while True:
+                day_end = datetime.combine(current.date(), time_type(23, 59))
+                segment_end = min(end_dt, day_end)
+                seg_start = current.time()
+                seg_end = segment_end.time()
+
+                if seg_start < seg_end:
+                    busy.append(
+                        BusyTime(
+                            day=day_enum_map[current.weekday()],
+                            start=seg_start,
+                            end=seg_end,
+                        )
+                    )
+
+                # Advance to next day
+                next_day_start = datetime.combine(
+                    current.date() + timedelta(days=1), time_type(0, 0)
+                )
+                if next_day_start >= end_dt:
+                    break
+                current = next_day_start
+
+        return busy
 
     async def _persist_weekly_plan(
         self,

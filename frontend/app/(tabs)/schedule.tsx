@@ -54,6 +54,9 @@ function getDisplayTime(isoDate: string): string {
 /** Derive a display title from a ScheduleItemRead */
 function getItemTitle(item: ScheduleItemRead): string {
   if (item.meal?.title) return item.meal.title;
+  // Google Calendar imported busy blocks
+  const sourceType = (item as Record<string, unknown>).source_type as string | undefined;
+  if (sourceType === 'google_calendar') return 'Busy';
   switch (item.activity_type) {
     case 'meal':
       return 'Meal';
@@ -282,7 +285,8 @@ export default function SchedulePage() {
     setSelectedDayIndex(0); // Reset to Monday when changing weeks
   };
 
-  const getBorderColor = (activityType: string) => {
+  const getBorderColor = (activityType: string, sourceType?: string) => {
+    if (sourceType === 'google_calendar') return Colors.light.textMuted;
     switch (activityType) {
       case 'meal':
         return Colors.light.secondary;
@@ -415,7 +419,9 @@ export default function SchedulePage() {
               const item = row.item;
               const itemDate = new Date(item.date);
               const isInPast = itemDate < now;
-              const needsConfirmation = isInPast && item.activity_type === 'meal';
+              const itemSourceType = (item as Record<string, unknown>).source_type as string | undefined;
+              const isGoogleBusy = itemSourceType === 'google_calendar';
+              const needsConfirmation = isInPast && item.activity_type === 'meal' && !isGoogleBusy;
               const isCompleted = item.is_completed ?? false;
               const isDone = isCompleted;
 
@@ -423,7 +429,7 @@ export default function SchedulePage() {
                 ? '#16A34A'
                 : needsConfirmation && !isCompleted
                   ? '#F59E0B'
-                  : getBorderColor(item.activity_type);
+                  : getBorderColor(item.activity_type, itemSourceType);
 
               const displayTime = getDisplayTime(item.date);
               const title = getItemTitle(item);
@@ -432,7 +438,7 @@ export default function SchedulePage() {
               return (
                 <SwipeableScheduleItem
                   key={item.id || i}
-                  needsConfirmation={needsConfirmation}
+                  needsConfirmation={needsConfirmation && !isGoogleBusy}
                   isCompleted={isCompleted}
                   onConfirmDone={() => handleConfirmDone(item)}
                   onConfirmMissed={() => handleConfirmMissed(item)}
@@ -480,7 +486,10 @@ export default function SchedulePage() {
                         </View>
                       </View>
 
-                      {item.meal?.tags && item.meal.tags.length > 0 && (
+                      {isGoogleBusy && (
+                        <Text style={styles.eventSubtitle}>Google Calendar</Text>
+                      )}
+                      {!isGoogleBusy && item.meal?.tags && item.meal.tags.length > 0 && (
                         <Text style={styles.eventSubtitle}>
                           {item.meal.tags.slice(0, 3).join(', ')}
                         </Text>
