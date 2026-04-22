@@ -477,7 +477,7 @@ class MealPlanService:
                     is_completed=False,
                     exercise_category=plan.exercise.category,
                     exercise_calorie_burn=plan.exercise.calories_burned,
-                    exercise_muscle_gain=plan.exercise.muscle_gain_estimate_kg
+                    exercise_muscle_gain=plan.exercise.muscle_gain_estimate_kg,
                 )
             )
 
