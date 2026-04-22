@@ -1,4 +1,4 @@
-import type { DailyMealPlanOutput, DriOutput } from '@/api/types.gen';
+import type { DriOutput } from '@/api/types.gen';
 import type { HealthKitInputs } from '@/lib/healthkit';
 
 // Targets — hitting these scores 100; sub-target performance scales linearly.
@@ -32,6 +32,13 @@ export interface HealthScoreResult {
   sleep: SubScoreResult | null;
 }
 
+export interface DailyNutritionTotals {
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
+}
+
 function getStatus(score: number): string {
   if (score >= 90) return 'Excellent';
   if (score >= 70) return 'Good';
@@ -54,7 +61,7 @@ function finishScore(raw: number): SubScoreResult {
 }
 
 function calculateNutritionScore(
-  todayPlan: DailyMealPlanOutput | undefined,
+  todayPlan: DailyNutritionTotals | undefined,
   targets: DriOutput | undefined
 ): SubScoreResult | null {
   if (!todayPlan || !targets) return null;
@@ -133,7 +140,7 @@ function calculateSleepScore(
 }
 
 export function calculateHealthScore(
-  todayPlan: DailyMealPlanOutput | undefined,
+  todayPlan: DailyNutritionTotals | undefined,
   targets: DriOutput | undefined,
   user: { wake_up_time?: string | null; sleep_time?: string | null } | null | undefined,
   hasPlan: boolean,

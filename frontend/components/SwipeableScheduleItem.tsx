@@ -1,4 +1,3 @@
-import type { Confirmation } from '@/contexts/ConfirmationsContext';
 import { Colors } from '@/constants/theme';
 import { Check, X } from 'lucide-react-native';
 import React, { useRef } from 'react';
@@ -7,9 +6,9 @@ import { Swipeable } from 'react-native-gesture-handler';
 
 type Props = {
   children: React.ReactNode;
-  /** Whether this item is in the past and needs the user to confirm */
+  /** True when the item is in the past and hasn't been confirmed yet */
   needsConfirmation: boolean;
-  confirmation: Confirmation | undefined;
+  isCompleted: boolean;
   onConfirmDone: () => void;
   onConfirmMissed: () => void;
 };
@@ -35,21 +34,17 @@ function RightAction() {
 export function SwipeableScheduleItem({
   children,
   needsConfirmation,
-  confirmation,
+  isCompleted,
   onConfirmDone,
   onConfirmMissed,
 }: Props) {
   const swipeRef = useRef<Swipeable>(null);
 
-  // Items that are already confirmed or don't need confirmation are not swipeable
-  if (!needsConfirmation || confirmation) {
+  if (!needsConfirmation || isCompleted) {
     return <>{children}</>;
   }
 
   const handleOpen = (direction: 'left' | 'right') => {
-    // onSwipeableOpen fires with the side that opened:
-    // 'left'  = left side revealed  = user swiped RIGHT → done
-    // 'right' = right side revealed = user swiped LEFT  → missed
     swipeRef.current?.close();
     if (direction === 'left') {
       onConfirmDone();
@@ -61,14 +56,9 @@ export function SwipeableScheduleItem({
   return (
     <Swipeable
       ref={swipeRef}
-      friction={2}
-      leftThreshold={60}
-      rightThreshold={60}
       renderLeftActions={() => <LeftAction />}
       renderRightActions={() => <RightAction />}
       onSwipeableOpen={handleOpen}
-      overshootLeft={false}
-      overshootRight={false}
     >
       {children}
     </Swipeable>
@@ -77,35 +67,24 @@ export function SwipeableScheduleItem({
 
 const styles = StyleSheet.create({
   leftAction: {
-    flex: 1,
-    backgroundColor: '#16A34A',
+    backgroundColor: Colors.light.success,
     justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingLeft: 20,
-    borderRadius: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 20,
-    alignSelf: 'stretch',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 12,
+    gap: 4,
   },
   rightAction: {
-    flex: 1,
     backgroundColor: Colors.light.error,
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 20,
-    borderRadius: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    gap: 8,
-    paddingLeft: 20,
-    alignSelf: 'stretch',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 12,
+    gap: 4,
   },
   actionLabel: {
     color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-    alignSelf: 'center',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

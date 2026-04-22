@@ -92,7 +92,7 @@ jest.mock('expo-auth-session', () => ({
   makeRedirectUri: jest.fn(() => 'exp://redirect'),
 }));
 
-// Mock AsyncStorage — used by sleep/streak hooks and ConfirmationsContext
+// Mock AsyncStorage — used by sleep/streak hooks
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn().mockResolvedValue(null),
   setItem: jest.fn().mockResolvedValue(undefined),

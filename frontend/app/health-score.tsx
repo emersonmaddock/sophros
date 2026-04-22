@@ -1,8 +1,12 @@
-import type { Day, DailyMealPlanOutput, DriOutput, UserRead } from '@/api/types.gen';
+import type { DriOutput, UserRead } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { calculateHealthScore, type SubScoreResult } from '@/utils/healthScore';
+import {
+  calculateHealthScore,
+  type DailyNutritionTotals,
+  type SubScoreResult,
+} from '@/utils/healthScore';
 import {
   useActiveEnergyToday,
   useHealthKit,
@@ -17,28 +21,18 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CircularProgress } from '../components/ui/circular-progress';
 
-const JS_DAY_TO_API_DAY: Record<number, Day> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
-
 interface PillarRow {
   label: string;
   color: string;
   result: SubScoreResult | null;
-  detail: string; // short, shown always when measured
-  source: string; // shown on expand
-  target: string; // shown on expand
-  notMeasuredHint: string; // shown instead of score when not measured
+  detail: string;
+  source: string;
+  target: string;
+  notMeasuredHint: string;
 }
 
 function nutritionRow(
-  plan: DailyMealPlanOutput | undefined,
+  plan: DailyNutritionTotals | undefined,
   targets: DriOutput | undefined,
   result: SubScoreResult | null
 ): PillarRow {
@@ -52,7 +46,7 @@ function nutritionRow(
         : '',
     source: "Today's meal plan vs your DRI targets",
     target: 'Average adherence across calories, protein, carbs, fat',
-    notMeasuredHint: 'Generate this week’s meal plan to enable nutrition scoring.',
+    notMeasuredHint: "Generate this week's meal plan to enable nutrition scoring.",
   };
 }
 
@@ -123,7 +117,7 @@ export default function HealthScorePage() {
     return d.toISOString().split('T')[0];
   }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: savedPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: scheduleItems = [] } = useWeekScheduleQuery(weekStartStr);
   const { data: targets } = useUserTargetsQuery();
   const { data: user } = useUserQuery();
 
@@ -141,10 +135,25 @@ export default function HealthScorePage() {
     [hkActive, hkSteps, hkSleep]
   );
 
-  const todayPlan = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[today.getDay()];
-    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
-  }, [savedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
+  const todayPlan = useMemo((): DailyNutritionTotals | undefined => {
+    const todayItems = scheduleItems.filter((item) => {
+      const d = new Date(item.date);
+      return (
+        d.getFullYear() === today.getFullYear() &&
+        d.getMonth() === today.getMonth() &&
+        d.getDate() === today.getDate() &&
+        item.activity_type === 'meal' &&
+        item.meal != null
+      );
+    });
+    if (todayItems.length === 0) return undefined;
+    return {
+      total_calories: todayItems.reduce((s, i) => s + (i.meal?.calories ?? 0), 0),
+      total_protein: todayItems.reduce((s, i) => s + (i.meal?.protein ?? 0), 0),
+      total_carbs: todayItems.reduce((s, i) => s + (i.meal?.carbohydrates ?? 0), 0),
+      total_fat: todayItems.reduce((s, i) => s + (i.meal?.fat ?? 0), 0),
+    };
+  }, [scheduleItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const healthScore = useMemo(
     () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),

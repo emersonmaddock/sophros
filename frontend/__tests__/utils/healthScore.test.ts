@@ -1,5 +1,5 @@
-import type { DailyMealPlanOutput, DriOutput } from '@/api/types.gen';
-import { calculateHealthScore } from '@/utils/healthScore';
+import type { DriOutput } from '@/api/types.gen';
+import { calculateHealthScore, type DailyNutritionTotals } from '@/utils/healthScore';
 
 // ---------------------------------------------------------------------------
 // Fixture helpers
@@ -19,15 +19,12 @@ function makeDailyPlan(
   protein: number,
   carbs: number,
   fat: number
-): DailyMealPlanOutput {
+): DailyNutritionTotals {
   return {
-    day: 'Monday',
-    slots: [],
     total_calories: calories,
     total_protein: protein,
     total_carbs: carbs,
     total_fat: fat,
-    exercise: null,
   };
 }
 
@@ -144,7 +141,6 @@ describe('calculateHealthScore — sleep (schedule-based)', () => {
   });
 
   it('scores 13 at 1h undershoot (06:00 → 07:00)', () => {
-    // 1h of sleep should show something, even if low
     const r = calculateHealthScore(undefined, undefined, sched('06:00', '07:00'), false);
     expect(r.sleep?.score).toBe(13);
   });

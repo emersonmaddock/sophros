@@ -34,8 +34,11 @@ jest.mock('@clerk/expo', () => ({
 }));
 
 // Mock all data-fetching hooks used by the dashboard
+jest.mock('@/lib/queries/schedule', () => ({
+  useWeekScheduleQuery: jest.fn(() => ({ data: [], isLoading: false, error: null })),
+}));
+
 jest.mock('@/lib/queries/mealPlan', () => ({
-  useSavedWeekPlanQuery: jest.fn(() => ({ data: null, isLoading: false, error: null })),
   useGenerateWeekPlanMutation: jest.fn(() => ({ mutateAsync: jest.fn(), isPending: false })),
 }));
 
@@ -64,7 +67,7 @@ jest.mock('react-native-svg', () => {
   };
 });
 
-import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { useUser } from '@clerk/expo';
 
@@ -72,9 +75,9 @@ describe('DashboardPage (Home)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Reset to default null-data state
-    (useSavedWeekPlanQuery as jest.Mock).mockReturnValue({
-      data: null,
+    // Reset to default empty-data state
+    (useWeekScheduleQuery as jest.Mock).mockReturnValue({
+      data: [],
       isLoading: false,
       error: null,
     });
@@ -118,8 +121,8 @@ describe('DashboardPage (Home)', () => {
 
   it('shows loading indicator when isLoading: true', () => {
     // Mock the query to return isLoading: true
-    (useSavedWeekPlanQuery as jest.Mock).mockReturnValue({
-      data: null,
+    (useWeekScheduleQuery as jest.Mock).mockReturnValue({
+      data: [],
       isLoading: true,
       error: null,
     });
