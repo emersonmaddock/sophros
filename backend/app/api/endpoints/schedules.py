@@ -137,7 +137,8 @@ async def swap_schedule_item_meal(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    """Swap the active meal on a slot. meal_id must be in the item's alternatives."""
+    """Swap the active meal on a slot. meal_id must be in the item's alternatives.
+    Leftover slots cannot be swapped directly. Swapping a primary also updates its leftover."""
     stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
@@ -145,6 +146,12 @@ async def swap_schedule_item_meal(
     if not item or item.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
+        )
+
+    if item.source_schedule_item_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Leftover slots cannot be swapped directly",
         )
 
     valid_ids = {alt.meal_id for alt in item.alternatives}
@@ -156,6 +163,17 @@ async def swap_schedule_item_meal(
 
     item.meal_id = body.meal_id
     db.add(item)
+
+    # Also update any leftover that was sourced from this slot
+    leftover_stmt = select(ScheduleItem).where(
+        ScheduleItem.source_schedule_item_id == item_id,
+        ScheduleItem.user_id == current_user.id,
+    )
+    leftover_result = await db.execute(leftover_stmt)
+    for leftover in leftover_result.scalars().all():
+        leftover.meal_id = body.meal_id
+        db.add(leftover)
+
     await db.commit()
     db.expire(item)
 

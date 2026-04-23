@@ -97,14 +97,21 @@ export function useSwapMealMutation() {
       const prev = queryClient.getQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate));
       queryClient.setQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate), (old) => {
         if (!old) return [];
+        let swappedMeal: MealRead | undefined;
         return old.map((item) => {
-          if (item.id !== itemId) return item;
-          const newMeal = item.alternatives?.find((a: MealRead) => a.id === mealId);
-          if (!newMeal) return item;
-          const oldMeal = item.meal;
-          const newAlts = (item.alternatives ?? []).filter((a: MealRead) => a.id !== mealId);
-          if (oldMeal) newAlts.push(oldMeal);
-          return { ...item, meal: newMeal, meal_id: mealId, alternatives: newAlts };
+          if (item.id === itemId) {
+            swappedMeal = item.alternatives?.find((a: MealRead) => a.id === mealId);
+            if (!swappedMeal) return item;
+            const oldMeal = item.meal;
+            const newAlts = (item.alternatives ?? []).filter((a: MealRead) => a.id !== mealId);
+            if (oldMeal) newAlts.push(oldMeal);
+            return { ...item, meal: swappedMeal, meal_id: mealId, alternatives: newAlts };
+          }
+          // Keep leftover in sync with its source
+          if (item.source_schedule_item_id === itemId && swappedMeal) {
+            return { ...item, meal: swappedMeal, meal_id: mealId };
+          }
+          return item;
         });
       });
       return { prev, weekStartDate };

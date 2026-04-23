@@ -252,19 +252,21 @@ export default function WeekPlanningScreen() {
                   )}
                 </View>
                 <View style={styles.itemActions}>
-                  {item.alternatives && item.alternatives.length > 0 && (
-                    <TouchableOpacity
-                      onPress={() => handleSwap(item)}
-                      style={[
-                        styles.actionButton,
-                        { backgroundColor: `${Colors.light.primary}15` },
-                      ]}
-                    >
-                      <Text style={[styles.actionButtonText, { color: Colors.light.primary }]}>
-                        Swap
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {item.alternatives &&
+                    item.alternatives.length > 0 &&
+                    !item.source_schedule_item_id && (
+                      <TouchableOpacity
+                        onPress={() => handleSwap(item)}
+                        style={[
+                          styles.actionButton,
+                          { backgroundColor: `${Colors.light.primary}15` },
+                        ]}
+                      >
+                        <Text style={[styles.actionButtonText, { color: Colors.light.primary }]}>
+                          Swap
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   <TouchableOpacity
                     onPress={() => handleDelete(item)}
                     style={[styles.actionButton, { backgroundColor: '#FEE2E215' }]}

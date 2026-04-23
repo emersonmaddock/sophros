@@ -313,13 +313,14 @@ class MealPlanService:
             first_plan.slots, [MealSlot.LUNCH, MealSlot.DINNER], 0.35
         )
 
-        # Fetch 5 breakfast recipes: 3 for weekly rotation + 2 shared alternatives
+        # Fetch 8 breakfast recipes: up to 3 for weekly rotation + 2 shared alternatives
+        # (extra buffer in case the API returns fewer results than requested)
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
                 MealType.BREAKFAST,
                 breakfast_cals,
                 constraints,
-                count=5,
+                count=8,
                 max_prep_time=30,
             ),
             self._fetch_recipe_pool(
@@ -332,12 +333,12 @@ class MealPlanService:
                 "No breakfast recipes found matching your dietary preferences."
             )
 
-        # First 3 breakfast recipes rotate across all 7 days (allows repeats)
-        # Next 2 are reserved as shared alternatives for all breakfast slots
-        breakfast_rotation = breakfast_pool[: min(3, len(breakfast_pool))]
-        breakfast_alt_pool = breakfast_pool[
-            len(breakfast_rotation) : len(breakfast_rotation) + 2
-        ]
+        # Always reserve 2 slots for alternatives; rotation gets whatever remains.
+        # e.g. pool=8 → rotation=6,alts=2; pool=5 → rotation=3,alts=2; pool=3 → rotation=1,alts=2
+        BREAKFAST_ALT_COUNT = 2
+        rotation_size = max(1, len(breakfast_pool) - BREAKFAST_ALT_COUNT)
+        breakfast_rotation = breakfast_pool[:rotation_size]
+        breakfast_alt_pool = breakfast_pool[rotation_size : rotation_size + BREAKFAST_ALT_COUNT]
         breakfast_idx = 0
 
         # Step 5: Assign recipes from pools, respecting leftovers

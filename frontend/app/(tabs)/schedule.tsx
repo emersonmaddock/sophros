@@ -570,7 +570,9 @@ export default function SchedulePage() {
         onModify={handleMealModify}
         onRemove={handleMealRemove}
         onSwap={
-          selectedItem?.alternatives && selectedItem.alternatives.length > 0
+          selectedItem?.alternatives &&
+          selectedItem.alternatives.length > 0 &&
+          !selectedItem.source_schedule_item_id
             ? () => setSwapModalItem(selectedItem)
             : undefined
         }
