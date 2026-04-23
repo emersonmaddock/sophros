@@ -1,4 +1,3 @@
-from datetime import date, datetime
 from datetime import time as timeofday
 
 from pydantic import BaseModel, Field
@@ -48,21 +47,8 @@ class DailyMealPlan(BaseModel):
 class WeeklyMealPlan(BaseModel):
     daily_plans: list[DailyMealPlan]
     total_weekly_calories: int
+    # Global alternative pools used internally by the service during generation.
+    # Alternatives are now also persisted per-slot as ScheduleItemAlternative rows.
     breakfast_alternatives: list[Recipe] = Field(default_factory=list)
     lunch_alternatives: list[Recipe] = Field(default_factory=list)
     dinner_alternatives: list[Recipe] = Field(default_factory=list)
-
-
-class SaveMealPlanRequest(BaseModel):
-    week_start_date: date
-    plan_data: WeeklyMealPlan
-
-
-class SavedMealPlanResponse(BaseModel):
-    id: int
-    week_start_date: date
-    plan_data: WeeklyMealPlan
-    created_at: datetime
-    updated_at: datetime
-
-    model_config = {"from_attributes": True}

@@ -1,16 +1,23 @@
-import type { Recipe } from '@/api/types.gen';
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
-import { ArrowRight, Edit, Trash2 } from 'lucide-react-native';
+import { ArrowRight, Edit, RefreshCw, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+interface RecipeData {
+  title?: string;
+  nutrients?: { calories?: number; protein?: number; carbohydrates?: number; fat?: number };
+  ingredients?: string[];
+  source_url?: string;
+  preparation_time_minutes?: number;
+}
 
 interface MealData {
   time: string;
   title?: string;
   subtitle?: string;
   type: string;
-  recipe?: Recipe;
+  recipe?: RecipeData;
   [key: string]: unknown;
 }
 
@@ -20,6 +27,7 @@ interface MealDetailModalProps {
   meal: MealData | null;
   onModify?: (meal: MealData) => void;
   onRemove?: (meal: MealData) => void;
+  onSwap?: () => void;
 }
 
 export const MealDetailModal = ({
@@ -28,6 +36,7 @@ export const MealDetailModal = ({
   meal,
   onModify,
   onRemove,
+  onSwap,
 }: MealDetailModalProps) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['85%'], []);
@@ -131,6 +140,21 @@ export const MealDetailModal = ({
           </TouchableOpacity>
         )}
 
+        {onSwap && (
+          <TouchableOpacity
+            style={[styles.alternativeButton]}
+            onPress={() => {
+              onClose();
+              onSwap();
+            }}
+          >
+            <RefreshCw size={18} color={Colors.light.primary} />
+            <Text style={[styles.actionButtonText, { color: Colors.light.primary }]}>
+              View Alternatives
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.actionsRow}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: Colors.light.background, flex: 1 }]}
@@ -223,6 +247,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   linkTitle: { fontSize: 14, fontWeight: '600', color: Colors.light.primary },
+  alternativeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: `${Colors.light.primary}12`,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+  },
   actionsRow: { flexDirection: 'row', gap: 12 },
   actionButton: {
     padding: 16,

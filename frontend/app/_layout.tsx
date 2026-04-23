@@ -9,9 +9,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { queryClient } from '@/config/queryClient';
-import { ConfirmationsProvider } from '@/contexts/ConfirmationsContext';
 import { DevTimeProvider } from '@/contexts/DevTimeContext';
 import { OnboardingProvider } from '@/contexts/onboarding-context';
+import { HealthKitProvider } from '@/lib/healthkit';
 import { UserProvider } from '@/contexts/UserContext';
 import { client } from '../api/client.gen';
 
@@ -37,11 +37,11 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <DevTimeProvider>
-        <ConfirmationsProvider>
-          <QueryClientProvider client={queryClient}>
-            <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
-              <UserProvider>
-                <OnboardingProvider>
+        <QueryClientProvider client={queryClient}>
+          <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
+            <UserProvider>
+              <OnboardingProvider>
+                <HealthKitProvider>
                   <BottomSheetModalProvider>
                     <ThemeProvider value={DefaultTheme}>
                       <Stack>
@@ -57,15 +57,16 @@ export default function RootLayout() {
                           name="profile/dietary-preferences"
                           options={{ headerShown: false }}
                         />
+                        <Stack.Screen name="profile/health" options={{ headerShown: false }} />
                       </Stack>
                       <StatusBar style="dark" />
                     </ThemeProvider>
                   </BottomSheetModalProvider>
-                </OnboardingProvider>
-              </UserProvider>
-            </ClerkProvider>
-          </QueryClientProvider>
-        </ConfirmationsProvider>
+                </HealthKitProvider>
+              </OnboardingProvider>
+            </UserProvider>
+          </ClerkProvider>
+        </QueryClientProvider>
       </DevTimeProvider>
     </GestureHandlerRootView>
   );

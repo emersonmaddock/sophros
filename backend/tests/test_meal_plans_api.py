@@ -1,165 +1,155 @@
-from datetime import date
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
-from app.domain.enums import Day, MealSlot
-from app.schemas.meal_plan import DailyMealPlan, MealSlotTarget, WeeklyMealPlan
+from app.api import deps
+from app.db.session import get_db
+from app.domain.enums import ActivityLevel, ActivityType, PregnancyStatus, Sex
+from app.main import app
+from app.models.meal import Meal
+from app.models.schedule import ScheduleItem
 
 BASE = "/api/v1/meal-plans"
 
-MONDAY = date(2025, 6, 2)   # confirmed Monday
-TUESDAY = date(2025, 6, 3)  # not a Monday
+MONDAY = "2025-06-02"  # confirmed Monday
+TUESDAY = "2025-06-03"  # not a Monday
 
-WEEKLY_PLAN_PAYLOAD = {
-    "daily_plans": [
-        {
-            "day": "Monday",
-            "slots": [
-                {
-                    "slot_name": "Breakfast",
-                    "calories": 600,
-                    "protein": 30,
-                    "carbohydrates": 75,
-                    "fat": 20,
-                }
-            ],
-            "exercise": None,
-            "total_calories": 600,
-            "total_protein": 30,
-            "total_carbs": 75,
-            "total_fat": 20,
-        }
-    ],
-    "total_weekly_calories": 600,
-}
+
+@pytest.fixture
+async def mock_client() -> AsyncClient:
+    """Client with mocked dependencies (no DB required)."""
+    # Create a mock user with required attributes for UserRead validation
+    mock_user = MagicMock()
+    mock_user.id = "test_user_id"
+    mock_user.email = "test@example.com"
+    mock_user.age = 30
+    mock_user.weight = 70.0
+    mock_user.height = 175.0
+    mock_user.show_imperial = False
+    mock_user.gender = Sex.MALE
+    mock_user.activity_level = ActivityLevel.MODERATE
+    mock_user.pregnancy_status = PregnancyStatus.NOT_PREGNANT
+    mock_user.target_weight = None
+    mock_user.target_body_fat = None
+    mock_user.target_date = None
+    mock_user.allergies = []
+    mock_user.include_cuisines = []
+    mock_user.exclude_cuisines = []
+    mock_user.busy_times = []
+
+    # Mock db.execute() to return an object with all() method
+    class MockResult:
+        def all(self):
+            return []
+
+    mock_result = MockResult()
+
+    mock_db = AsyncMock()
+    mock_db.execute = AsyncMock(return_value=mock_result)
+
+    app.dependency_overrides[get_db] = lambda: mock_db
+    app.dependency_overrides[deps.get_current_user] = lambda: mock_user
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
-async def test_save_meal_plan_creates_new(client: AsyncClient):
-    response = await client.post(
-        f"{BASE}/save",
-        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["week_start_date"] == str(MONDAY)
-    assert "id" in data
-
-
-@pytest.mark.asyncio
-async def test_save_meal_plan_non_monday_rejected(client: AsyncClient):
-    response = await client.post(
-        f"{BASE}/save",
-        json={"week_start_date": str(TUESDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
-    )
+async def test_generate_week_requires_monday(mock_client: AsyncClient):
+    with patch("app.api.endpoints.meal_plans.MealPlanService"):
+        response = await mock_client.post(
+            f"{BASE}/generate-week",
+            params={"week_start_date": TUESDAY},
+        )
     assert response.status_code == 400
     assert "Monday" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
-async def test_save_meal_plan_upserts_existing(client: AsyncClient):
-    first = await client.post(
-        f"{BASE}/save",
-        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
-    )
-    first_id = first.json()["id"]
+async def test_generate_week_calls_service_and_returns_items(mock_client: AsyncClient):
+    mock_items = []  # generate_and_persist returns list[ScheduleItem]; empty is valid
 
-    second = await client.post(
-        f"{BASE}/save",
-        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
-    )
-    assert second.status_code == 200
-    assert second.json()["id"] == first_id
-
-
-@pytest.mark.asyncio
-async def test_get_week_plan_found(client: AsyncClient):
-    await client.post(
-        f"{BASE}/save",
-        json={"week_start_date": str(MONDAY), "plan_data": WEEKLY_PLAN_PAYLOAD},
-    )
-    response = await client.get(f"{BASE}/week", params={"week_start_date": str(MONDAY)})
-    assert response.status_code == 200
-    assert response.json()["week_start_date"] == str(MONDAY)
-
-
-@pytest.mark.asyncio
-async def test_get_week_plan_returns_null_when_none(client: AsyncClient):
-    unplanned = date(2025, 1, 6)  # Monday with no saved data
-    response = await client.get(
-        f"{BASE}/week", params={"week_start_date": str(unplanned)}
-    )
-    assert response.status_code == 200
-    assert response.json() is None
-
-
-@pytest.mark.asyncio
-async def test_get_planned_weeks(client: AsyncClient):
-    week1 = date(2025, 6, 2)
-    week2 = date(2025, 6, 9)
-    for week in (week1, week2):
-        await client.post(
-            f"{BASE}/save",
-            json={"week_start_date": str(week), "plan_data": WEEKLY_PLAN_PAYLOAD},
+    with patch("app.api.endpoints.meal_plans.MealPlanService") as mock_service:
+        mock_service.return_value.generate_and_persist = AsyncMock(
+            return_value=mock_items
         )
+        response = await mock_client.post(
+            f"{BASE}/generate-week",
+            params={"week_start_date": MONDAY},
+        )
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_generate_week_returns_500_on_service_error(mock_client: AsyncClient):
+    with patch("app.api.endpoints.meal_plans.MealPlanService") as mock_service:
+        mock_service.return_value.generate_and_persist = AsyncMock(
+            side_effect=RuntimeError("Spoonacular down")
+        )
+        response = await mock_client.post(
+            f"{BASE}/generate-week",
+            params={"week_start_date": MONDAY},
+        )
+
+    assert response.status_code == 500
+    assert "Failed to generate" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_planned_weeks_empty_when_no_meal_items(mock_client: AsyncClient):
+    response = await mock_client.get(f"{BASE}/planned-weeks")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_planned_weeks_returns_mondays(client: AsyncClient, db, mock_user):
+    """Insert meal-type schedule items and verify planned-weeks returns their Monday."""
+    from datetime import datetime as dt
+
+    meal = Meal(
+        recipe_id="r1",
+        title="T",
+        calories=500,
+        protein=30,
+        carbohydrates=60,
+        fat=15,
+        ingredients=[],
+        tags=[],
+    )
+    db.add(meal)
+    await db.flush()
+
+    item = ScheduleItem(
+        user_id=mock_user.id,
+        date=dt(2025, 6, 4, 8, 0),  # Wednesday in week starting 2025-06-02
+        activity_type=ActivityType.MEAL,
+        duration_minutes=30,
+        is_completed=False,
+        meal_id=meal.id,
+    )
+    db.add(item)
+    await db.commit()
 
     response = await client.get(f"{BASE}/planned-weeks")
     assert response.status_code == 200
     weeks = response.json()
-    assert str(week1) in weeks
-    assert str(week2) in weeks
+    assert "2025-06-02" in weeks  # Monday of that week
 
 
 @pytest.mark.asyncio
-async def test_generate_daily_plan(client: AsyncClient):
-    mock_plan = DailyMealPlan(
-        day=Day.MONDAY,
-        slots=[
-            MealSlotTarget(
-                slot_name=MealSlot.BREAKFAST,
-                calories=600,
-                protein=30,
-                carbohydrates=75,
-                fat=20,
-            )
-        ],
-        exercise=None,
-        total_calories=600,
-        total_protein=30,
-        total_carbs=75,
-        total_fat=20,
-    )
-    with patch("app.api.endpoints.meal_plans.MealPlanService") as MockService:
-        MockService.return_value.generate_daily_plan = AsyncMock(return_value=mock_plan)
-        response = await client.post(f"{BASE}/generate", params={"day": "Monday"})
-
-    assert response.status_code == 200
-    assert response.json()["day"] == "Monday"
-
-
-@pytest.mark.asyncio
-async def test_generate_weekly_plan(client: AsyncClient):
-    mock_weekly = WeeklyMealPlan(
-        daily_plans=[
-            DailyMealPlan(
-                day=Day.MONDAY,
-                slots=[],
-                exercise=None,
-                total_calories=2000,
-                total_protein=150,
-                total_carbs=250,
-                total_fat=70,
-            )
-        ],
-        total_weekly_calories=2000,
-    )
-    with patch("app.api.endpoints.meal_plans.MealPlanService") as MockService:
-        MockService.return_value.generate_weekly_plan = AsyncMock(return_value=mock_weekly)
-        response = await client.post(f"{BASE}/generate-week")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert "daily_plans" in data
-    assert data["total_weekly_calories"] == 2000
+async def test_removed_endpoints_return_404(mock_client: AsyncClient):
+    """Verify that old endpoints no longer exist."""
+    r1 = await mock_client.post(f"{BASE}/save", json={})
+    r2 = await mock_client.get(f"{BASE}/week", params={"week_start_date": MONDAY})
+    r3 = await mock_client.post(f"{BASE}/generate", params={"day": "Monday"})
+    assert r1.status_code == 405 or r1.status_code == 404
+    assert r2.status_code == 405 or r2.status_code == 404
+    assert r3.status_code == 405 or r3.status_code == 404

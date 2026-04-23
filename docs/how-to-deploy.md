@@ -14,12 +14,22 @@ This guide covers building a signed Android release bundle and publishing it to 
 
 ---
 
+Android:
+```bash
+cd frontend
+npx expo prebuild --platform android --clean
+cd android
+./gradlew assembleDebug
+./gradlew assembleRelease
+```
+The APK is written to `android/app/build/outputs/apk/debug/`.
+
 ## Step 1: Set the Android SDK Location
 
 Gradle needs to know where your Android SDK lives. Set this in `frontend/android/local.properties`:
 
 ```
-sdk.dir=C:\Users\<your-username>\AppData\Local\Android\Sdk
+sdk.dir=C:\\Users\\<your-username>\\AppData\\Local\\Android\\Sdk
 ```
 
 > **Note:** `local.properties` is machine-specific and is gitignored. Every developer (and CI machine) must create their own copy. Do not commit this file.

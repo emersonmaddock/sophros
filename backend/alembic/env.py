@@ -1,20 +1,20 @@
 import asyncio
 from logging.config import fileConfig
 
-from sqlalchemy import pool
-from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
-
 # 1. Import config and models
 # Need to import models here to register them
 from app.core.config import settings
 from app.db.base_class import Base
-from app.models.user import User
-from app.models.schedule import ScheduleItem
-from app.models.dietary import UserAllergy, UserBusyTime, UserExcludeCuisine, UserIncludeCuisine
-from app.models.saved_meal_plan import SavedMealPlan
+from app.models.dietary import (UserAllergy, UserBusyTime,  # noqa: F401
+                                UserExcludeCuisine, UserIncludeCuisine)
+from app.models.meal import Meal, ScheduleItemAlternative  # noqa: F401
+from app.models.schedule import ScheduleItem  # noqa: F401
+from app.models.user import User  # noqa: F401
+# ---
+from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 config = context.config
 

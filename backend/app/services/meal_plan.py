@@ -1,10 +1,18 @@
 import asyncio
 import logging
 import random
-from datetime import time
+from datetime import date, datetime, time, timedelta
+from datetime import time as time_type
 from typing import Any
 
-from app.domain.enums import Day, MealSlot
+from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+
+from app.domain.enums import ActivityType, Day, MealSlot
+from app.models.meal import Meal, ScheduleItemAlternative
+from app.models.schedule import ScheduleItem as ScheduleItemORM
 from app.schemas.dietary import DietaryConstraints
 from app.schemas.meal_plan import (
     DailyMealPlan,
@@ -20,6 +28,16 @@ from app.services.nutrient_calculator import NutrientCalculator
 from app.services.spoonacular import MealType, SpoonacularClient
 
 logger = logging.getLogger(__name__)
+
+_DAY_OFFSETS: dict[Day, int] = {
+    Day.MONDAY: 0,
+    Day.TUESDAY: 1,
+    Day.WEDNESDAY: 2,
+    Day.THURSDAY: 3,
+    Day.FRIDAY: 4,
+    Day.SATURDAY: 5,
+    Day.SUNDAY: 6,
+}
 
 
 class MealPlanService:
@@ -106,21 +124,23 @@ class MealPlanService:
         slot: MealSlotTarget,
         pool: list[dict],
         used_ids: set[int],
+        max_alternatives: int = 2,
     ) -> MealSlotTarget:
         """
-        Assign a primary recipe and up to 2 alternatives from the pool.
+        Assign a primary recipe and optionally up to max_alternatives from the pool.
 
         - Primary: first unused recipe (added to used_ids globally)
         - Alternatives: next unused-within-slot recipes (NOT added to used_ids)
         - Raises ValueError if no unused primary is available
         - Sets slot.plan as MealOption and slot.prep_time_minutes
         """
+        target_count = 1 + max_alternatives
         candidates: list[dict] = []
         for item in pool:
             rid = item.get("id")
             if rid not in used_ids and rid not in [c.get("id") for c in candidates]:
                 candidates.append(item)
-                if len(candidates) >= 3:
+                if len(candidates) >= target_count:
                     break
 
         if not candidates:
@@ -129,11 +149,12 @@ class MealPlanService:
                 f"Pool exhausted ({len(pool)} recipes, {len(used_ids)} used)."
             )
 
-        if len(candidates) < 3:
+        if max_alternatives > 0 and len(candidates) < target_count:
             logger.warning(
-                "Only %d candidate(s) for %s (wanted 3)",
+                "Only %d candidate(s) for %s (wanted %d)",
                 len(candidates),
                 slot.slot_name,
+                target_count,
             )
 
         # First candidate is primary — track globally
@@ -292,12 +313,13 @@ class MealPlanService:
             first_plan.slots, [MealSlot.LUNCH, MealSlot.DINNER], 0.35
         )
 
+        # Fetch 5 breakfast recipes: 3 for weekly rotation + 2 shared alternatives
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
                 MealType.BREAKFAST,
                 breakfast_cals,
                 constraints,
-                count=6,
+                count=5,
                 max_prep_time=30,
             ),
             self._fetch_recipe_pool(
@@ -311,10 +333,10 @@ class MealPlanService:
             )
 
         # First 3 breakfast recipes rotate across all 7 days (allows repeats)
-        # Next 3 are reserved as alternatives for swapping
+        # Next 2 are reserved as shared alternatives for all breakfast slots
         breakfast_rotation = breakfast_pool[: min(3, len(breakfast_pool))]
         breakfast_alt_pool = breakfast_pool[
-            len(breakfast_rotation) : len(breakfast_rotation) + 3
+            len(breakfast_rotation) : len(breakfast_rotation) + 2
         ]
         breakfast_idx = 0
 
@@ -353,31 +375,29 @@ class MealPlanService:
                         recipe.preparation_time_minutes or 15, 20
                     )
                 else:
-                    self._assign_slot_recipes(slot, main_pool, used_ids)
+                    # Only assign a primary — shared alternatives are built below
+                    self._assign_slot_recipes(slot, main_pool, used_ids, max_alternatives=0)
                     # Store in manifest for potential leftover lookups
                     if slot.plan and slot.plan.main_recipe:
                         recipe_manifest[(plan.day, slot.slot_name)] = (
                             slot.plan.main_recipe
                         )
 
-        # Build global alternatives pools (recipes not used in the plan)
+        # Build shared alternative pools (consistent across all slots of each type)
+        # Breakfast: 2 alternatives shared by every breakfast slot in the week
         breakfast_alternatives = [
             self._convert_to_recipe(r) for r in breakfast_alt_pool
         ]
 
-        lunch_alternatives: list[Recipe] = []
-        dinner_alternatives: list[Recipe] = []
+        # Lunch + Dinner: same 3 alternatives shared by every lunch and dinner slot
+        main_alternatives: list[Recipe] = []
         for item in main_pool:
             rid = item.get("id")
             if not isinstance(rid, int) or rid in used_ids:
                 continue
-            if len(lunch_alternatives) < 3:
-                lunch_alternatives.append(self._convert_to_recipe(item))
-                used_ids.add(rid)
-            elif len(dinner_alternatives) < 3:
-                dinner_alternatives.append(self._convert_to_recipe(item))
-                used_ids.add(rid)
-            if len(lunch_alternatives) >= 3 and len(dinner_alternatives) >= 3:
+            main_alternatives.append(self._convert_to_recipe(item))
+            used_ids.add(rid)
+            if len(main_alternatives) >= 3:
                 break
 
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
@@ -385,9 +405,210 @@ class MealPlanService:
             daily_plans=daily_plans,
             total_weekly_calories=total_weekly_cals,
             breakfast_alternatives=breakfast_alternatives,
-            lunch_alternatives=lunch_alternatives,
-            dinner_alternatives=dinner_alternatives,
+            lunch_alternatives=main_alternatives,
+            dinner_alternatives=main_alternatives,
         )
+
+    async def generate_and_persist(
+        self,
+        user: User,
+        week_start_date: date,
+        db: AsyncSession,
+    ) -> list[ScheduleItemORM]:
+        """
+        Generate a weekly meal plan and persist it to the database.
+
+        Deletes any existing meal- and exercise-type ScheduleItems for the given week
+        first, then creates Meal rows, ScheduleItem rows (meals + workouts), and
+        ScheduleItemAlternative rows.
+        Returns the persisted ScheduleItems with meal + alternatives eager-loaded.
+        """
+        weekly_plan = await self.generate_weekly_plan(user)
+        return await self._persist_weekly_plan(
+            daily_plans=weekly_plan.daily_plans,
+            user_id=user.id,
+            week_start_date=week_start_date,
+            db=db,
+            breakfast_alternatives=weekly_plan.breakfast_alternatives,
+            lunch_alternatives=weekly_plan.lunch_alternatives,
+            dinner_alternatives=weekly_plan.dinner_alternatives,
+        )
+
+    async def _persist_weekly_plan(
+        self,
+        daily_plans: list,  # list[DailyMealPlan]
+        user_id: str,
+        week_start_date: date,
+        db: AsyncSession,
+        breakfast_alternatives: list[Recipe] | None = None,
+        lunch_alternatives: list[Recipe] | None = None,
+        dinner_alternatives: list[Recipe] | None = None,
+    ) -> list[ScheduleItemORM]:
+        # Step 1: Delete existing meal items for this week
+        week_start_dt = datetime.combine(week_start_date, time_type(0, 0, 0))
+        week_end_dt = datetime.combine(
+            week_start_date + timedelta(days=6), time_type(23, 59, 59)
+        )
+        await db.execute(
+            delete(ScheduleItemORM).where(
+                ScheduleItemORM.user_id == user_id,
+                ScheduleItemORM.activity_type.in_(
+                    [ActivityType.MEAL, ActivityType.EXERCISE]
+                ),
+                ScheduleItemORM.date >= week_start_dt,
+                ScheduleItemORM.date <= week_end_dt,
+            )
+        )
+
+        # Step 2: Create Meal rows for every unique recipe (primaries + shared alternatives)
+        recipe_id_to_meal: dict[str, Meal] = {}
+
+        def _add_meal_row(r: Recipe) -> None:
+            if r.id not in recipe_id_to_meal:
+                meal_row = Meal(
+                    recipe_id=r.id,
+                    title=r.title,
+                    image_url=r.image_url,
+                    source_url=r.source_url,
+                    calories=r.nutrients.calories,
+                    protein=r.nutrients.protein,
+                    carbohydrates=r.nutrients.carbohydrates,
+                    fat=r.nutrients.fat,
+                    prep_time_minutes=r.preparation_time_minutes,
+                    ingredients=r.ingredients,
+                    tags=r.tags,
+                )
+                db.add(meal_row)
+                recipe_id_to_meal[r.id] = meal_row
+
+        for plan in daily_plans:
+            for slot in plan.slots:
+                if slot.is_leftover or not slot.plan:
+                    continue
+                if slot.plan.main_recipe:
+                    _add_meal_row(slot.plan.main_recipe)
+
+        # Shared alternative pools (deduplicated across lunch/dinner which share the same list)
+        seen_alt_ids: set[str] = set()
+        for alt_recipe in [
+            *(breakfast_alternatives or []),
+            *(lunch_alternatives or []),
+            *(dinner_alternatives or []),
+        ]:
+            if alt_recipe.id not in seen_alt_ids:
+                seen_alt_ids.add(alt_recipe.id)
+                _add_meal_row(alt_recipe)
+
+        await db.flush()  # Assign Meal.id values
+
+        # Step 3: Create ScheduleItem rows (one per slot)
+        plan_slot_to_item: dict[tuple, ScheduleItemORM] = {}
+        # Track (item, slot_name) so we can assign shared alternatives after flush
+        item_slot_pairs: list[tuple[ScheduleItemORM, MealSlot]] = []
+
+        for plan in daily_plans:
+            offset = _DAY_OFFSETS[plan.day]
+            slot_date = week_start_date + timedelta(days=offset)
+
+            for slot in plan.slots:
+                meal_time = slot.time or time_type(12, 0)
+                item_dt = datetime.combine(slot_date, meal_time)
+                prep = 5 if slot.is_leftover else (slot.prep_time_minutes or 30)
+
+                # Meal link: leftovers get their meal_id set in step 4
+                meal_obj = None
+                if not slot.is_leftover and slot.plan and slot.plan.main_recipe:
+                    meal_obj = recipe_id_to_meal.get(slot.plan.main_recipe.id)
+
+                schedule_item = ScheduleItemORM(
+                    user_id=user_id,
+                    date=item_dt,
+                    activity_type=ActivityType.MEAL,
+                    duration_minutes=max(30, prep),
+                    prep_time_minutes=prep,
+                    is_completed=False,
+                    meal_id=meal_obj.id if meal_obj else None,
+                )
+                db.add(schedule_item)
+                plan_slot_to_item[(plan.day, slot.slot_name)] = schedule_item
+                item_slot_pairs.append((schedule_item, slot.slot_name))
+
+        await db.flush()  # Assign ScheduleItem.id values
+
+        # Step 3b: Create exercise ScheduleItem rows
+        for plan in daily_plans:
+            if not plan.exercise:
+                continue
+            offset = _DAY_OFFSETS[plan.day]
+            slot_date = week_start_date + timedelta(days=offset)
+            exercise_time = plan.exercise.time or time_type(7, 0)
+            db.add(
+                ScheduleItemORM(
+                    user_id=user_id,
+                    date=datetime.combine(slot_date, exercise_time),
+                    activity_type=ActivityType.EXERCISE,
+                    duration_minutes=plan.exercise.duration_minutes,
+                    prep_time_minutes=0,
+                    is_completed=False,
+                    exercise_category=plan.exercise.category,
+                    exercise_calorie_burn=plan.exercise.calories_burned,
+                    exercise_muscle_gain=plan.exercise.muscle_gain_estimate_kg,
+                )
+            )
+
+        # Step 4: Resolve leftover links (source_schedule_item_id + meal_id)
+        for plan in daily_plans:
+            for slot in plan.slots:
+                if not slot.is_leftover:
+                    continue
+                leftover_item = plan_slot_to_item.get((plan.day, slot.slot_name))
+                source_item = plan_slot_to_item.get(
+                    (slot.leftover_from_day, slot.leftover_from_slot)
+                )
+                if leftover_item and source_item:
+                    leftover_item.source_schedule_item_id = source_item.id
+                    leftover_item.meal_id = source_item.meal_id
+
+        # Step 5: Attach shared alternative pools to every meal slot
+        shared_alts: dict[MealSlot, list[Recipe]] = {
+            MealSlot.BREAKFAST: breakfast_alternatives or [],
+            MealSlot.LUNCH: lunch_alternatives or [],
+            MealSlot.DINNER: dinner_alternatives or [],
+        }
+        for schedule_item, slot_name in item_slot_pairs:
+            for alt_recipe in shared_alts.get(slot_name, []):
+                alt_meal = recipe_id_to_meal.get(alt_recipe.id)
+                if alt_meal and alt_meal.id:
+                    db.add(
+                        ScheduleItemAlternative(
+                            schedule_item_id=schedule_item.id,
+                            meal_id=alt_meal.id,
+                        )
+                    )
+
+        await db.commit()
+
+        # Step 6: Re-fetch all created items with relationships
+        stmt = (
+            select(ScheduleItemORM)
+            .where(
+                ScheduleItemORM.user_id == user_id,
+                ScheduleItemORM.activity_type.in_(
+                    [ActivityType.MEAL, ActivityType.EXERCISE]
+                ),
+                ScheduleItemORM.date >= week_start_dt,
+                ScheduleItemORM.date <= week_end_dt,
+            )
+            .order_by(ScheduleItemORM.date)
+            .options(
+                selectinload(ScheduleItemORM.meal),
+                selectinload(ScheduleItemORM.alternatives).selectinload(
+                    ScheduleItemAlternative.meal
+                ),
+            )
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
 
     def _apply_adaptive_leftovers(self, daily_plans: list[DailyMealPlan], user: User):
         """
