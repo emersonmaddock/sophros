@@ -107,6 +107,10 @@ class MealPlanService:
             max_prep_time,
         )
 
+        # Sample from different pages of Spoonacular results so weekly plans do not
+        # keep drawing from the same top-ranked recipes for identical constraints.
+        random_offset = random.randint(0, 50)
+
         results = await self.spoonacular_client.search_recipes(
             type=meal_type,
             min_calories=min_cals,
@@ -114,6 +118,7 @@ class MealPlanService:
             max_ready_time=max_prep_time,
             constraints=constraints,
             number=count,
+            offset=random_offset,
         )
 
         random.shuffle(results)

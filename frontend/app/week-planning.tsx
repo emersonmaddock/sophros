@@ -242,13 +242,25 @@ export default function WeekPlanningScreen() {
                 <View style={styles.itemContent}>
                   <Text style={styles.itemTime}>{formatDisplayTime(item.date)}</Text>
                   <Text style={styles.itemTitle} numberOfLines={1}>
-                    {item.meal?.title ?? item.activity_type}
+                    {item.meal?.title ??
+                      (item.activity_type === 'exercise'
+                        ? (item.exercise_category ?? 'Workout')
+                        : item.activity_type)}
                   </Text>
-                  {item.meal && (
-                    <Text style={styles.itemMacros}>
-                      {item.meal.calories} cal · {item.meal.protein}g P · {item.meal.carbohydrates}g
-                      C
-                    </Text>
+                  {(item.meal || item.source_schedule_item_id) && (
+                    <View style={styles.itemMetaRow}>
+                      {item.meal && (
+                        <Text style={styles.itemMacros} numberOfLines={1}>
+                          {item.meal.calories} cal · {item.meal.protein}g P ·{' '}
+                          {item.meal.carbohydrates}g C · {item.meal.fat}g F
+                        </Text>
+                      )}
+                      {item.source_schedule_item_id && (
+                        <View style={styles.leftoverBadge}>
+                          <Text style={styles.leftoverBadgeText}>Leftover</Text>
+                        </View>
+                      )}
+                    </View>
                   )}
                 </View>
                 <View style={styles.itemActions}>
@@ -366,7 +378,15 @@ const styles = StyleSheet.create({
   itemContent: { flex: 1, gap: 2 },
   itemTime: { fontSize: 12, color: Colors.light.textMuted, fontWeight: '600' },
   itemTitle: { fontSize: 16, fontWeight: '600', color: Colors.light.text },
-  itemMacros: { fontSize: 12, color: Colors.light.textMuted },
+  itemMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  leftoverBadge: {
+    backgroundColor: '#F3F0FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  leftoverBadgeText: { fontSize: 10, fontWeight: '700', color: '#7C3AED' },
+  itemMacros: { flex: 1, fontSize: 12, color: Colors.light.textMuted },
   itemActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   actionButton: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
   actionButtonText: { fontSize: 13, fontWeight: '600' },

@@ -60,7 +60,7 @@ function getItemTitle(item: ScheduleItemRead): string {
     case 'meal':
       return 'Meal';
     case 'exercise':
-      return 'Workout';
+      return item.exercise_category ?? 'Workout';
     case 'sleep':
       return 'Sleep';
     default:
@@ -458,6 +458,9 @@ export default function SchedulePage() {
               const displayTime = getDisplayTime(item.date);
               const title = getItemTitle(item);
               const durationDisplay = getDurationDisplay(item.duration_minutes);
+              const mealMacros = item.meal
+                ? `${item.meal.calories} cal · ${item.meal.protein}g P · ${item.meal.carbohydrates}g C · ${item.meal.fat}g F`
+                : null;
 
               return (
                 <SwipeableScheduleItem
@@ -492,28 +495,40 @@ export default function SchedulePage() {
                           marginBottom: 4,
                         }}
                       >
-                        <View
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}
-                        >
+                        <View style={{ flex: 1, paddingRight: 12 }}>
                           <Text style={styles.eventTitle} numberOfLines={1}>
                             {title}
                             {isDone && ' ✓'}
                           </Text>
-                          {isDone && (
-                            <View style={styles.doneBadge}>
-                              <Text style={styles.doneBadgeText}>Done</Text>
-                            </View>
-                          )}
                         </View>
                         <View style={styles.durationBadge}>
                           <Text style={styles.durationText}>{durationDisplay}</Text>
                         </View>
                       </View>
 
-                      {item.meal?.tags && item.meal.tags.length > 0 && (
-                        <Text style={styles.eventSubtitle}>
-                          {item.meal.tags.slice(0, 3).join(', ')}
-                        </Text>
+                      {isDone && (
+                        <View style={styles.cardBadgeRow}>
+                          {isDone && (
+                            <View style={styles.doneBadge}>
+                              <Text style={styles.doneBadgeText}>Done</Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+
+                      {(mealMacros || item.source_schedule_item_id) && (
+                        <View style={styles.subtitleRow}>
+                          {mealMacros && (
+                            <Text style={styles.eventSubtitle} numberOfLines={1}>
+                              {mealMacros}
+                            </Text>
+                          )}
+                          {item.source_schedule_item_id && (
+                            <View style={styles.leftoverBadge}>
+                              <Text style={styles.leftoverBadgeText}>Leftover</Text>
+                            </View>
+                          )}
+                        </View>
                       )}
                       {needsConfirmation && !isCompleted && (
                         <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
@@ -758,6 +773,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.light.text,
   },
+  cardBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    flexWrap: 'wrap',
+  },
   durationBadge: {
     backgroundColor: Colors.light.background,
     paddingHorizontal: 8,
@@ -772,6 +794,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textMuted,
     marginTop: 2,
+    flex: 1,
+  },
+  subtitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 2,
   },
   pendingCard: {
     backgroundColor: '#FFFBEB',
@@ -782,6 +811,17 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     marginTop: 4,
     textAlign: 'center',
+  },
+  leftoverBadge: {
+    backgroundColor: '#F3F0FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  leftoverBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#7C3AED',
   },
   doneBadge: {
     backgroundColor: '#DCFCE7',
