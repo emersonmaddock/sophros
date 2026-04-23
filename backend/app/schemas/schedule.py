@@ -12,6 +12,8 @@ class ScheduleItemBase(BaseModel):
     duration_minutes: int
     is_completed: bool = False
     exercise_category: ExerciseCategory | None = None
+    exercise_calorie_burn: int = 0
+    exercise_muscle_gain: float = 0.0
 
 
 class ScheduleItemCreate(ScheduleItemBase):

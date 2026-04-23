@@ -552,6 +552,9 @@ class MealPlanService:
                     duration_minutes=plan.exercise.duration_minutes,
                     prep_time_minutes=0,
                     is_completed=False,
+                    exercise_category=plan.exercise.category,
+                    exercise_calorie_burn=plan.exercise.calories_burned,
+                    exercise_muscle_gain=plan.exercise.muscle_gain_estimate_kg,
                 )
             )
 
