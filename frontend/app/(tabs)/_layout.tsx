@@ -5,11 +5,13 @@ import { Platform } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
+import { useUser } from '@/contexts/UserContext';
 import { Calendar, Home, TrendingUp, User } from 'lucide-react-native';
 
 export default function TabLayout() {
   const colorScheme = 'light'; // Forcing light mode based on design system for now
   const { isSignedIn, isLoaded } = useAuth();
+  const { isOnboarded, loading: userLoading } = useUser();
 
   // Wait for Clerk to load before making routing decisions
   if (!isLoaded) {
@@ -19,6 +21,16 @@ export default function TabLayout() {
   // Protect tabs - redirect to auth if session expires
   if (!isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  // Wait for backend user check to complete before routing
+  if (userLoading) {
+    return null;
+  }
+
+  // Redirect to onboarding if signed in but not yet in the backend DB
+  if (!isOnboarded) {
+    return <Redirect href="/onboarding" />;
   }
 
   return (
