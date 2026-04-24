@@ -5,9 +5,11 @@ import {
   useGoogleCalendarStatusQuery,
   useGoogleCalendarSyncMutation,
 } from '@/lib/queries/googleCalendar';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { useUserProfileModal } from '@clerk/expo';
 import { Stack, useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, RefreshCw, Unlink } from 'lucide-react-native';
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, RefreshCw, Unlink } from 'lucide-react-native';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -20,10 +22,61 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// source_type is returned by the API but not yet in the generated types
+type ScheduleItemWithSource = ScheduleItemRead & { source_type?: string };
+
 /**
  * Google Calendar authorization is handled by Clerk. This screen only asks the
  * backend to verify Clerk has a Google OAuth token and then sync Calendar data.
  */
+
+function getMondayOf(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function toWeekStartString(monday: Date): string {
+  return monday.toISOString().slice(0, 10);
+}
+
+function formatWeekRange(monday: Date): string {
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  return `${monday.toLocaleDateString('en-US', opts)} – ${sunday.toLocaleDateString('en-US', opts)}`;
+}
+
+// Backend stores naive UTC datetimes serialized without a 'Z'. Appending 'Z'
+// tells JS to treat the value as UTC so it converts to the device's local time.
+function toLocalDate(isoUtc: string): Date {
+  return new Date(isoUtc.endsWith('Z') ? isoUtc : isoUtc + 'Z');
+}
+
+// Returns a YYYY-MM-DD key in the device's LOCAL timezone for grouping.
+function localDateKey(isoUtc: string): string {
+  const d = toLocalDate(isoUtc);
+  return d.toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
+}
+
+function formatDayHeading(localDateStr: string): string {
+  // localDateStr is already YYYY-MM-DD in local time — construct as local midnight
+  // to avoid UTC-midnight being reinterpreted as the previous day in western zones.
+  const [year, month, day] = localDateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function formatTimeRange(isoStart: string, durationMinutes: number): string {
+  const start = toLocalDate(isoStart);
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
+  const fmt = (d: Date) =>
+    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
 
 function formatSyncTime(isoString: string | null | undefined): string {
   if (!isoString) return 'Never';
@@ -35,6 +88,96 @@ function formatSyncTime(isoString: string | null | undefined): string {
     minute: '2-digit',
   });
 }
+
+// ── Imported schedule preview ─────────────────────────────────────────────────
+
+function ImportedSchedulePreview() {
+  const [weekOffset, setWeekOffset] = React.useState(0);
+
+  const monday = React.useMemo(() => {
+    const base = getMondayOf(new Date());
+    base.setDate(base.getDate() + weekOffset * 7);
+    return base;
+  }, [weekOffset]);
+
+  const weekStartStr = toWeekStartString(monday);
+  const { data: items, isLoading } = useWeekScheduleQuery(weekStartStr);
+
+  const busyBlocks = React.useMemo(() => {
+    if (!items) return [];
+    return (items as ScheduleItemWithSource[]).filter(
+      (item) => item.source_type === 'google_calendar'
+    );
+  }, [items]);
+
+  // Group by LOCAL date (YYYY-MM-DD in device timezone) so late-evening events
+  // don't bleed into the next UTC day.
+  const grouped = React.useMemo(() => {
+    const map = new Map<string, ScheduleItemWithSource[]>();
+    for (const item of busyBlocks) {
+      const day = localDateKey(item.date);
+      if (!map.has(day)) map.set(day, []);
+      map.get(day)!.push(item);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [busyBlocks]);
+
+  return (
+    <View style={styles.card}>
+      {/* Header row */}
+      <View style={styles.previewHeader}>
+        <Text style={styles.cardLabel}>Imported Busy Blocks</Text>
+        <View style={styles.weekNav}>
+          <TouchableOpacity
+            onPress={() => setWeekOffset((o) => o - 1)}
+            style={styles.navBtn}
+            disabled={weekOffset === 0}
+          >
+            <ChevronLeft
+              size={18}
+              color={weekOffset === 0 ? Colors.light.textMuted : Colors.light.primary}
+            />
+          </TouchableOpacity>
+          <Text style={styles.weekRangeText}>{formatWeekRange(monday)}</Text>
+          <TouchableOpacity
+            onPress={() => setWeekOffset((o) => o + 1)}
+            style={styles.navBtn}
+            disabled={weekOffset >= 7}
+          >
+            <ChevronRight
+              size={18}
+              color={weekOffset >= 7 ? Colors.light.textMuted : Colors.light.primary}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator color={Colors.light.primary} style={{ marginTop: 8 }} />
+      ) : grouped.length === 0 ? (
+        <Text style={styles.emptyText}>No busy blocks this week.</Text>
+      ) : (
+        <View style={styles.dayList}>
+          {grouped.map(([day, dayItems]) => (
+            <View key={day} style={styles.dayRow}>
+              <Text style={styles.dayHeading}>{formatDayHeading(day)}</Text>
+              {dayItems.map((item) => (
+                <View key={item.id} style={styles.busyBlock}>
+                  <View style={styles.busyDot} />
+                  <Text style={styles.busyTime}>
+                    {formatTimeRange(item.date, item.duration_minutes)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function CalendarIntegrationScreen() {
   const router = useRouter();
@@ -199,6 +342,9 @@ export default function CalendarIntegrationScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Imported schedule preview — only shown when connected */}
+        {isConnected && <ImportedSchedulePreview />}
+
         {/* How it works */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>How it works</Text>
@@ -335,5 +481,55 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.text,
     lineHeight: 19,
+  },
+  // ── Preview card ────────────────────────────────────────────────────────────
+  previewHeader: {
+    gap: 8,
+  },
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  navBtn: {
+    padding: 4,
+  },
+  weekRangeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
+    fontStyle: 'italic',
+  },
+  dayList: {
+    gap: 12,
+    marginTop: 4,
+  },
+  dayRow: {
+    gap: 4,
+  },
+  dayHeading: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.text,
+  },
+  busyBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingLeft: 4,
+  },
+  busyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.light.primary,
+  },
+  busyTime: {
+    fontSize: 13,
+    color: Colors.light.textMuted,
   },
 });

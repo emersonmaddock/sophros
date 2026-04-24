@@ -45,6 +45,7 @@ export function useGoogleCalendarStatusQuery() {
     queryFn: async () => {
       const response = await client.get<GoogleCalendarStatus, unknown>({
         url: '/api/v1/calendar/google/status',
+        security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error) throw new Error('Failed to fetch calendar status');
       return response.data!;
@@ -62,6 +63,7 @@ export function useGoogleCalendarConnectMutation() {
     mutationFn: async () => {
       const response = await client.post<GoogleCalendarStatus, unknown>({
         url: '/api/v1/calendar/google/connect',
+        security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error || !response.data) {
         throw new Error('Failed to connect Google Calendar through Clerk');
@@ -83,6 +85,7 @@ export function useGoogleCalendarSyncMutation() {
     mutationFn: async () => {
       const response = await client.post<GoogleCalendarSyncResult, unknown>({
         url: '/api/v1/calendar/google/sync',
+        security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error || !response.data) {
         throw new Error('Calendar sync failed');
@@ -104,6 +107,7 @@ export function useGoogleCalendarDisconnectMutation() {
       const response = await client.delete<GoogleCalendarDisconnectResult, unknown>({
         url: '/api/v1/calendar/google/disconnect',
         query: { remove_busy_blocks: removeBusyBlocks },
+        security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error || !response.data) {
         throw new Error('Failed to disconnect Google Calendar');

@@ -92,7 +92,13 @@ async def connect_calendar(
     await db.flush()
 
     # Run initial sync
-    await service.sync_for_user(connection, access_token, db)
+    try:
+        await service.sync_for_user(connection, access_token, db)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Connected to Clerk but initial calendar sync failed: {exc}",
+        ) from exc
 
     return GoogleCalendarStatus(
         connected=True,
