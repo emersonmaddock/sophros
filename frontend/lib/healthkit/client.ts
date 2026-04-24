@@ -14,7 +14,8 @@ import type {
 // evaluation time. Static imports trigger NitroModules initialization before
 // the native module is ready, crashing the entire module graph.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const hk = () => require('@kingstinct/react-native-healthkit') as typeof import('@kingstinct/react-native-healthkit');
+const hk = () =>
+  require('@kingstinct/react-native-healthkit') as typeof import('@kingstinct/react-native-healthkit');
 
 function isIOS(): boolean {
   return Platform.OS === 'ios';
@@ -145,7 +146,10 @@ export async function getLatestWeight(): Promise<BodyMetricSample | null> {
 
 export async function getLatestBodyFat(): Promise<BodyMetricSample | null> {
   if (!isIOS()) return null;
-  const s = await hk().getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyFatPercentage', '%');
+  const s = await hk().getMostRecentQuantitySample(
+    'HKQuantityTypeIdentifierBodyFatPercentage',
+    '%'
+  );
   if (!s) return null;
   const recordedAtISO =
     s.startDate instanceof Date ? s.startDate.toISOString() : String(s.startDate ?? nowISO());

@@ -9,7 +9,14 @@ import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import type { ScheduleItemRead } from '@/api/types.gen';
 import { useUserProfileModal } from '@clerk/expo';
 import { Stack, useRouter } from 'expo-router';
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, RefreshCw, Unlink } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Unlink,
+} from 'lucide-react-native';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -73,8 +80,7 @@ function formatDayHeading(localDateStr: string): string {
 function formatTimeRange(isoStart: string, durationMinutes: number): string {
   const start = toLocalDate(isoStart);
   const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 

@@ -419,7 +419,9 @@ export default function SchedulePage() {
               const item = row.item;
               const itemDate = new Date(item.date);
               const isInPast = itemDate < now;
-              const itemSourceType = (item as Record<string, unknown>).source_type as string | undefined;
+              const itemSourceType = (item as Record<string, unknown>).source_type as
+                | string
+                | undefined;
               const isGoogleBusy = itemSourceType === 'google_calendar';
               const needsConfirmation = isInPast && item.activity_type === 'meal' && !isGoogleBusy;
               const isCompleted = item.is_completed ?? false;
@@ -486,9 +488,7 @@ export default function SchedulePage() {
                         </View>
                       </View>
 
-                      {isGoogleBusy && (
-                        <Text style={styles.eventSubtitle}>Google Calendar</Text>
-                      )}
+                      {isGoogleBusy && <Text style={styles.eventSubtitle}>Google Calendar</Text>}
                       {!isGoogleBusy && item.meal?.tags && item.meal.tags.length > 0 && (
                         <Text style={styles.eventSubtitle}>
                           {item.meal.tags.slice(0, 3).join(', ')}
