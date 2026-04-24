@@ -1,3 +1,4 @@
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { MissedItemModal } from '@/components/MissedItemModal';
@@ -8,8 +9,7 @@ import {
 } from '@/components/SleepWakePrompt';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { Colors } from '@/constants/theme';
-import type { ScheduleItemRead } from '@/api/types.gen';
-import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { useNow } from '@/hooks/useNow';
 import {
   useCompleteScheduleItemMutation,
   useCreateScheduleItemMutation,
@@ -17,13 +17,13 @@ import {
   useUpdateScheduleItemMutation,
   useWeekScheduleQuery,
 } from '@/lib/queries/schedule';
+import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { toLocalDateStr as formatDateStr } from '@/utils/date';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
-import { useNow } from '@/hooks/useNow';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { toLocalDateStr as formatDateStr } from '@/utils/date';
 
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -500,13 +500,7 @@ export default function SchedulePage() {
                         >
                           <Text style={styles.eventTitle} numberOfLines={1}>
                             {title}
-                            {isDone && ' ✓'}
                           </Text>
-                          {isDone && (
-                            <View style={styles.doneBadge}>
-                              <Text style={styles.doneBadgeText}>Done</Text>
-                            </View>
-                          )}
                         </View>
                         <View style={styles.durationBadge}>
                           <Text style={styles.durationText}>{durationDisplay}</Text>
@@ -519,11 +513,6 @@ export default function SchedulePage() {
                             <Text style={styles.leftoverPillText}>Leftover</Text>
                           </View>
                         </View>
-                      )}
-                      {item.meal?.tags && item.meal.tags.length > 0 && (
-                        <Text style={styles.eventSubtitle}>
-                          {item.meal.tags.slice(0, 3).join(', ')}
-                        </Text>
                       )}
                       {needsConfirmation && !isCompleted && (
                         <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>

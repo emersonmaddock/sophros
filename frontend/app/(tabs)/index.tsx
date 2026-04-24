@@ -1,15 +1,15 @@
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUser } from '@/contexts/UserContext';
 import { useNow } from '@/hooks/useNow';
+import type { HealthKitInputs } from '@/lib/healthkit';
+import { useActiveEnergyToday, useSleepLastNight, useStepsToday } from '@/lib/healthkit';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
 import { mondayOf } from '@/utils/date';
 import { calculateHealthScore } from '@/utils/healthScore';
-import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
-import type { HealthKitInputs } from '@/lib/healthkit';
-import type { ScheduleItemRead } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
@@ -130,12 +130,7 @@ export default function DashboardPage() {
   // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
     return todayMealItems
-      .filter((item) => {
-        if (!item.meal) return false;
-        if (item.is_completed) return true;
-        const itemMins = new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
-        return itemMins <= nowMins;
-      })
+      .filter((item) => item.meal && item.is_completed)
       .reduce(
         (acc, item) => ({
           calories: acc.calories + (item.meal?.calories ?? 0),
