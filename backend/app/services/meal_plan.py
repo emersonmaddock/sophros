@@ -371,7 +371,7 @@ class MealPlanService:
         )
         google_blocks = google_result.scalars().all()
 
-        extra_busy = self._google_blocks_to_busy_times(google_blocks)
+        extra_busy = self._google_blocks_to_busy_times(list(google_blocks))
         if extra_busy:
             planning_user = user.model_copy(
                 update={"busy_times": list(user.busy_times) + extra_busy}

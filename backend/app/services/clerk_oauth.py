@@ -37,7 +37,8 @@ class ClerkOAuthService:
 
         if response.status_code in {401, 403, 404}:
             raise ClerkOAuthError(
-                f"Google account is not connected in Clerk (HTTP {response.status_code})."
+                "Google account is not connected in Clerk"
+                f" (HTTP {response.status_code})."
             )
 
         response.raise_for_status()
