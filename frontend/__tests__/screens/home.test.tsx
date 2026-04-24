@@ -105,6 +105,38 @@ describe('DashboardPage (Home)', () => {
     expect(screen.getByText(/No meals planned yet/i)).toBeTruthy();
   });
 
+  it('shows "All done for today" when today had meals but all have already passed', () => {
+    // `useNow` is globally mocked to 2026-01-15T10:00 local (jest.setup.ts).
+    // Place the meal at 08:00 that day so it's past-but-same-day.
+    const pastMeal = new Date(2026, 0, 15, 8, 0, 0);
+    (useWeekScheduleQuery as jest.Mock).mockReturnValue({
+      data: [
+        {
+          id: 1,
+          user_id: 'u',
+          date: pastMeal.toISOString(),
+          activity_type: 'meal',
+          is_completed: false,
+          duration_minutes: 15,
+          meal: {
+            id: 10,
+            title: 'Breakfast',
+            calories: 300,
+            protein: 20,
+            carbohydrates: 30,
+            fat: 10,
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    });
+
+    renderWithProviders(<DashboardPage />);
+    expect(screen.getByText(/All done for today/i)).toBeTruthy();
+    expect(screen.queryByText(/No meals planned yet/i)).toBeNull();
+  });
+
   it("shows the user's first name in the greeting when Clerk user has firstName", async () => {
     // Override the global Clerk mock for this test only
     (useUser as jest.Mock).mockReturnValueOnce({

@@ -1,4 +1,5 @@
 import { MacroNutrients } from '@/components/MacroNutrients';
+import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useUser } from '@/contexts/UserContext';
 import { useNow } from '@/hooks/useNow';
@@ -8,10 +9,11 @@ import { mondayOf } from '@/utils/date';
 import { calculateHealthScore } from '@/utils/healthScore';
 import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
 import type { HealthKitInputs } from '@/lib/healthkit';
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -108,6 +110,7 @@ export default function DashboardPage() {
       })
       .slice(0, 3)
       .map((item) => ({
+        item,
         time: formatDisplayTime(item.date),
         title: item.meal?.title ?? 'Meal',
         subtitle: item.meal ? `${item.meal.calories} cal` : '',
@@ -115,6 +118,14 @@ export default function DashboardPage() {
         color: Colors.light.secondary,
       }));
   }, [todayMealItems, nowMins]);
+
+  const [selectedItem, setSelectedItem] = useState<ScheduleItemRead | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  const handleUpcomingPress = useCallback((item: ScheduleItemRead) => {
+    setSelectedItem(item);
+    setDetailModalVisible(true);
+  }, []);
 
   // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
@@ -290,25 +301,26 @@ export default function DashboardPage() {
 
             {upcomingItems.length > 0 ? (
               <View style={styles.listContainer}>
-                {upcomingItems.map((item, i) => (
+                {upcomingItems.map((entry, i) => (
                   <TouchableOpacity
-                    key={i}
+                    key={entry.item.id}
                     style={[styles.listItem, i === 0 && styles.activeListItem]}
+                    onPress={() => handleUpcomingPress(entry.item)}
                   >
-                    <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                      <item.icon size={24} color={item.color} />
+                    <View style={[styles.iconBox, { backgroundColor: `${entry.color}15` }]}>
+                      <entry.icon size={24} color={entry.color} />
                     </View>
                     <View style={styles.itemContent}>
                       <Text style={styles.itemTitle} numberOfLines={1}>
-                        {item.title}
+                        {entry.title}
                       </Text>
                       <Text style={styles.itemSubtitle} numberOfLines={1}>
-                        {item.subtitle}
+                        {entry.subtitle}
                       </Text>
                     </View>
                     <View style={styles.timeBox}>
                       <View style={styles.timeBadge}>
-                        <Text style={styles.timeText}>{item.time}</Text>
+                        <Text style={styles.timeText}>{entry.time}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -317,7 +329,9 @@ export default function DashboardPage() {
             ) : (
               <View style={styles.emptyUpcoming}>
                 <Text style={styles.emptyText}>
-                  No meals planned yet. Head to the Schedule tab to plan your week!
+                  {todayMealItems.length > 0
+                    ? 'All done for today — check back tomorrow!'
+                    : 'No meals planned yet. Head to the Schedule tab to plan your week!'}
                 </Text>
               </View>
             )}
@@ -334,6 +348,22 @@ export default function DashboardPage() {
           </View>
         </ScrollView>
       )}
+
+      <MealDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        readOnly
+        meal={
+          selectedItem
+            ? {
+                time: formatDisplayTime(selectedItem.date),
+                title: selectedItem.meal?.title ?? 'Meal',
+                type: selectedItem.activity_type,
+                meal: selectedItem.meal,
+              }
+            : null
+        }
+      />
     </SafeAreaView>
   );
 }

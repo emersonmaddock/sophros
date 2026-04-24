@@ -20,6 +20,7 @@ interface MealDetailModalProps {
   meal: MealData | null;
   onModify?: (meal: MealData) => void;
   onRemove?: (meal: MealData) => void;
+  readOnly?: boolean;
 }
 
 export const MealDetailModal = ({
@@ -28,6 +29,7 @@ export const MealDetailModal = ({
   meal,
   onModify,
   onRemove,
+  readOnly = false,
 }: MealDetailModalProps) => {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ['85%'], []);
@@ -135,28 +137,30 @@ export const MealDetailModal = ({
           </TouchableOpacity>
         )}
 
-        <View style={styles.actionsRow}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: Colors.light.background, flex: 1 }]}
-            onPress={() => {
-              onModify?.(meal);
-              onClose();
-            }}
-          >
-            <Edit size={20} color={Colors.light.text} />
-            <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>Modify</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: `${Colors.light.error}15` }]}
-            onPress={() => {
-              onRemove?.(meal);
-              onClose();
-            }}
-          >
-            <Trash2 size={20} color={Colors.light.error} />
-            <Text style={[styles.actionButtonText, { color: Colors.light.error }]}>Remove</Text>
-          </TouchableOpacity>
-        </View>
+        {!readOnly && (
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: Colors.light.background, flex: 1 }]}
+              onPress={() => {
+                onModify?.(meal);
+                onClose();
+              }}
+            >
+              <Edit size={20} color={Colors.light.text} />
+              <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>Modify</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: `${Colors.light.error}15` }]}
+              onPress={() => {
+                onRemove?.(meal);
+                onClose();
+              }}
+            >
+              <Trash2 size={20} color={Colors.light.error} />
+              <Text style={[styles.actionButtonText, { color: Colors.light.error }]}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
