@@ -466,21 +466,18 @@ export default function SchedulePage() {
               const durationDisplay = getDurationDisplay(item.duration_minutes);
 
               return (
-                <SwipeableScheduleItem
-                  key={item.id || i}
-                  needsConfirmation={needsConfirmation}
-                  isCompleted={isCompleted}
-                  onConfirmDone={() => handleConfirmDone(item)}
-                  onConfirmMissed={() => handleConfirmMissed(item)}
-                >
-                  <View style={styles.timelineItem}>
-                    <View style={styles.timeColumn}>
-                      <Text style={styles.itemTime}>{displayTime}</Text>
-                      {needsConfirmation && !isCompleted && (
-                        <Text style={styles.pendingDot}>●</Text>
-                      )}
-                    </View>
+                <View key={item.id || i} style={styles.timelineItem}>
+                  <View style={styles.timeColumn}>
+                    <Text style={styles.itemTime}>{displayTime}</Text>
+                    {needsConfirmation && !isCompleted && <Text style={styles.pendingDot}>●</Text>}
+                  </View>
 
+                  <SwipeableScheduleItem
+                    needsConfirmation={needsConfirmation}
+                    isCompleted={isCompleted}
+                    onConfirmDone={() => handleConfirmDone(item)}
+                    onConfirmMissed={() => handleConfirmMissed(item)}
+                  >
                     <TouchableOpacity
                       style={[
                         styles.eventCard,
@@ -532,8 +529,8 @@ export default function SchedulePage() {
                         <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
                       )}
                     </TouchableOpacity>
-                  </View>
-                </SwipeableScheduleItem>
+                  </SwipeableScheduleItem>
+                </View>
               );
             })}
           </View>
