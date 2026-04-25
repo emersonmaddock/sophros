@@ -2,7 +2,7 @@ import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@g
 import { Colors, Layout } from '@/constants/theme';
 import type { MealRead } from '@/api/types.gen';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type AlternativesModalProps = {
   visible: boolean;
@@ -10,6 +10,8 @@ type AlternativesModalProps = {
   currentMealTitle: string | null;
   alternatives: MealRead[];
   onSelect: (mealId: number) => void;
+  /** If set, the item being inspected is a leftover of this source's meal title. */
+  leftoverSourceTitle?: string | null;
 };
 
 export function AlternativesModal({
@@ -18,9 +20,11 @@ export function AlternativesModal({
   currentMealTitle,
   alternatives,
   onSelect,
+  leftoverSourceTitle,
 }: AlternativesModalProps) {
   const bottomSheetRef = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ['80%'], []);
+  const snapPoints = useMemo(() => ['60%'], []);
+  const isLeftover = leftoverSourceTitle != null;
 
   useEffect(() => {
     if (visible) {
@@ -56,24 +60,38 @@ export function AlternativesModal({
     >
       <BottomSheetScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Swap Meal</Text>
-        {currentMealTitle && <Text style={styles.current}>Current: {currentMealTitle}</Text>}
-        {alternatives.length === 0 ? (
-          <Text style={styles.empty}>No alternatives available</Text>
+        {isLeftover ? (
+          <View style={styles.noticeBox}>
+            <Text style={styles.noticeTitle}>
+              This is a leftover of &quot;{leftoverSourceTitle}&quot;
+            </Text>
+            <Text style={styles.noticeBody}>
+              Leftovers follow their source meal. To change what you&apos;re eating, open the source
+              meal and swap or edit it there.
+            </Text>
+          </View>
         ) : (
-          alternatives.map((meal) => (
-            <TouchableOpacity
-              key={meal.id}
-              style={styles.option}
-              onPress={() => handleSelect(meal)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.optionTitle}>{meal.title}</Text>
-              <Text style={styles.optionMacros}>
-                {meal.calories} cal · {meal.protein}g protein · {meal.carbohydrates}g carbs ·{' '}
-                {meal.fat}g fat
-              </Text>
-            </TouchableOpacity>
-          ))
+          <>
+            {currentMealTitle && <Text style={styles.current}>Current: {currentMealTitle}</Text>}
+            {alternatives.length === 0 ? (
+              <Text style={styles.empty}>No alternatives available</Text>
+            ) : (
+              alternatives.map((meal) => (
+                <TouchableOpacity
+                  key={meal.id}
+                  style={styles.option}
+                  onPress={() => handleSelect(meal)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.optionTitle}>{meal.title}</Text>
+                  <Text style={styles.optionMacros}>
+                    {meal.calories} cal · {meal.protein}g protein · {meal.carbohydrates}g carbs ·{' '}
+                    {meal.fat}g fat
+                  </Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </>
         )}
       </BottomSheetScrollView>
     </BottomSheetModal>
@@ -86,11 +104,19 @@ const styles = StyleSheet.create({
   current: { fontSize: 13, color: Colors.light.textMuted, marginBottom: 8 },
   empty: { fontSize: 14, color: Colors.light.textMuted, textAlign: 'center', marginTop: 20 },
   option: {
-    backgroundColor: Colors.light.surface,
+    backgroundColor: Colors.light.background,
     borderRadius: Layout.cardRadius,
     padding: 16,
     gap: 4,
   },
   optionTitle: { fontSize: 16, fontWeight: '600', color: Colors.light.text },
   optionMacros: { fontSize: 13, color: Colors.light.textMuted },
+  noticeBox: {
+    backgroundColor: Colors.light.background,
+    borderRadius: Layout.cardRadius,
+    padding: 16,
+    gap: 6,
+  },
+  noticeTitle: { fontSize: 15, fontWeight: '600', color: Colors.light.text },
+  noticeBody: { fontSize: 13, color: Colors.light.textMuted, lineHeight: 18 },
 });

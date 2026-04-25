@@ -1,3 +1,4 @@
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { MissedItemModal } from '@/components/MissedItemModal';
@@ -8,8 +9,7 @@ import {
 } from '@/components/SleepWakePrompt';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { Colors } from '@/constants/theme';
-import type { ScheduleItemRead } from '@/api/types.gen';
-import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { useNow } from '@/hooks/useNow';
 import {
   useCompleteScheduleItemMutation,
   useCreateScheduleItemMutation,
@@ -17,9 +17,10 @@ import {
   useUpdateScheduleItemMutation,
   useWeekScheduleQuery,
 } from '@/lib/queries/schedule';
+import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
+import { toLocalDateStr as formatDateStr } from '@/utils/date';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
-import { useNow } from '@/hooks/useNow';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -35,10 +36,6 @@ function getMonday(weekOffset: number): Date {
   monday.setDate(today.getDate() + diff + weekOffset * 7);
   monday.setHours(0, 0, 0, 0);
   return monday;
-}
-
-function formatDateStr(d: Date): string {
-  return d.toISOString().split('T')[0];
 }
 
 /** Derive a display time string (e.g. "7:30 AM") from an ISO date string */
@@ -169,15 +166,20 @@ export default function SchedulePage() {
   }, []);
 
   const handleMealModify = useCallback(
-    (meal: { time: string; title?: string; subtitle?: string; type: string }) => {
+    (mealData: { time: string; title?: string; subtitle?: string; type: string }) => {
       if (!selectedItem) return;
+      const m = selectedItem.meal;
       setEditModalItem({
         id: String(selectedItem.id),
-        time: meal.time,
-        title: meal.title || 'Meal',
-        subtitle: meal.subtitle,
+        time: mealData.time,
+        title: mealData.title || 'Meal',
+        subtitle: mealData.subtitle,
         duration: getDurationDisplay(selectedItem.duration_minutes),
         type: 'meal',
+        calories: m?.calories,
+        protein: m?.protein,
+        carbs: m?.carbohydrates,
+        fat: m?.fat,
       });
       setEditModalMode('edit');
       setEditModalItemType('meal');
@@ -206,6 +208,13 @@ export default function SchedulePage() {
 
   const handleEditSave = useCallback(
     (updatedItem: WeeklyScheduleItem) => {
+      // Build a naive ISO string from local components so it round-trips
+      // cleanly into the backend's TIMESTAMP WITHOUT TIME ZONE column.
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const toNaiveIso = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+        `T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
       if (editModalMode === 'add') {
         // Compute the date for the selected day
         const dayDate = weekDates[selectedDayIndex];
@@ -225,7 +234,7 @@ export default function SchedulePage() {
 
         createMutation.mutate({
           body: {
-            date: itemDate.toISOString(),
+            date: toNaiveIso(itemDate),
             activity_type: activityType,
             duration_minutes: durationMinutes,
           },
@@ -233,14 +242,40 @@ export default function SchedulePage() {
         });
       } else if (editModalItem) {
         const itemId = parseInt(editModalItem.id);
-        if (!isNaN(itemId)) {
-          const durationMinutes = parseInt(updatedItem.duration) || 30;
-          updateMutation.mutate({
-            itemId,
-            body: { duration_minutes: durationMinutes },
-            weekStartDate: weekStartStr,
-          });
+        if (isNaN(itemId)) return;
+
+        // Rebuild date from modal's time string + the original item's day
+        const originalItem = scheduleItems.find((i) => i.id === itemId);
+        if (!originalItem) {
+          Alert.alert('Error', 'Schedule item no longer exists. Refresh and try again.');
+          return;
         }
+        const originalDate = new Date(originalItem.date);
+
+        const [timePart, period] = updatedItem.time.split(' ');
+        const [h, m] = timePart.split(':').map(Number);
+        let hours = h;
+        if (period === 'PM' && h !== 12) hours += 12;
+        if (period === 'AM' && h === 12) hours = 0;
+
+        const newDate = new Date(originalDate);
+        newDate.setHours(hours, m || 0, 0, 0);
+
+        // For meals, duration is read-only (comes from the recipe); keep the
+        // original value so the user can't change it accidentally via edit.
+        const isMeal = originalItem.activity_type === 'meal';
+        const durationMinutes = isMeal
+          ? originalItem.duration_minutes
+          : parseInt(updatedItem.duration) || originalItem.duration_minutes;
+
+        updateMutation.mutate({
+          itemId,
+          body: {
+            date: toNaiveIso(newDate),
+            duration_minutes: durationMinutes,
+          },
+          weekStartDate: weekStartStr,
+        });
       }
     },
     [
@@ -251,6 +286,7 @@ export default function SchedulePage() {
       selectedDayIndex,
       weekDates,
       weekStartStr,
+      scheduleItems,
     ]
   );
 
@@ -430,21 +466,18 @@ export default function SchedulePage() {
               const durationDisplay = getDurationDisplay(item.duration_minutes);
 
               return (
-                <SwipeableScheduleItem
-                  key={item.id || i}
-                  needsConfirmation={needsConfirmation}
-                  isCompleted={isCompleted}
-                  onConfirmDone={() => handleConfirmDone(item)}
-                  onConfirmMissed={() => handleConfirmMissed(item)}
-                >
-                  <View style={styles.timelineItem}>
-                    <View style={styles.timeColumn}>
-                      <Text style={styles.itemTime}>{displayTime}</Text>
-                      {needsConfirmation && !isCompleted && (
-                        <Text style={styles.pendingDot}>●</Text>
-                      )}
-                    </View>
+                <View key={item.id || i} style={styles.timelineItem}>
+                  <View style={styles.timeColumn}>
+                    <Text style={styles.itemTime}>{displayTime}</Text>
+                    {needsConfirmation && !isCompleted && <Text style={styles.pendingDot}>●</Text>}
+                  </View>
 
+                  <SwipeableScheduleItem
+                    needsConfirmation={needsConfirmation}
+                    isCompleted={isCompleted}
+                    onConfirmDone={() => handleConfirmDone(item)}
+                    onConfirmMissed={() => handleConfirmMissed(item)}
+                  >
                     <TouchableOpacity
                       style={[
                         styles.eventCard,
@@ -467,30 +500,26 @@ export default function SchedulePage() {
                         >
                           <Text style={styles.eventTitle} numberOfLines={1}>
                             {title}
-                            {isDone && ' ✓'}
                           </Text>
-                          {isDone && (
-                            <View style={styles.doneBadge}>
-                              <Text style={styles.doneBadgeText}>Done</Text>
-                            </View>
-                          )}
                         </View>
                         <View style={styles.durationBadge}>
                           <Text style={styles.durationText}>{durationDisplay}</Text>
                         </View>
                       </View>
 
-                      {item.meal?.tags && item.meal.tags.length > 0 && (
-                        <Text style={styles.eventSubtitle}>
-                          {item.meal.tags.slice(0, 3).join(', ')}
-                        </Text>
+                      {item.source_schedule_item_id != null && (
+                        <View style={styles.leftoverPillRow}>
+                          <View style={styles.leftoverPill}>
+                            <Text style={styles.leftoverPillText}>Leftover</Text>
+                          </View>
+                        </View>
                       )}
                       {needsConfirmation && !isCompleted && (
                         <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
                       )}
                     </TouchableOpacity>
-                  </View>
-                </SwipeableScheduleItem>
+                  </SwipeableScheduleItem>
+                </View>
               );
             })}
           </View>
@@ -814,5 +843,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.light.text,
+  },
+  leftoverPillRow: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  leftoverPill: {
+    backgroundColor: Colors.light.background,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  leftoverPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
   },
 });

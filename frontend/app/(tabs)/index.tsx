@@ -1,15 +1,19 @@
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
+import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useUser } from '@/contexts/UserContext';
 import { useNow } from '@/hooks/useNow';
+import type { HealthKitInputs } from '@/lib/healthkit';
+import { useActiveEnergyToday, useSleepLastNight, useStepsToday } from '@/lib/healthkit';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
-import { calculateHealthScore, type DailyNutritionTotals } from '@/utils/healthScore';
-import { useActiveEnergyToday, useStepsToday, useSleepLastNight } from '@/lib/healthkit';
-import type { HealthKitInputs } from '@/lib/healthkit';
+import { mondayOf } from '@/utils/date';
+import { calculateHealthScore } from '@/utils/healthScore';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -43,17 +47,12 @@ export default function DashboardPage() {
   const currentMinute = now.getMinutes();
 
   // Compute this week's Monday to fetch the saved plan
-  const weekStartStr = useMemo(() => {
-    const d = new Date(now);
-    const dow = d.getDay();
-    const diff = dow === 0 ? -6 : 1 - dow;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const weekStartStr = useMemo(() => mondayOf(now), [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: scheduleItems = [], isLoading: isLoadingPlan } = useWeekScheduleQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
-  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+  const { isLoading: isLoadingUser } = useUserQuery();
+  const { user: backendUser } = useUser();
 
   const { data: hkActive } = useActiveEnergyToday();
   const { data: hkSteps } = useStepsToday();
@@ -84,23 +83,22 @@ export default function DashboardPage() {
     });
   }, [scheduleItems, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Derive today's nutrition totals from schedule items for health score
-  const todayPlan = useMemo((): DailyNutritionTotals | undefined => {
-    const mealsWithData = todayMealItems.filter((i) => i.meal != null);
-    if (mealsWithData.length === 0) return undefined;
-    return {
-      total_calories: mealsWithData.reduce((s, i) => s + (i.meal?.calories ?? 0), 0),
-      total_protein: mealsWithData.reduce((s, i) => s + (i.meal?.protein ?? 0), 0),
-      total_carbs: mealsWithData.reduce((s, i) => s + (i.meal?.carbohydrates ?? 0), 0),
-      total_fat: mealsWithData.reduce((s, i) => s + (i.meal?.fat ?? 0), 0),
-    };
-  }, [todayMealItems]);
-
-  // Compute health score
-  const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
-    [todayPlan, targets, user, hkInputs]
-  );
+  // Compute health score — uses the same calculator as the detail page so the
+  // two screens never disagree.
+  const healthScore = useMemo(() => {
+    const completed = todayMealItems.filter((i) => i.is_completed && i.meal);
+    const totals = completed.reduce(
+      (acc, i) => ({
+        total_calories: acc.total_calories + (i.meal?.calories ?? 0),
+        total_protein: acc.total_protein + (i.meal?.protein ?? 0),
+        total_carbs: acc.total_carbs + (i.meal?.carbohydrates ?? 0),
+        total_fat: acc.total_fat + (i.meal?.fat ?? 0),
+      }),
+      { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+    );
+    const hasPlan = todayMealItems.length > 0;
+    return calculateHealthScore(totals, targets, backendUser, hasPlan, hkInputs);
+  }, [todayMealItems, targets, backendUser, hkInputs]);
 
   // Derive upcoming meals (items whose time is still in the future and not completed)
   const upcomingItems = useMemo(() => {
@@ -112,6 +110,7 @@ export default function DashboardPage() {
       })
       .slice(0, 3)
       .map((item) => ({
+        item,
         time: formatDisplayTime(item.date),
         title: item.meal?.title ?? 'Meal',
         subtitle: item.meal ? `${item.meal.calories} cal` : '',
@@ -120,10 +119,18 @@ export default function DashboardPage() {
       }));
   }, [todayMealItems, nowMins]);
 
+  const [selectedItem, setSelectedItem] = useState<ScheduleItemRead | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  const handleUpcomingPress = useCallback((item: ScheduleItemRead) => {
+    setSelectedItem(item);
+    setDetailModalVisible(true);
+  }, []);
+
   // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
     return todayMealItems
-      .filter((item) => item.is_completed && item.meal)
+      .filter((item) => item.meal && item.is_completed)
       .reduce(
         (acc, item) => ({
           calories: acc.calories + (item.meal?.calories ?? 0),
@@ -133,7 +140,7 @@ export default function DashboardPage() {
         }),
         { calories: 0, protein: 0, carbs: 0, fat: 0 }
       );
-  }, [todayMealItems]);
+  }, [todayMealItems, nowMins]);
 
   // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {
@@ -289,25 +296,26 @@ export default function DashboardPage() {
 
             {upcomingItems.length > 0 ? (
               <View style={styles.listContainer}>
-                {upcomingItems.map((item, i) => (
+                {upcomingItems.map((entry, i) => (
                   <TouchableOpacity
-                    key={i}
+                    key={entry.item.id}
                     style={[styles.listItem, i === 0 && styles.activeListItem]}
+                    onPress={() => handleUpcomingPress(entry.item)}
                   >
-                    <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                      <item.icon size={24} color={item.color} />
+                    <View style={[styles.iconBox, { backgroundColor: `${entry.color}15` }]}>
+                      <entry.icon size={24} color={entry.color} />
                     </View>
                     <View style={styles.itemContent}>
                       <Text style={styles.itemTitle} numberOfLines={1}>
-                        {item.title}
+                        {entry.title}
                       </Text>
                       <Text style={styles.itemSubtitle} numberOfLines={1}>
-                        {item.subtitle}
+                        {entry.subtitle}
                       </Text>
                     </View>
                     <View style={styles.timeBox}>
                       <View style={styles.timeBadge}>
-                        <Text style={styles.timeText}>{item.time}</Text>
+                        <Text style={styles.timeText}>{entry.time}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -316,7 +324,9 @@ export default function DashboardPage() {
             ) : (
               <View style={styles.emptyUpcoming}>
                 <Text style={styles.emptyText}>
-                  No meals planned yet. Head to the Schedule tab to plan your week!
+                  {todayMealItems.length > 0
+                    ? 'All done for today — check back tomorrow!'
+                    : 'No meals planned yet. Head to the Schedule tab to plan your week!'}
                 </Text>
               </View>
             )}
@@ -333,6 +343,22 @@ export default function DashboardPage() {
           </View>
         </ScrollView>
       )}
+
+      <MealDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        readOnly
+        meal={
+          selectedItem
+            ? {
+                time: formatDisplayTime(selectedItem.date),
+                title: selectedItem.meal?.title ?? 'Meal',
+                type: selectedItem.activity_type,
+                meal: selectedItem.meal,
+              }
+            : null
+        }
+      />
     </SafeAreaView>
   );
 }
