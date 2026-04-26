@@ -7,11 +7,15 @@ export type WeeklyScheduleItem = {
   subtitle?: string;
   duration: string;
   type: ItemType;
-  calories?: number;
+  status?: 'completed' | 'current' | 'upcoming';
   workoutType?: string;
   targetHours?: number;
   alternatives?: WeeklyScheduleItem[];
   recipe?: Record<string, unknown>;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 };
 
 export type DaySchedule = {
