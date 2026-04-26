@@ -98,13 +98,12 @@ class GoogleCalendarService:
         batch_id = str(uuid.uuid4())
 
         try:
-            calendar_ids: list[str] = connection.selected_calendar_ids or ["primary"]
+            calendar_ids = ["primary"]
             freebusy = await self.fetch_freebusy(
                 access_token, calendar_ids, time_min, time_max
             )
         except Exception:
             connection.sync_status = "failed"
-            connection.updated_at = now
             db.add(connection)
             await db.commit()
             raise
@@ -138,16 +137,12 @@ class GoogleCalendarService:
                         source_schedule_item_id=None,
                         source_type="google_calendar",
                         source_calendar_id=cal_id,
-                        source_external_id=None,
-                        source_sync_batch_id=batch_id,
-                        imported_at=now,
                     )
                 )
                 count += 1
 
         connection.last_synced_at = now
         connection.sync_status = "synced"
-        connection.updated_at = now
         db.add(connection)
 
         await db.commit()

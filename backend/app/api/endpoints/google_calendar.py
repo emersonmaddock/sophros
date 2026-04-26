@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete as sql_delete
 from sqlalchemy import func, select
@@ -64,8 +62,6 @@ async def connect_calendar(
             detail=f"Failed to retrieve Google account email: {exc}",
         ) from exc
 
-    now = datetime.utcnow()
-
     # Upsert the connection record
     stmt = select(GoogleCalendarConnection).where(
         GoogleCalendarConnection.user_id == current_user.id
@@ -77,16 +73,11 @@ async def connect_calendar(
         connection = GoogleCalendarConnection(
             user_id=current_user.id,
             google_account_email=email,
-            selected_calendar_ids=["primary"],
             sync_status="pending",
-            created_at=now,
-            updated_at=now,
         )
     else:
         connection.google_account_email = email
         connection.sync_status = "pending"
-        connection.disconnected_at = None
-        connection.updated_at = now
 
     db.add(connection)
     await db.flush()
@@ -120,7 +111,6 @@ async def get_status(
     clerk_oauth = _get_clerk_oauth_service()
     stmt = select(GoogleCalendarConnection).where(
         GoogleCalendarConnection.user_id == current_user.id,
-        GoogleCalendarConnection.disconnected_at.is_(None),
     )
     result = await db.execute(stmt)
     connection = result.scalar_one_or_none()
@@ -163,7 +153,6 @@ async def sync_calendar(
     """Manually trigger a FreeBusy sync for the rolling 8-week window."""
     stmt = select(GoogleCalendarConnection).where(
         GoogleCalendarConnection.user_id == current_user.id,
-        GoogleCalendarConnection.disconnected_at.is_(None),
     )
     result = await db.execute(stmt)
     connection = result.scalar_one_or_none()
@@ -213,7 +202,6 @@ async def disconnect_calendar(
     """
     stmt = select(GoogleCalendarConnection).where(
         GoogleCalendarConnection.user_id == current_user.id,
-        GoogleCalendarConnection.disconnected_at.is_(None),
     )
     result = await db.execute(stmt)
     connection = result.scalar_one_or_none()
@@ -224,7 +212,6 @@ async def disconnect_calendar(
             detail="No active Google Calendar connection found for this user.",
         )
 
-    now = datetime.utcnow()
     removed_count = 0
 
     if remove_busy_blocks:
@@ -246,10 +233,7 @@ async def disconnect_calendar(
             )
         )
 
-    connection.disconnected_at = now
-    connection.sync_status = "disconnected"
-    connection.updated_at = now
-    db.add(connection)
+    await db.delete(connection)
     await db.commit()
 
     return GoogleCalendarDisconnectResult(removed_busy_blocks=removed_count)
