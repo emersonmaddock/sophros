@@ -38,11 +38,23 @@ function getMonday(weekOffset: number): Date {
   return monday;
 }
 
-/** Derive a display time string (e.g. "7:30 AM") from an ISO date string */
-function getDisplayTime(isoDate: string): string {
-  const d = new Date(isoDate);
-  const h = d.getHours();
-  const m = d.getMinutes();
+/**
+ * Returns a Date for a schedule item, interpreting the timestamp correctly.
+ * Google Calendar items are stored as naive UTC strings; all other items are
+ * stored as naive local-time strings. Appending 'Z' makes JS parse as UTC.
+ */
+function getItemDate(item: ScheduleItemRead): Date {
+  const sourceType = (item as Record<string, unknown>).source_type as string | undefined;
+  const iso = item.date;
+  return sourceType === 'google_calendar'
+    ? new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+    : new Date(iso);
+}
+
+/** Derive a display time string (e.g. "7:30 AM") from a Date */
+function getDisplayTime(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
   const period = h >= 12 ? 'PM' : 'AM';
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
@@ -141,10 +153,19 @@ export default function SchedulePage() {
   const dayItems: ScheduleItemRead[] = useMemo(() => {
     const monday = mondayDate.getTime();
     return scheduleItems.filter((item) => {
-      const itemDay = Math.floor((new Date(item.date).getTime() - monday) / (1000 * 60 * 60 * 24));
+      const itemDay = Math.floor((getItemDate(item).getTime() - monday) / (1000 * 60 * 60 * 24));
       return itemDay === selectedDayIndex;
     });
   }, [scheduleItems, selectedDayIndex, mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasPlannedItems = useMemo(
+    () =>
+      dayItems.some(
+        (item) =>
+          (item as Record<string, unknown>).source_type !== 'google_calendar'
+      ),
+    [dayItems]
+  );
 
   const handleItemPress = useCallback((item: ScheduleItemRead) => {
     if (item.activity_type === 'meal' && item.meal) {
@@ -152,7 +173,7 @@ export default function SchedulePage() {
       setModalVisible(true);
     } else {
       // Non-meal items open EditItemModal for editing
-      const displayTime = getDisplayTime(item.date);
+      const displayTime = getDisplayTime(getItemDate(item));
       setEditModalItem({
         id: String(item.id),
         time: displayTime,
@@ -351,7 +372,7 @@ export default function SchedulePage() {
     const nowRow: TimelineRow = { kind: 'now', label: nowLabel };
 
     const insertIdx = itemRows.findIndex(
-      (r) => r.kind === 'item' && parseTimeToMins(getDisplayTime(r.item.date)) > nowMins
+      (r) => r.kind === 'item' && parseTimeToMins(getDisplayTime(getItemDate(r.item))) > nowMins
     );
     if (insertIdx === -1) return [...itemRows, nowRow];
     return [...itemRows.slice(0, insertIdx), nowRow, ...itemRows.slice(insertIdx)];
@@ -441,6 +462,7 @@ export default function SchedulePage() {
             <Text style={styles.emptySubtitle}>Loading...</Text>
           </View>
         ) : dayItems.length > 0 ? (
+          <>
           <View style={styles.timeline}>
             {timelineRows.map((row, i) => {
               if (row.kind === 'now') {
@@ -453,7 +475,7 @@ export default function SchedulePage() {
                 );
               }
               const item = row.item;
-              const itemDate = new Date(item.date);
+              const itemDate = getItemDate(item);
               const isInPast = itemDate < now;
               const itemSourceType = (item as Record<string, unknown>).source_type as
                 | string
@@ -469,7 +491,7 @@ export default function SchedulePage() {
                   ? '#F59E0B'
                   : getBorderColor(item.activity_type, itemSourceType);
 
-              const displayTime = getDisplayTime(item.date);
+              const displayTime = getDisplayTime(itemDate);
               const title = getItemTitle(item);
               const durationDisplay = getDurationDisplay(item.duration_minutes);
 
@@ -532,6 +554,20 @@ export default function SchedulePage() {
               );
             })}
           </View>
+          {!hasPlannedItems && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>No items planned</Text>
+              <Text style={styles.emptySubtitle}>No items scheduled for this day</Text>
+              <TouchableOpacity
+                style={styles.planThisWeekButton}
+                onPress={() => router.push(`/week-planning?weekStart=${weekStartStr}`)}
+              >
+                <Calendar size={18} color="#FFF" />
+                <Text style={styles.planThisWeekText}>Plan This Week</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          </>
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No items planned</Text>
@@ -568,7 +604,7 @@ export default function SchedulePage() {
         meal={
           selectedItem
             ? {
-                time: getDisplayTime(selectedItem.date),
+                time: getDisplayTime(getItemDate(selectedItem)),
                 title: getItemTitle(selectedItem),
                 type: selectedItem.activity_type,
                 meal: selectedItem.meal,

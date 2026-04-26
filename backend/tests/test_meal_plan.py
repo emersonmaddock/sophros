@@ -1,8 +1,20 @@
+from datetime import datetime, time
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from app.domain.enums import Allergy, Cuisine, Day, MealSlot
+from app.domain.enums import (
+    ActivityType,
+    Allergy,
+    Cuisine,
+    Day,
+    ExerciseCategory,
+    MealSlot,
+)
+from app.services.exercise_service import ExerciseRecommendation
+from app.services.google_calendar import _parse_google_dt
+from app.services.meal_allocator import MealAllocator
 from app.services.meal_plan import MealPlanService
 from tests.generate_mock_user import create_mock_user
 
@@ -228,3 +240,45 @@ async def test_generate_weekly_plan(mock_exercise):
         f"Expected all non-leftover primaries unique, got {len(set(non_leftover_ids))} "
         f"unique out of {len(non_leftover_ids)}"
     )
+
+
+def test_google_calendar_busy_blocks_are_merged_into_user_schedule():
+    service = MealPlanService()
+    user = create_mock_user()
+    user.busy_times = []
+    user.schedules = [
+        SimpleNamespace(
+            source_type="google_calendar",
+            date=datetime(2026, 4, 27, 6, 0),
+            duration_minutes=210,
+            activity_type=ActivityType.OTHER,
+        )
+    ]
+
+    monday_schedule = service._get_user_schedule(user, Day.MONDAY)
+
+    assert len(monday_schedule.busy_times) == 1
+    assert monday_schedule.busy_times[0].start == time(6, 0)
+    assert monday_schedule.busy_times[0].end == time(9, 30)
+
+    breakfast_time = MealAllocator._find_time_for_slot(
+        MealSlot.BREAKFAST, monday_schedule, Day.MONDAY
+    )
+    exercise_time = MealAllocator.allocate_exercise_time(
+        recommendation=ExerciseRecommendation(
+            category=ExerciseCategory.CARDIO,
+            duration_minutes=30,
+        ),
+        user_schedule=monday_schedule,
+        day=Day.MONDAY,
+        meal_times=[],
+    )
+
+    assert breakfast_time == time(9, 30)
+    assert exercise_time == time(9, 30)
+
+
+def test_parse_google_dt_preserves_wall_clock_time_from_offset():
+    parsed = _parse_google_dt("2026-04-27T09:30:00-04:00")
+
+    assert parsed == datetime(2026, 4, 27, 9, 30)

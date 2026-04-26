@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -18,7 +18,7 @@ class GoogleCalendarConnection(Base):
     google_account_email: Mapped[str] = mapped_column(String, nullable=False)
 
     # Sync state
-    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # "pending" | "synced" | "failed"
     sync_status: Mapped[str] = mapped_column(String, nullable=False, default="pending")
 

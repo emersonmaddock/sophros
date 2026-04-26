@@ -685,44 +685,24 @@ class MealPlanService:
 
     def _get_user_schedule(self, user: User, day: Day) -> UserSchedule:
         """
-        Converts busy times into a UserSchedule for the allocator.
-        Prefers explicit user_busy_times (relational) over
-        ScheduleItem-derived times.
+        Converts user scheduling constraints into a UserSchedule for one day.
+
+        user.busy_times already contains all busy windows — both manual recurring
+        constraints (flattened from the ORM by UserRead.flatten_relationships) and
+        Google Calendar blocks (merged by generate_and_persist via
+        _google_blocks_to_busy_times).  No other sources need to be read here.
         """
-        busy_times = []
+        busy_times: list[BusyTime] = []
+        seen_busy_windows: set[tuple[Day, time_type, time_type]] = set()
 
-        # Access busy_times (Schema property)
-        # Check if user is a Pydantic model or ORM model
-        is_pydantic = not hasattr(user, "__dict__") or isinstance(user, User)
-
-        if is_pydantic:
-            # We are using the UserRead/UserBase schema
-            source_busy = getattr(user, "busy_times", [])
-            for bt in source_busy:
-                if bt.day == day:
-                    # Schema uses 'start', 'end'
-                    busy_times.append(BusyTime(day=day, start=bt.start, end=bt.end))
-        elif hasattr(user, "user_busy_times"):
-            # We are using the ORM model (fallback)
-            for bt in user.user_busy_times:
-                if bt.day == day:
-                    # Model uses 'start_time', 'end_time'
-                    busy_times.append(
-                        BusyTime(day=day, start=bt.start_time, end=bt.end_time)
-                    )
-        else:
-            # Fallback: derive from ScheduleItem records
-            # Explicitly check schedules before looping
-            schedules = getattr(user, "schedules", []) or []
-            for item in schedules:
-                if item.date.strftime("%A") == day:
-                    from datetime import timedelta
-
-                    start_time = item.date.time()
-                    end_dt = item.date + timedelta(minutes=item.duration_minutes)
-                    end_time = end_dt.time()
-
-                    busy_times.append(BusyTime(day=day, start=start_time, end=end_time))
+        for bt in getattr(user, "busy_times", []) or []:
+            if bt.day != day or bt.start >= bt.end:
+                continue
+            key = (bt.day, bt.start, bt.end)
+            if key in seen_busy_windows:
+                continue
+            seen_busy_windows.add(key)
+            busy_times.append(BusyTime(day=bt.day, start=bt.start, end=bt.end))
 
         return UserSchedule(
             busy_times=busy_times,

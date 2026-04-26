@@ -6,7 +6,7 @@ Clerk; callers pass in a fresh access token retrieved from Clerk.
 """
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import httpx
 from sqlalchemy import delete as sql_delete
@@ -92,8 +92,9 @@ class GoogleCalendarService:
         Returns (synced_count, batch_id).
         On Google API error, marks sync_status='failed' and re-raises.
         """
-        now = datetime.utcnow()
-        time_min = datetime(now.year, now.month, now.day)  # start of today UTC
+        now = datetime.now(UTC)
+        # Keep stored ScheduleItem timestamps naive to match the DB column type.
+        time_min = datetime(now.year, now.month, now.day)
         time_max = time_min + timedelta(weeks=SYNC_WEEKS)
         batch_id = str(uuid.uuid4())
 
@@ -153,9 +154,13 @@ class GoogleCalendarService:
 
 
 def _parse_google_dt(value: str) -> datetime:
-    """Parse an RFC 3339 datetime string from Google (with or without trailing Z)."""
-    value = value.rstrip("Z").replace("+00:00", "")
-    # Handle fractional seconds
-    if "." in value:
-        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
-    return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+    """
+    Parse an RFC 3339 datetime string from Google.
+
+    We intentionally preserve the timestamp's wall-clock components and drop the
+    offset when storing it, because the planner treats manual busy times as
+    local wall-clock constraints as well.
+    """
+    normalized = value.replace("Z", "+00:00")
+    parsed = datetime.fromisoformat(normalized)
+    return parsed.replace(tzinfo=None)
