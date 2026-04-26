@@ -167,7 +167,10 @@ export function useProgressData(): {
       // necessary because the user record only stores the *current* target, not the one
       // that was active when the goal period began — so we cannot derive the previous
       // target from the user record alone.
-      const cachedUser = user as { goal_start_date?: string | null; goal_start_weight_kg?: number | null };
+      const cachedUser = user as {
+        goal_start_date?: string | null;
+        goal_start_weight_kg?: number | null;
+      };
       const storedStartDate = cachedUser.goal_start_date ?? null;
       const storedStartWeight = cachedUser.goal_start_weight_kg ?? null;
 
@@ -280,11 +283,23 @@ export function useProgressData(): {
     }
 
     load().catch(console.error);
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // Depend on stable scalar fields from `user` rather than the object reference
     // itself, so React Query background refetches don't spuriously re-trigger load().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now.toDateString(), user?.id, user?.target_weight, user?.target_date, user?.goal_start_date, user?.goal_start_weight_kg, isUserLoading, isUserError, reloadKey]);
+  }, [
+    now.toDateString(),
+    user?.id,
+    user?.target_weight,
+    user?.target_date,
+    user?.goal_start_date,
+    user?.goal_start_weight_kg,
+    isUserLoading,
+    isUserError,
+    reloadKey,
+  ]);
 
   return { snapshot, isLoading: isLoading || isUserLoading, reload };
 }

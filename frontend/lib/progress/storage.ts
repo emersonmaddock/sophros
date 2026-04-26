@@ -257,7 +257,10 @@ export async function getStoredGoalTarget(): Promise<StoredGoalTarget | null> {
   }
 }
 
-export async function setStoredGoalTarget(targetDate: string, targetWeightKg: number): Promise<void> {
+export async function setStoredGoalTarget(
+  targetDate: string,
+  targetWeightKg: number
+): Promise<void> {
   await AsyncStorage.setItem(GOAL_TARGET_KEY, JSON.stringify({ targetDate, targetWeightKg }));
 }
 
@@ -287,7 +290,9 @@ export async function purgeFutureProgressData(
   await Promise.all([
     ...weightLog
       .filter((e) => e.date > today)
-      .map((e) => client.delete({ url: `/api/v1/users/me/progress/weight-log/${e.date}`, ...BEARER })),
+      .map((e) =>
+        client.delete({ url: `/api/v1/users/me/progress/weight-log/${e.date}`, ...BEARER })
+      ),
     ...bfLog
       .filter((e) => e.date > today)
       .map((e) =>

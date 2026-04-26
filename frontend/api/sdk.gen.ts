@@ -9,12 +9,22 @@ import type {
   CreateUserApiV1UsersPostData,
   CreateUserApiV1UsersPostErrors,
   CreateUserApiV1UsersPostResponses,
+  DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteData,
+  DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteErrors,
+  DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponses,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+  DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteData,
+  DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors,
+  DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+  GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetData,
+  GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponses,
+  GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetData,
+  GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponses,
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData,
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
   GetScheduleItemsApiV1SchedulesGetData,
@@ -23,6 +33,8 @@ import type {
   GetWeekScheduleApiV1SchedulesWeekGetData,
   GetWeekScheduleApiV1SchedulesWeekGetErrors,
   GetWeekScheduleApiV1SchedulesWeekGetResponses,
+  GetWeightLogApiV1UsersMeProgressWeightLogGetData,
+  GetWeightLogApiV1UsersMeProgressWeightLogGetResponses,
   HealthCheckHealthGetData,
   HealthCheckHealthGetResponses,
   ReadUserMeApiV1UsersMeGetData,
@@ -41,6 +53,15 @@ import type {
   UpdateUserMeApiV1UsersMePutData,
   UpdateUserMeApiV1UsersMePutErrors,
   UpdateUserMeApiV1UsersMePutResponses,
+  UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostData,
+  UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostErrors,
+  UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponses,
+  UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostData,
+  UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostErrors,
+  UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponses,
+  UpsertWeightEntryApiV1UsersMeProgressWeightLogPostData,
+  UpsertWeightEntryApiV1UsersMeProgressWeightLogPostErrors,
+  UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponses,
 } from './types.gen';
 
 export type Options<
@@ -297,6 +318,179 @@ export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extend
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/planned-weeks',
     ...options,
+  });
+
+/**
+ * Get Weight Log
+ *
+ * Return all weight log entries for the current user, oldest first.
+ */
+export const getWeightLogApiV1UsersMeProgressWeightLogGet = <ThrowOnError extends boolean = false>(
+  options?: Options<GetWeightLogApiV1UsersMeProgressWeightLogGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetWeightLogApiV1UsersMeProgressWeightLogGetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/weight-log',
+    ...options,
+  });
+
+/**
+ * Upsert Weight Entry
+ *
+ * Upsert a weight entry for the given date (one entry per user per date).
+ */
+export const upsertWeightEntryApiV1UsersMeProgressWeightLogPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UpsertWeightEntryApiV1UsersMeProgressWeightLogPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponses,
+    UpsertWeightEntryApiV1UsersMeProgressWeightLogPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/weight-log',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete Weight Entry
+ *
+ * Delete the weight log entry for a specific date (YYYY-MM-DD).
+ */
+export const deleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDelete = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteData, ThrowOnError>
+) =>
+  (options.client ?? client).delete<
+    DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses,
+    DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/weight-log/{entry_date}',
+    ...options,
+  });
+
+/**
+ * Get Body Fat Log
+ *
+ * Return all body fat log entries for the current user, oldest first.
+ */
+export const getBodyFatLogApiV1UsersMeProgressBodyFatLogGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/body-fat-log',
+    ...options,
+  });
+
+/**
+ * Upsert Body Fat Entry
+ *
+ * Upsert a body fat entry for the given date (one entry per user per date).
+ */
+export const upsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponses,
+    UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/body-fat-log',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+/**
+ * Delete Body Fat Entry
+ *
+ * Delete the body fat log entry for a specific date (YYYY-MM-DD).
+ */
+export const deleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDelete = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteData,
+    ThrowOnError
+  >
+) =>
+  (options.client ?? client).delete<
+    DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponses,
+    DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/body-fat-log/{entry_date}',
+    ...options,
+  });
+
+/**
+ * Get Archived Goals
+ *
+ * Return all archived goals for the current user, most recent first.
+ */
+export const getArchivedGoalsApiV1UsersMeProgressArchivedGoalsGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/archived-goals',
+    ...options,
+  });
+
+/**
+ * Upsert Archived Goal
+ *
+ * Upsert an archived goal summary by its stable id.
+ */
+export const upsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponses,
+    UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/users/me/progress/archived-goals',
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
   });
 
 /**

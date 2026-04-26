@@ -101,11 +101,7 @@ export default function LogTodayPage() {
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.doneButton}
-          onPress={handleGoHome}
-          activeOpacity={0.85}
-        >
+        <TouchableOpacity style={styles.doneButton} onPress={handleGoHome} activeOpacity={0.85}>
           <Text style={styles.doneButtonText}>Done</Text>
         </TouchableOpacity>
       </ScrollView>

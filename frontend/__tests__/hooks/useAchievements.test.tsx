@@ -18,9 +18,7 @@ import { useStreak } from '@/hooks/useStreak';
 import { getSleepLogCount } from '@/components/SleepWakePrompt';
 
 const mockUseStreak = useStreak as jest.MockedFunction<typeof useStreak>;
-const mockGetSleepLogCount = getSleepLogCount as jest.MockedFunction<
-  typeof getSleepLogCount
->;
+const mockGetSleepLogCount = getSleepLogCount as jest.MockedFunction<typeof getSleepLogCount>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,9 +45,7 @@ function meals(count: number, completed = true) {
 }
 
 function workouts(count: number, completed = true) {
-  return Array.from({ length: count }, () =>
-    makeScheduleItem('exercise', completed)
-  );
+  return Array.from({ length: count }, () => makeScheduleItem('exercise', completed));
 }
 
 function renderAchievements(scheduleItems: ScheduleItemRead[] = []) {

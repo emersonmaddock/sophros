@@ -11,11 +11,7 @@
  */
 import { client } from '@/api/client.gen';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  WeightLogEntryRead,
-  BodyFatLogEntryRead,
-  ArchivedGoalRead,
-} from '@/types/progress';
+import type { WeightLogEntryRead, BodyFatLogEntryRead, ArchivedGoalRead } from '@/types/progress';
 
 // ---------------------------------------------------------------------------
 // Query keys

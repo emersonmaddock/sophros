@@ -15,10 +15,7 @@ import { WeightLogForm } from '@/components/WeightLogForm';
 import { Colors, Layout, Shadows } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
 import type { ProgressSnapshot } from '@/lib/progress/compute';
-import {
-  confidenceExplainerText,
-  confidenceLevelLabel,
-} from '@/lib/progress/compute';
+import { confidenceExplainerText, confidenceLevelLabel } from '@/lib/progress/compute';
 import { localDateStr } from '@/lib/progress/storage';
 import { kgToLbs } from '@/utils/units';
 import { useRouter } from 'expo-router';
@@ -178,7 +175,9 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
       <View style={styles.badgeRow}>
         <View style={styles.goalModeBadge}>
           <TrendingUp size={13} color={Colors.light.primary} />
-          <Text style={styles.goalModeText} numberOfLines={1}>{goalModeLabel}</Text>
+          <Text style={styles.goalModeText} numberOfLines={1}>
+            {goalModeLabel}
+          </Text>
         </View>
         <TouchableOpacity
           style={[styles.goalModeBadge, { backgroundColor: confBadgeBg }]}
@@ -190,7 +189,9 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
           </Text>
         </TouchableOpacity>
         <View style={styles.goalModeBadge}>
-          <Text style={styles.goalModeText} numberOfLines={1}>{progressBadgeLabel}</Text>
+          <Text style={styles.goalModeText} numberOfLines={1}>
+            {progressBadgeLabel}
+          </Text>
         </View>
       </View>
 
