@@ -89,7 +89,11 @@ export default function WeekPlanningScreen() {
   ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dayItems = useMemo(
-    () => scheduleItems.filter((item) => getDayIndex(item.date, weekStart) === selectedDayIndex),
+    () =>
+      scheduleItems.filter(
+        (item) =>
+          item.activity_type !== 'sleep' && getDayIndex(item.date, weekStart) === selectedDayIndex
+      ),
     [scheduleItems, selectedDayIndex, weekStart]
   );
 

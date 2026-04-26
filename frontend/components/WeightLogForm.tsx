@@ -70,11 +70,12 @@ export function WeightLogForm({ showImperial, onLogged, initialValue }: Props) {
     setError(null);
     setSaving(true);
     try {
-      await upsertWeightEntry({
+      const saved = await upsertWeightEntry({
         date: localDateStr(now),
         weightKg: parseFloat(kg.toFixed(3)),
         source: 'manual',
       });
+      if (!saved) throw new Error('Save failed');
       onLogged();
     } catch {
       setError('Failed to save. Try again.');

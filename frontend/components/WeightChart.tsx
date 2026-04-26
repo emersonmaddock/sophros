@@ -21,7 +21,7 @@ import { Colors } from '@/constants/theme';
 import { kgToLbs } from '@/utils/units';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Polyline, Rect } from 'react-native-svg';
+import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,9 +43,9 @@ type Props = {
 // ---------------------------------------------------------------------------
 
 const HEIGHT = 150;
-const PAD_LEFT = 38; // y-axis label space
+const PAD_LEFT = 52; // y-axis label space (wider to fit rotated axis title)
 const PAD_RIGHT = 10;
-const PAD_TOP = 8;
+const PAD_TOP = 10;
 const PAD_BOTTOM = 4; // tiny gap; x-axis labels live outside the SVG
 
 // ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ export function WeightChart({
   const targetMs = dateToMs(targetDate);
   const spanMs = targetMs - startMs || 1; // guard against same-day goals
 
-  // Small inset so startDate/targetDate don't sit flush against the axis edges.
+  // Small inset so startDate doesn't sit flush against the y-axis.
   const X_INSET = 10;
   const toX = (dateStr: string) => {
     const ratio = (dateToMs(dateStr) - startMs) / spanMs;
@@ -142,11 +142,15 @@ export function WeightChart({
       isDateInDomain(e.date, startDate, targetDate)
     );
 
+    // Work entirely in display units so gridlines, data dots, and the target
+    // line all share the same coordinate space with no rounding mismatch.
+    const toDisplay = (kg: number) => (showImperial ? kgToLbs(kg) : kg);
+
     // Y-range is based only on visible data + target + band references.
     const allValues = [
-      ...visibleHistory.map((e) => e.weightKg),
-      targetWeightKg,
-      ...(stabilityBand ? [stabilityBand.low, stabilityBand.high] : []),
+      ...visibleHistory.map((e) => toDisplay(e.weightKg)),
+      toDisplay(targetWeightKg),
+      ...(stabilityBand ? [toDisplay(stabilityBand.low), toDisplay(stabilityBand.high)] : []),
     ];
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
@@ -158,21 +162,21 @@ export function WeightChart({
     const hi = Math.ceil(dataMax / step) * step + step;
     const span = hi - lo;
 
-    const toY = (kg: number) => PAD_TOP + chartH * (1 - (kg - lo) / span);
+    const toY = (displayVal: number) => PAD_TOP + chartH * (1 - (displayVal - lo) / span);
 
     const pts = visibleHistory.map((e) => ({
       x: toX(e.date),
-      y: toY(e.weightKg),
+      y: toY(toDisplay(e.weightKg)),
       kg: e.weightKg,
       date: e.date,
     }));
 
-    const tY = toY(targetWeightKg);
+    const tY = toY(toDisplay(targetWeightKg));
 
     let band = null;
     if (stabilityBand) {
-      const bHigh = toY(stabilityBand.high);
-      const bLow = toY(stabilityBand.low);
+      const bHigh = toY(toDisplay(stabilityBand.high));
+      const bLow = toY(toDisplay(stabilityBand.low));
       band = { x: PAD_LEFT, y: bHigh, w: chartW, h: bLow - bHigh };
     }
 
@@ -184,11 +188,10 @@ export function WeightChart({
     return { points: pts, targetY: tY, bandRect: band, yLabels: labels };
     // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weightHistory, targetWeightKg, stabilityBand, chartW, chartH, startDate, targetDate]);
+  }, [weightHistory, targetWeightKg, stabilityBand, showImperial, chartW, chartH, startDate, targetDate]);
 
-  const fmtWeight = (kg: number) =>
-    showImperial ? `${kgToLbs(kg).toFixed(0)}` : `${kg.toFixed(1)}`;
-  const unit = showImperial ? 'lbs' : 'kg';
+  const fmtWeight = (displayVal: number) =>
+    showImperial ? `${Math.round(displayVal)}` : `${displayVal.toFixed(1)}`;
 
   const polylinePoints = points.map((p) => `${p.x},${p.y}`).join(' ');
 
@@ -203,7 +206,7 @@ export function WeightChart({
 
   return (
     <View style={styles.container}>
-      <View style={{ height: HEIGHT + 14, position: 'relative' }}>
+      <View style={{ height: HEIGHT + 44, position: 'relative' }}>
         <Svg width={width} height={HEIGHT}>
           {/* Horizontal grid lines */}
           {yLabels.map((label, i) => (
@@ -237,6 +240,19 @@ export function WeightChart({
             stroke="#9CA3AF"
             strokeWidth={1.5}
           />
+
+          {/* Y-axis label — rotated, centered alongside the axis */}
+          <SvgText
+            x={12}
+            y={PAD_TOP + chartH / 2}
+            textAnchor="middle"
+            transform={`rotate(-90, 12, ${PAD_TOP + chartH / 2})`}
+            fontSize={10}
+            fontWeight="700"
+            fill="#6B7280"
+          >
+            {showImperial ? 'Weight (lbs)' : 'Weight (kg)'}
+          </SvgText>
 
           {/* Daily tick marks — one per logged day from startDate → min(today, targetDate).
               startDate and today get taller, more opaque ticks for visibility. */}
@@ -308,23 +324,22 @@ export function WeightChart({
             />
           )}
 
-          {/* Data point dots — each at its real logged date x position.
-              Today's entry gets the open ring; all others get a small filled dot. */}
-          {points.map((p, i) =>
-            p.date === today ? null : (
-              <Circle key={i} cx={p.x} cy={p.y} r={3} fill={Colors.light.primary} />
-            )
-          )}
+          {/* Data point dots — small filled dot for every logged entry, including today */}
+          {points.map((p, i) => (
+            <Circle key={i} cx={p.x} cy={p.y} r={3} fill={Colors.light.primary} />
+          ))}
 
-          {/* Today ring — only when the user has a log entry for today */}
-          {todayEntry && (
+          {/* Today ring — only when the user has NOT yet logged today.
+              Floats at the last known weight's y-position as a prompt to log. */}
+          {todayInDomain && !todayEntry && points.length > 0 && (
             <Circle
               cx={todayX}
-              cy={todayEntry.y}
-              r={6}
+              cy={points[points.length - 1].y}
+              r={3}
               fill={Colors.light.surface}
               stroke={Colors.light.primary}
               strokeWidth={2}
+              opacity={0.5}
             />
           )}
         </Svg>
@@ -336,8 +351,8 @@ export function WeightChart({
           </Text>
         ))}
 
-        {/* X-axis labels: start (left), today (proportional), target (right) */}
-        <Text style={[styles.xLabel, { left: PAD_LEFT - 16 }]} numberOfLines={1}>
+        {/* X-axis labels: start (left), today (proportional), target date (right) */}
+        <Text style={[styles.xLabel, { left: toX(startDate) - 16 }]} numberOfLines={1}>
           {shortDate(startDate)}
         </Text>
 
@@ -350,33 +365,15 @@ export function WeightChart({
           </Text>
         )}
 
-        <Text style={[styles.xLabel, { left: PAD_LEFT + chartW - 16 }]} numberOfLines={1}>
+        <Text
+          style={[styles.xLabel, { left: toX(targetDate) - 16 }]}
+          numberOfLines={1}
+        >
           {shortDate(targetDate)}
         </Text>
-      </View>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: Colors.light.primary }]} />
-          <Text style={styles.legendText}>Weight ({unit})</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDash, { backgroundColor: Colors.light.secondary }]} />
-          <Text style={styles.legendText}>Target</Text>
-        </View>
-        {todayInDomain && (
-          <View style={styles.legendItem}>
-            <View style={styles.legendRing} />
-            <Text style={styles.legendText}>Today</Text>
-          </View>
-        )}
-        {stabilityBand && (
-          <View style={styles.legendItem}>
-            <View style={[styles.legendBand, { backgroundColor: Colors.light.primary }]} />
-            <Text style={styles.legendText}>Band</Text>
-          </View>
-        )}
+        {/* X-axis title — centered below the date labels */}
+        <Text style={styles.xAxisTitle}>Time</Text>
       </View>
     </View>
   );
@@ -400,7 +397,7 @@ const styles = StyleSheet.create({
   },
   xLabel: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 26,
     fontSize: 10,
     color: Colors.light.textMuted,
     width: 32,
@@ -410,43 +407,14 @@ const styles = StyleSheet.create({
     color: Colors.light.primary,
     fontWeight: '600',
   },
-  legend: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingLeft: PAD_LEFT,
-    marginTop: 2,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendRing: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: Colors.light.primary,
-    backgroundColor: 'transparent',
-  },
-  legendDash: {
-    width: 12,
-    height: 2,
-    borderRadius: 1,
-  },
-  legendBand: {
-    width: 12,
-    height: 8,
-    borderRadius: 2,
-    opacity: 0.2,
-  },
-  legendText: {
+  xAxisTitle: {
+    position: 'absolute',
+    bottom: 16,
+    left: PAD_LEFT,
+    right: PAD_RIGHT,
+    textAlign: 'center',
     fontSize: 10,
-    color: Colors.light.textMuted,
+    fontWeight: '700',
+    color: '#6B7280',
   },
 });

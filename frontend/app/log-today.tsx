@@ -10,7 +10,7 @@ import { useUserQuery } from '@/lib/queries/user';
 import { localDateStr } from '@/lib/progress/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { Moon, Scale, X } from 'lucide-react-native';
+import { ChevronLeft, Moon, Scale } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +28,10 @@ export default function LogTodayPage() {
   const [sleepLogged, setSleepLogged] = useState(false);
   const [weightLogged, setWeightLogged] = useState(false);
 
+  const handleGoHome = () => {
+    router.replace('/(tabs)');
+  };
+
   const handleLogSleep = async () => {
     await AsyncStorage.setItem(SLEEP_STORAGE_KEY, localDateStr(now));
     const raw = await AsyncStorage.getItem(SLEEP_LOG_COUNT_KEY);
@@ -41,10 +45,12 @@ export default function LogTodayPage() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Log Today</Text>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-            <X size={22} color={Colors.light.textMuted} />
+          <TouchableOpacity onPress={handleGoHome} hitSlop={10} style={styles.backButton}>
+            <ChevronLeft size={20} color={Colors.light.text} />
+            <Text style={styles.backButtonText}>Home</Text>
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Log Today</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Sleep card */}
@@ -97,7 +103,7 @@ export default function LogTodayPage() {
 
         <TouchableOpacity
           style={styles.doneButton}
-          onPress={() => router.back()}
+          onPress={handleGoHome}
           activeOpacity={0.85}
         >
           <Text style={styles.doneButtonText}>Done</Text>
@@ -119,14 +125,30 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 4,
+    minHeight: 32,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    width: 72,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.text,
   },
   headerTitle: {
     fontSize: 26,
     fontWeight: '700',
     color: Colors.light.text,
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 72,
   },
   card: {
     backgroundColor: Colors.light.surface,

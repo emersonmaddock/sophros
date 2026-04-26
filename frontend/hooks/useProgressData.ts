@@ -15,16 +15,17 @@
  */
 import { getSleepLogCount } from '@/components/SleepWakePrompt';
 import { useNow } from '@/hooks/useNow';
-import { useUserQuery } from '@/lib/queries/user';
+import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import {
   archiveGoal,
   getBodyFatLog,
   getLatestArchivedGoal,
+  getStoredGoalTarget,
   getWeightLog,
   localDateStr,
   purgeFutureProgressData,
-  saveGoalSnapshot,
+  setStoredGoalTarget,
   upsertWeightEntry,
 } from '@/lib/progress/storage';
 import type { GoalSnapshot } from '@/lib/progress/storage';
@@ -42,6 +43,7 @@ import {
 import type { ProgressSnapshot } from '@/lib/progress/compute';
 import { mondayOf } from '@/utils/date';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ScheduleItemRead } from '@/api/types.gen';
 
 export function useProgressData(): {
   snapshot: ProgressSnapshot | null;
@@ -49,12 +51,14 @@ export function useProgressData(): {
   reload: () => void;
 } {
   const now = useNow();
-  const { data: user, isLoading: isUserLoading } = useUserQuery();
+  const { data: user, isLoading: isUserLoading, isError: isUserError } = useUserQuery();
+  const updateUser = useUpdateUserMutation();
   const [snapshot, setSnapshot] = useState<ProgressSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
   const lastLoadDate = useRef<string | null>(null);
+  const scheduleItemsRef = useRef<ScheduleItemRead[]>([]);
 
   // Fetch current + previous week of schedule items to count confirmed
   // meals and workouts for the 14-day confidence score window.
@@ -72,12 +76,19 @@ export function useProgressData(): {
     () => [...currentWeekItems, ...prevWeekItems],
     [currentWeekItems, prevWeekItems]
   );
+  scheduleItemsRef.current = scheduleItems;
 
   useEffect(() => {
-    if (isUserLoading || !user) return;
+    if (isUserLoading) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     const today = localDateStr(now);
-    const runKey = `${today}:${reloadKey}`;
+    // Include the goal target in the key so changing target_date or target_weight
+    // always forces a fresh load, even when the calendar date hasn't changed.
+    const runKey = `${today}:${reloadKey}:${user.target_date ?? ''}:${user.target_weight ?? ''}`;
     if (lastLoadDate.current === runKey) return;
     lastLoadDate.current = runKey;
 
@@ -86,8 +97,20 @@ export function useProgressData(): {
     async function load() {
       setIsLoading(true);
 
-      // Step 1: purge future entries (handles dev time-travel backward)
-      await purgeFutureProgressData(now);
+      // Step 1: fetch all log data in a single parallel round-trip
+      const [rawWeightLog, rawBfLog, rawSleepCount] = await Promise.all([
+        getWeightLog(),
+        getBodyFatLog(),
+        getSleepLogCount(),
+      ]);
+
+      // Step 1b: purge future entries using already-fetched data — fire-and-forget
+      // so the render isn't blocked waiting for deletions (rare in production).
+      void purgeFutureProgressData(now, { weightLog: rawWeightLog, bfLog: rawBfLog });
+
+      // Filter future-dated entries out of the local data used for rendering.
+      const prefilteredWeightLog = rawWeightLog.filter((e) => e.date <= today);
+      const prefilteredBfLog = rawBfLog.filter((e) => e.date <= today);
 
       // Step 2: check if goal data is complete
       const targetWeightKg = user!.target_weight ?? null;
@@ -122,12 +145,10 @@ export function useProgressData(): {
         return;
       }
 
-      // Step 3: load logs from DB
-      const [weightLog, bfLog, sleepCount] = await Promise.all([
-        getWeightLog(),
-        getBodyFatLog(),
-        getSleepLogCount(),
-      ]);
+      // Step 3: use the already-fetched (and future-filtered) logs
+      const weightLog = prefilteredWeightLog;
+      const bfLog = prefilteredBfLog;
+      const sleepCount = rawSleepCount;
 
       // Step 4: seed baseline from user weight if no weight log exists
       let finalWeightLog = weightLog;
@@ -137,14 +158,29 @@ export function useProgressData(): {
         finalWeightLog = [baseline];
       }
 
-      // Step 5: manage goal snapshot via user record fields
-      // goal_start_date and goal_start_weight_kg are stored on the User model.
-      const storedStartDate = (user as { goal_start_date?: string | null }).goal_start_date ?? null;
-      const storedStartWeight = (user as { goal_start_weight_kg?: number | null }).goal_start_weight_kg ?? null;
+      // Step 5: manage goal snapshot.
+      // goal_start_date / goal_start_weight_kg live on the User record and record
+      // when the current goal period started and the weight at that time.
+      //
+      // To detect when the user has changed their goal (new target_date / target_weight),
+      // we compare against a locally-stored "goal target at last period start". This is
+      // necessary because the user record only stores the *current* target, not the one
+      // that was active when the goal period began — so we cannot derive the previous
+      // target from the user record alone.
+      const cachedUser = user as { goal_start_date?: string | null; goal_start_weight_kg?: number | null };
+      const storedStartDate = cachedUser.goal_start_date ?? null;
+      const storedStartWeight = cachedUser.goal_start_weight_kg ?? null;
+
+      const storedGoalTarget = await getStoredGoalTarget();
+      const goalChanged =
+        storedStartDate !== null &&
+        storedGoalTarget !== null &&
+        (storedGoalTarget.targetDate !== targetDate ||
+          Math.abs(storedGoalTarget.targetWeightKg - targetWeightKg) > 0.01);
 
       let activeSnapshot: GoalSnapshot | null = null;
 
-      if (storedStartDate !== null && storedStartWeight !== null) {
+      if (storedStartDate !== null && storedStartWeight !== null && !goalChanged) {
         activeSnapshot = {
           startWeightKg: storedStartWeight,
           targetWeightKg,
@@ -154,18 +190,27 @@ export function useProgressData(): {
         };
       }
 
-      const goalChanged =
-        activeSnapshot !== null && hasGoalChanged(activeSnapshot, targetWeightKg, targetDate);
-
       if (activeSnapshot === null || goalChanged) {
+        const startWeight = finalWeightLog[finalWeightLog.length - 1].weightKg;
         activeSnapshot = {
-          startWeightKg: finalWeightLog[finalWeightLog.length - 1].weightKg,
+          startWeightKg: startWeight,
           targetWeightKg,
           targetBodyFat: user!.target_body_fat ?? null,
           targetDate,
           startDate: today,
         };
-        await saveGoalSnapshot(activeSnapshot);
+        // Persist new goal period start and the target it was started for.
+        await Promise.all([
+          updateUser.mutateAsync({
+            goal_start_date: activeSnapshot.startDate,
+            goal_start_weight_kg: activeSnapshot.startWeightKg,
+          }),
+          setStoredGoalTarget(targetDate, targetWeightKg),
+        ]);
+      } else if (storedGoalTarget === null) {
+        // First run after this logic was introduced — seed the stored target
+        // without resetting the goal period so existing users are unaffected.
+        await setStoredGoalTarget(targetDate, targetWeightKg);
       }
 
       // Step 6: detect goal completion and archive
@@ -185,10 +230,10 @@ export function useProgressData(): {
       }
 
       // Step 7: count confirmed meals/workouts from the 2-week schedule window
-      const mealsConfirmed = scheduleItems.filter(
+      const mealsConfirmed = scheduleItemsRef.current.filter(
         (i) => i.is_completed === true && i.activity_type === 'meal'
       ).length;
-      const workoutsConfirmed = scheduleItems.filter(
+      const workoutsConfirmed = scheduleItemsRef.current.filter(
         (i) => i.is_completed === true && i.activity_type === 'exercise'
       ).length;
 
@@ -236,8 +281,10 @@ export function useProgressData(): {
 
     load().catch(console.error);
     return () => { cancelled = true; };
+    // Depend on stable scalar fields from `user` rather than the object reference
+    // itself, so React Query background refetches don't spuriously re-trigger load().
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now.toDateString(), user, isUserLoading, reloadKey, scheduleItems]);
+  }, [now.toDateString(), user?.id, user?.target_weight, user?.target_date, user?.goal_start_date, user?.goal_start_weight_kg, isUserLoading, isUserError, reloadKey]);
 
   return { snapshot, isLoading: isLoading || isUserLoading, reload };
 }

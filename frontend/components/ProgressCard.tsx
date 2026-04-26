@@ -18,7 +18,6 @@ import type { ProgressSnapshot } from '@/lib/progress/compute';
 import {
   confidenceExplainerText,
   confidenceLevelLabel,
-  weightProgressLabel,
 } from '@/lib/progress/compute';
 import { localDateStr } from '@/lib/progress/storage';
 import { kgToLbs } from '@/utils/units';
@@ -141,16 +140,7 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
   const [showBfForm, setShowBfForm] = useState(false);
   const [showConfExplainer, setShowConfExplainer] = useState(false);
 
-  const progressLabel = weightProgressLabel(
-    snapshot.goalMode,
-    snapshot.startWeightKg,
-    snapshot.latestWeightKg,
-    snapshot.targetWeightKg,
-    showImperial
-  );
-
   const confLevel = snapshot.confidenceLevel;
-  // Badge colours per level
   const confBadgeBg =
     confLevel === 'high' ? '#DCFCE7' : confLevel === 'medium' ? '#FEF3C7' : '#FEE2E2';
   const confBadgeText =
@@ -167,7 +157,16 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
         ? 'Weight gain'
         : 'Maintain weight';
 
-  const targetDateStr = snapshot.targetDate ? formatDate(snapshot.targetDate) : '';
+  const progressBadgeLabel = (() => {
+    if (snapshot.goalMode === 'maintain') {
+      return snapshot.maintainInRange ? 'In range' : 'Off target';
+    }
+    const totalNeeded = Math.abs(snapshot.targetWeightKg - snapshot.startWeightKg);
+    if (totalNeeded < 0.01) return 'At target';
+    const progress = Math.abs(snapshot.latestWeightKg - snapshot.startWeightKg);
+    const pct = Math.min(100, Math.round((progress / totalNeeded) * 100));
+    return `${pct}% to goal`;
+  })();
 
   const latestBf = snapshot.hasBodyFatData
     ? snapshot.bodyFatHistory[snapshot.bodyFatHistory.length - 1].bodyFatPercent
@@ -175,38 +174,29 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
 
   return (
     <View style={styles.card}>
-      {/* Badge row: goal mode + confidence, target date on the right */}
-      <View style={styles.goalHeader}>
-        <View style={styles.badgeRow}>
-          <View style={styles.goalModeBadge}>
-            <TrendingUp size={13} color={Colors.light.primary} />
-            <Text style={styles.goalModeText}>{goalModeLabel}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.goalModeBadge, { backgroundColor: confBadgeBg }]}
-            onPress={() => setShowConfExplainer((v) => !v)}
-            activeOpacity={0.75}
-          >
-            <Text style={[styles.goalModeText, { color: confBadgeText }]}>
-              {confidenceLevelLabel(confLevel)}
-            </Text>
-          </TouchableOpacity>
+      {/* Badge row: goal mode + confidence + progress to goal */}
+      <View style={styles.badgeRow}>
+        <View style={styles.goalModeBadge}>
+          <TrendingUp size={13} color={Colors.light.primary} />
+          <Text style={styles.goalModeText} numberOfLines={1}>{goalModeLabel}</Text>
         </View>
-        {targetDateStr ? <Text style={styles.targetDateText}>Target: {targetDateStr}</Text> : null}
+        <TouchableOpacity
+          style={[styles.goalModeBadge, { backgroundColor: confBadgeBg }]}
+          onPress={() => setShowConfExplainer((v) => !v)}
+          activeOpacity={0.75}
+        >
+          <Text style={[styles.goalModeText, { color: confBadgeText }]} numberOfLines={1}>
+            {confidenceLevelLabel(confLevel)}
+          </Text>
+        </TouchableOpacity>
+        <View style={styles.goalModeBadge}>
+          <Text style={styles.goalModeText} numberOfLines={1}>{progressBadgeLabel}</Text>
+        </View>
       </View>
 
       {/* Confidence explainer — shown on badge tap */}
       {showConfExplainer && (
         <Text style={styles.confExplainerText}>{confidenceExplainerText(confLevel)}</Text>
-      )}
-
-      {/* Progress label */}
-      {snapshot.goalMode === 'maintain' ? (
-        <Text style={styles.maintainLabel}>
-          {snapshot.maintainInRange ? 'Within target range' : 'Outside target range'}
-        </Text>
-      ) : (
-        <Text style={styles.progressLabel}>{progressLabel}</Text>
       )}
 
       {/* Chart */}
@@ -423,17 +413,10 @@ const styles = StyleSheet.create({
     color: Colors.light.textMuted,
   },
   // Active goal card
-  goalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
   badgeRow: {
     flexDirection: 'row',
     gap: 6,
     alignItems: 'center',
-    flexShrink: 1,
   },
   goalModeBadge: {
     flexDirection: 'row',
@@ -443,32 +426,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 4,
     borderRadius: 10,
+    flexShrink: 1,
   },
   goalModeText: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.light.primary,
-  },
-  targetDateText: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
-    flexShrink: 0,
+    flexShrink: 1,
   },
   confExplainerText: {
     fontSize: 12,
     color: Colors.light.textMuted,
     lineHeight: 17,
     marginTop: -4,
-  },
-  progressLabel: {
-    fontSize: 13,
-    color: Colors.light.text,
-    fontWeight: '500',
-  },
-  maintainLabel: {
-    fontSize: 13,
-    color: Colors.light.text,
-    fontWeight: '600',
   },
   chartContainer: {
     marginHorizontal: -4,
@@ -485,7 +455,7 @@ const styles = StyleSheet.create({
   logActionsRow: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 4,
+    marginTop: -8,
   },
   logActionButton: {
     flex: 1,
