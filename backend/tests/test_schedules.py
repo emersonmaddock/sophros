@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+import sqlalchemy as sa
 from httpx import AsyncClient
 
 from app.domain.enums import ActivityType
@@ -409,3 +410,89 @@ async def test_create_workout_rejects_custom_meal(client: AsyncClient):
     response = await client.post(BASE, json=payload)
     assert response.status_code == 422
     assert "only valid for meal items" in response.text
+
+
+@pytest.mark.asyncio
+async def test_create_schedule_item_with_custom_meal(client: AsyncClient, mock_user):
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+        "custom_meal": {
+            "title": "Avocado Toast",
+            "calories": 350,
+            "protein": 12,
+            "carbohydrates": 40,
+            "fat": 15,
+        },
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["activity_type"] == "meal"
+    assert data["duration_minutes"] == 30
+    assert data["meal_id"] is not None
+    assert data["meal"]["title"] == "Avocado Toast"
+    assert data["meal"]["calories"] == 350
+    assert data["meal"]["protein"] == 12
+    assert data["meal"]["carbohydrates"] == 40
+    assert data["meal"]["fat"] == 15
+    assert data["meal"]["recipe_id"] is None
+    assert data["meal"]["is_custom"] is True
+    assert data["meal"]["prep_time_minutes"] == 30
+
+
+@pytest.mark.asyncio
+async def test_create_schedule_item_with_custom_meal_persists_owner(
+    client: AsyncClient, db, mock_user
+):
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+        "custom_meal": {
+            "title": "Avocado Toast",
+            "calories": 350,
+            "protein": 12,
+            "carbohydrates": 40,
+            "fat": 15,
+        },
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 200
+    meal_id = response.json()["meal_id"]
+    fresh = await db.get(Meal, meal_id)
+    assert fresh is not None
+    assert fresh.user_id == mock_user.id
+    assert fresh.is_custom is True
+    assert fresh.recipe_id is None
+
+
+@pytest.mark.asyncio
+async def test_create_schedule_item_with_meal_id_does_not_create_new_meal(
+    client: AsyncClient, db, mock_user
+):
+    meal = await _create_meal(db, recipe_id="spoon-1", title="Spoonacular Recipe")
+    await db.commit()
+
+    before_count = (
+        await db.execute(sa.select(sa.func.count()).select_from(Meal))
+    ).scalar_one()
+
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+        "meal_id": meal.id,
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 200
+    assert response.json()["meal_id"] == meal.id
+    assert response.json()["meal"]["title"] == "Spoonacular Recipe"
+
+    after_count = (
+        await db.execute(sa.select(sa.func.count()).select_from(Meal))
+    ).scalar_one()
+    assert after_count == before_count, (
+        "no new Meal row should be created when meal_id is provided"
+    )

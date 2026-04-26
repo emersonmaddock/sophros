@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models.meal import ScheduleItemAlternative
+from app.models.meal import Meal, ScheduleItemAlternative
 from app.models.schedule import ScheduleItem
 from app.models.user import User
 from app.schemas.schedule import (
@@ -75,15 +75,39 @@ async def create_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    # TODO(Task 3): replace this whole handler with the custom_meal-aware version.
-    # `exclude={"custom_meal"}` is a bridge so the field doesn't reach the ORM kwargs.
+    meal_id = item_in.meal_id
+    if item_in.custom_meal is not None:
+        meal = Meal(
+            recipe_id=None,
+            title=item_in.custom_meal.title,
+            calories=item_in.custom_meal.calories,
+            protein=item_in.custom_meal.protein,
+            carbohydrates=item_in.custom_meal.carbohydrates,
+            fat=item_in.custom_meal.fat,
+            prep_time_minutes=item_in.duration_minutes,
+            ingredients=[],
+            tags=[],
+            is_custom=True,
+            user_id=current_user.id,
+        )
+        db.add(meal)
+        await db.flush()
+        meal_id = meal.id
+
     item = ScheduleItem(
-        **item_in.model_dump(exclude={"custom_meal"}), user_id=current_user.id
+        date=item_in.date,
+        activity_type=item_in.activity_type,
+        duration_minutes=item_in.duration_minutes,
+        is_completed=item_in.is_completed,
+        exercise_category=item_in.exercise_category,
+        exercise_calorie_burn=item_in.exercise_calorie_burn,
+        exercise_muscle_gain=item_in.exercise_muscle_gain,
+        meal_id=meal_id,
+        user_id=current_user.id,
     )
     db.add(item)
     await db.commit()
-    await db.refresh(item)
-    # Re-fetch with meal loaded
+
     stmt = select(ScheduleItem).where(ScheduleItem.id == item.id).options(*_meal_load())
     result = await db.execute(stmt)
     return result.scalar_one()
