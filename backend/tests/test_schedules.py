@@ -340,7 +340,9 @@ async def test_swap_primary_cascades_to_leftovers(client, db, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_create_meal_item_rejects_neither_meal_id_nor_custom_meal(client: AsyncClient):
+async def test_create_meal_item_rejects_neither_meal_id_nor_custom_meal(
+    client: AsyncClient,
+):
     payload = {
         "date": "2025-06-15T08:00:00",
         "activity_type": "meal",
@@ -352,7 +354,9 @@ async def test_create_meal_item_rejects_neither_meal_id_nor_custom_meal(client: 
 
 
 @pytest.mark.asyncio
-async def test_create_meal_item_rejects_both_meal_id_and_custom_meal(client: AsyncClient, db):
+async def test_create_meal_item_rejects_both_meal_id_and_custom_meal(
+    client: AsyncClient, db
+):
     meal = await _create_meal(db)
     await db.commit()
     payload = {

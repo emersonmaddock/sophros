@@ -75,7 +75,11 @@ async def create_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    item = ScheduleItem(**item_in.model_dump(exclude={"custom_meal"}), user_id=current_user.id)
+    # TODO(Task 3): replace this whole handler with the custom_meal-aware version.
+    # `exclude={"custom_meal"}` is a bridge so the field doesn't reach the ORM kwargs.
+    item = ScheduleItem(
+        **item_in.model_dump(exclude={"custom_meal"}), user_id=current_user.id
+    )
     db.add(item)
     await db.commit()
     await db.refresh(item)

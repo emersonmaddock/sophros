@@ -33,13 +33,9 @@ class ScheduleItemCreate(ScheduleItemBase):
         is_meal = self.activity_type == ActivityType.MEAL
         provided = sum(x is not None for x in (self.meal_id, self.custom_meal))
         if is_meal and provided != 1:
-            raise ValueError(
-                "meal items require exactly one of meal_id or custom_meal"
-            )
+            raise ValueError("meal items require exactly one of meal_id or custom_meal")
         if not is_meal and provided != 0:
-            raise ValueError(
-                "meal_id and custom_meal are only valid for meal items"
-            )
+            raise ValueError("meal_id and custom_meal are only valid for meal items")
         return self
 
 
