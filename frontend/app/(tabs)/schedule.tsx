@@ -168,7 +168,6 @@ export default function SchedulePage() {
   const handleMealModify = useCallback(
     (mealData: { time: string; title?: string; subtitle?: string; type: string }) => {
       if (!selectedItem) return;
-      const m = selectedItem.meal;
       setEditModalItem({
         id: String(selectedItem.id),
         time: mealData.time,
@@ -176,10 +175,6 @@ export default function SchedulePage() {
         subtitle: mealData.subtitle,
         duration: getDurationDisplay(selectedItem.duration_minutes),
         type: 'meal',
-        calories: m?.calories,
-        protein: m?.protein,
-        carbs: m?.carbohydrates,
-        fat: m?.fat,
       });
       setEditModalMode('edit');
       setEditModalItemType('meal');
@@ -208,75 +203,87 @@ export default function SchedulePage() {
 
   const handleEditSave = useCallback(
     (updatedItem: WeeklyScheduleItem) => {
-      // Build a naive ISO string from local components so it round-trips
-      // cleanly into the backend's TIMESTAMP WITHOUT TIME ZONE column.
       const pad = (n: number) => String(n).padStart(2, '0');
       const toNaiveIso = (d: Date) =>
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
         `T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
 
-      if (editModalMode === 'add') {
-        // Compute the date for the selected day
-        const dayDate = weekDates[selectedDayIndex];
-        const [timePart, period] = updatedItem.time.split(' ');
+      const parseTime = (display: string) => {
+        const [timePart, period] = display.split(' ');
         const [h, m] = timePart.split(':').map(Number);
         let hours = h;
         if (period === 'PM' && h !== 12) hours += 12;
         if (period === 'AM' && h === 12) hours = 0;
-        const itemDate = new Date(dayDate);
-        itemDate.setHours(hours, m || 0, 0, 0);
+        return { hours, minutes: m || 0 };
+      };
 
-        const activityType =
-          updatedItem.type === 'workout'
-            ? ('exercise' as const)
-            : (updatedItem.type as 'meal' | 'sleep');
+      if (editModalMode === 'add') {
+        const dayDate = weekDates[selectedDayIndex];
+        const { hours, minutes } = parseTime(updatedItem.time);
+        const itemDate = new Date(dayDate);
+        itemDate.setHours(hours, minutes, 0, 0);
+
         const durationMinutes = parseInt(updatedItem.duration) || 30;
 
-        createMutation.mutate({
-          body: {
-            date: toNaiveIso(itemDate),
-            activity_type: activityType,
-            duration_minutes: durationMinutes,
-          },
-          weekStartDate: weekStartStr,
-        });
-      } else if (editModalItem) {
-        const itemId = parseInt(editModalItem.id);
-        if (isNaN(itemId)) return;
-
-        // Rebuild date from modal's time string + the original item's day
-        const originalItem = scheduleItems.find((i) => i.id === itemId);
-        if (!originalItem) {
-          Alert.alert('Error', 'Schedule item no longer exists. Refresh and try again.');
-          return;
+        if (updatedItem.type === 'meal') {
+          createMutation.mutate({
+            body: {
+              date: toNaiveIso(itemDate),
+              activity_type: 'meal',
+              duration_minutes: durationMinutes,
+              custom_meal: {
+                title: updatedItem.title ?? '',
+                calories: updatedItem.calories ?? 0,
+                protein: updatedItem.protein ?? 0,
+                carbohydrates: updatedItem.carbs ?? 0,
+                fat: updatedItem.fat ?? 0,
+              },
+            },
+            weekStartDate: weekStartStr,
+          });
+        } else {
+          const activityType =
+            updatedItem.type === 'workout' ? ('exercise' as const) : (updatedItem.type as 'sleep');
+          createMutation.mutate({
+            body: {
+              date: toNaiveIso(itemDate),
+              activity_type: activityType,
+              duration_minutes: durationMinutes,
+            },
+            weekStartDate: weekStartStr,
+          });
         }
-        const originalDate = new Date(originalItem.date);
-
-        const [timePart, period] = updatedItem.time.split(' ');
-        const [h, m] = timePart.split(':').map(Number);
-        let hours = h;
-        if (period === 'PM' && h !== 12) hours += 12;
-        if (period === 'AM' && h === 12) hours = 0;
-
-        const newDate = new Date(originalDate);
-        newDate.setHours(hours, m || 0, 0, 0);
-
-        // For meals, duration is read-only (comes from the recipe); keep the
-        // original value so the user can't change it accidentally via edit.
-        const isMeal = originalItem.activity_type === 'meal';
-        const durationMinutes = isMeal
-          ? originalItem.duration_minutes
-          : parseInt(updatedItem.duration) || originalItem.duration_minutes;
-
-        updateMutation.mutate({
-          itemId,
-          body: {
-            date: toNaiveIso(newDate),
-            duration_minutes: durationMinutes,
-          },
-          weekStartDate: weekStartStr,
-        });
+        return;
       }
+
+      if (!editModalItem) return;
+      const itemId = parseInt(editModalItem.id);
+      if (isNaN(itemId)) return;
+
+      const originalItem = scheduleItems.find((i) => i.id === itemId);
+      if (!originalItem) {
+        Alert.alert('Error', 'Schedule item no longer exists. Refresh and try again.');
+        return;
+      }
+
+      const originalDate = new Date(originalItem.date);
+      const { hours, minutes } = parseTime(updatedItem.time);
+      const newDate = new Date(originalDate);
+      newDate.setHours(hours, minutes, 0, 0);
+
+      const isMeal = originalItem.activity_type === 'meal';
+      const body = isMeal
+        ? { date: toNaiveIso(newDate) }
+        : {
+            date: toNaiveIso(newDate),
+            duration_minutes: parseInt(updatedItem.duration) || originalItem.duration_minutes,
+          };
+
+      updateMutation.mutate({
+        itemId,
+        body,
+        weekStartDate: weekStartStr,
+      });
     },
     [
       editModalMode,
