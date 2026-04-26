@@ -1,25 +1,25 @@
 /**
- * useProgressData — reads local progress logs + current user profile and
- * returns a fully-computed ProgressSnapshot (or null while loading).
+ * useProgressData — reads progress logs from the backend DB and the current
+ * user profile and returns a fully-computed ProgressSnapshot (or null while
+ * loading).
  *
  * Responsibilities:
- *   1. Purge future-dated entries whenever `now` changes (including dev override).
- *   2. Seed a baseline weight entry from the backend user profile on first use.
- *   3. Snapshot the active goal definition and detect when it changes.
- *   4. Detect goal completion and archive the summary locally.
- *   5. Compute goal mode, chart data, confidence, and maintain-mode band.
+ *   1. Purge future-dated entries on the server whenever `now` changes.
+ *   2. Seed a baseline weight entry if the DB has no weight log yet.
+ *   3. Read the active goal snapshot from user.goal_start_date / goal_start_weight_kg
+ *      and detect when it changes (saving the new snapshot via PUT /users/me).
+ *   4. Detect goal completion and archive the summary to the DB.
+ *   5. Compute goal mode, chart data, confidence score, and maintain-mode band.
  *
- * `reload()` can be called after any local write (weight log, body fat log)
- * to trigger a re-read without waiting for the next `now` tick.
+ * `reload()` triggers a re-run without waiting for the next date tick.
  */
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSleepLogCount } from '@/components/SleepWakePrompt';
 import { useNow } from '@/hooks/useNow';
 import { useUserQuery } from '@/lib/queries/user';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import {
   archiveGoal,
   getBodyFatLog,
-  getGoalSnapshot,
   getLatestArchivedGoal,
   getWeightLog,
   localDateStr,
@@ -27,6 +27,7 @@ import {
   saveGoalSnapshot,
   upsertWeightEntry,
 } from '@/lib/progress/storage';
+import type { GoalSnapshot } from '@/lib/progress/storage';
 import {
   buildArchivedGoalSummary,
   computeConfidenceScore,
@@ -39,20 +40,8 @@ import {
   toConfidenceLevel,
 } from '@/lib/progress/compute';
 import type { ProgressSnapshot } from '@/lib/progress/compute';
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-const ACHIEVEMENTS_KEY = 'achievements_data';
-
-type AchievementsData = {
-  mealsConfirmed: number;
-  workoutsConfirmed: number;
-};
-
-async function readAchievementsData(): Promise<AchievementsData> {
-  const raw = await AsyncStorage.getItem(ACHIEVEMENTS_KEY);
-  if (!raw) return { mealsConfirmed: 0, workoutsConfirmed: 0 };
-  return JSON.parse(raw) as AchievementsData;
-}
+import { mondayOf } from '@/utils/date';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export function useProgressData(): {
   snapshot: ProgressSnapshot | null;
@@ -63,19 +52,31 @@ export function useProgressData(): {
   const { data: user, isLoading: isUserLoading } = useUserQuery();
   const [snapshot, setSnapshot] = useState<ProgressSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Increment to trigger a manual reload
   const [reloadKey, setReloadKey] = useState(0);
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
-
-  // Track the last date we loaded for so we can skip redundant runs
   const lastLoadDate = useRef<string | null>(null);
+
+  // Fetch current + previous week of schedule items to count confirmed
+  // meals and workouts for the 14-day confidence score window.
+  const currentWeekStart = useMemo(() => mondayOf(now), [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const prevWeekStart = useMemo(() => {
+    const d = new Date(currentWeekStart + 'T00:00:00');
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().slice(0, 10);
+  }, [currentWeekStart]);
+
+  const { data: currentWeekItems = [] } = useWeekScheduleQuery(currentWeekStart);
+  const { data: prevWeekItems = [] } = useWeekScheduleQuery(prevWeekStart);
+
+  const scheduleItems = useMemo(
+    () => [...currentWeekItems, ...prevWeekItems],
+    [currentWeekItems, prevWeekItems]
+  );
 
   useEffect(() => {
     if (isUserLoading || !user) return;
 
     const today = localDateStr(now);
-
-    // Skip if same date and same reload key as previous run
     const runKey = `${today}:${reloadKey}`;
     if (lastLoadDate.current === runKey) return;
     lastLoadDate.current = runKey;
@@ -85,12 +86,16 @@ export function useProgressData(): {
     async function load() {
       setIsLoading(true);
 
-      // Step 1: purge future entries (handles time-travel backward)
+      // Step 1: purge future entries (handles dev time-travel backward)
       await purgeFutureProgressData(now);
 
       // Step 2: check if goal data is complete
       const targetWeightKg = user!.target_weight ?? null;
-      const targetDate = user!.target_date ?? null;
+      const targetDate = user!.target_date
+        ? typeof user!.target_date === 'string'
+          ? user!.target_date
+          : (user!.target_date as Date).toISOString().slice(0, 10)
+        : null;
 
       if (targetWeightKg === null || targetDate === null) {
         if (!cancelled) {
@@ -117,34 +122,42 @@ export function useProgressData(): {
         return;
       }
 
-      // Step 3: load logs
-      const [weightLog, bfLog, storedSnapshot, achievements, sleepCount] = await Promise.all([
+      // Step 3: load logs from DB
+      const [weightLog, bfLog, sleepCount] = await Promise.all([
         getWeightLog(),
         getBodyFatLog(),
-        getGoalSnapshot(),
-        readAchievementsData(),
         getSleepLogCount(),
       ]);
 
-      // Step 4: seed baseline from backend user weight if no local weight log exists
+      // Step 4: seed baseline from user weight if no weight log exists
       let finalWeightLog = weightLog;
       if (weightLog.length === 0) {
-        const baseline = {
-          date: today,
-          weightKg: user!.weight,
-          source: 'baseline' as const,
-        };
+        const baseline = { date: today, weightKg: user!.weight, source: 'baseline' as const };
         await upsertWeightEntry(baseline);
         finalWeightLog = [baseline];
       }
 
-      // Step 5: manage goal snapshot
-      let activeSnapshot = storedSnapshot;
-      const goalChanged =
-        storedSnapshot !== null && hasGoalChanged(storedSnapshot, targetWeightKg, targetDate);
+      // Step 5: manage goal snapshot via user record fields
+      // goal_start_date and goal_start_weight_kg are stored on the User model.
+      const storedStartDate = (user as { goal_start_date?: string | null }).goal_start_date ?? null;
+      const storedStartWeight = (user as { goal_start_weight_kg?: number | null }).goal_start_weight_kg ?? null;
 
-      if (storedSnapshot === null || goalChanged) {
-        // First use or goal changed — start a new goal period
+      let activeSnapshot: GoalSnapshot | null = null;
+
+      if (storedStartDate !== null && storedStartWeight !== null) {
+        activeSnapshot = {
+          startWeightKg: storedStartWeight,
+          targetWeightKg,
+          targetBodyFat: user!.target_body_fat ?? null,
+          targetDate,
+          startDate: storedStartDate,
+        };
+      }
+
+      const goalChanged =
+        activeSnapshot !== null && hasGoalChanged(activeSnapshot, targetWeightKg, targetDate);
+
+      if (activeSnapshot === null || goalChanged) {
         activeSnapshot = {
           startWeightKg: finalWeightLog[finalWeightLog.length - 1].weightKg,
           targetWeightKg,
@@ -163,7 +176,6 @@ export function useProgressData(): {
         const id = goalId(activeSnapshot!);
         const existing = await getLatestArchivedGoal();
         if (!existing || existing.id !== id) {
-          // First detection of completion — build and store the summary
           const summary = buildArchivedGoalSummary(id, activeSnapshot!, finalWeightLog, bfLog, now);
           await archiveGoal(summary);
           archivedGoal = summary;
@@ -172,7 +184,15 @@ export function useProgressData(): {
         }
       }
 
-      // Step 7: compute display values
+      // Step 7: count confirmed meals/workouts from the 2-week schedule window
+      const mealsConfirmed = scheduleItems.filter(
+        (i) => i.is_completed === true && i.activity_type === 'meal'
+      ).length;
+      const workoutsConfirmed = scheduleItems.filter(
+        (i) => i.is_completed === true && i.activity_type === 'exercise'
+      ).length;
+
+      // Step 8: compute display values
       const latestWeight =
         finalWeightLog.length > 0
           ? finalWeightLog[finalWeightLog.length - 1].weightKg
@@ -183,12 +203,11 @@ export function useProgressData(): {
       const confidenceScore = computeConfidenceScore({
         weightHistory: finalWeightLog,
         sleepLogCount: sleepCount,
-        mealConfirmedCount: achievements.mealsConfirmed,
-        workoutConfirmedCount: achievements.workoutsConfirmed,
+        mealConfirmedCount: mealsConfirmed,
+        workoutConfirmedCount: workoutsConfirmed,
         now,
       });
       const confLevel = toConfidenceLevel(confidenceScore);
-
       const band = goalMode === 'maintain' ? computeStabilityBand(targetWeightKg) : null;
       const maintainInRange = band !== null ? isMaintainInRange(latestWeight, band) : null;
 
@@ -216,13 +235,9 @@ export function useProgressData(): {
     }
 
     load().catch(console.error);
-
-    return () => {
-      cancelled = true;
-    };
-    // Re-run whenever date changes, user changes, or reload is triggered
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [now.toDateString(), user, isUserLoading, reloadKey]);
+  }, [now.toDateString(), user, isUserLoading, reloadKey, scheduleItems]);
 
   return { snapshot, isLoading: isLoading || isUserLoading, reload };
 }

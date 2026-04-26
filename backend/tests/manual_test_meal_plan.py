@@ -58,7 +58,8 @@ async def run_authentic_test():
     service = MealPlanService(spoonacular_client=client)
 
     print(
-        "\n[STEP 1] Generating Weekly Plan (this may take 10-20s due to real API calls)..."
+        "\n[STEP 1] Generating Weekly Plan "
+        + "(this may take 10-20s due to real API calls)..."
     )
 
     try:
@@ -89,13 +90,15 @@ async def run_authentic_test():
 
             # Show first meal detail
             print(
-                f"{daily.day.value:<12} | {ex_str:<20} | Target: {daily.total_calories} kcal"
+                f"{daily.day.value:<12} | {ex_str:<20} | "
+                + f"Target: {daily.total_calories} kcal"
             )
             for slot in daily.slots:
                 tag = "[L]" if slot.is_leftover else "[C]"
                 meal_title = slot.plan.main_recipe.title if slot.plan else "N/A"
                 print(
-                    f"{'':<12} | {'':<20} |   {tag} {slot.slot_name.value}: {meal_title}"
+                    f"{'':<12} | {'':<20} |   "
+                    + f"{tag} {slot.slot_name.value}: {meal_title}"
                 )
             print("-" * 60)
 

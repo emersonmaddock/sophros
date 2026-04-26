@@ -1,33 +1,58 @@
-import type { Confirmation } from '@/contexts/ConfirmationsContext';
 import { Colors } from '@/constants/theme';
 import { Check, X } from 'lucide-react-native';
 import React, { useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 
 type Props = {
   children: React.ReactNode;
-  /** Whether this item is in the past and needs the user to confirm */
+  /** True when the item is in the past and hasn't been confirmed yet */
   needsConfirmation: boolean;
-  confirmation: Confirmation | undefined;
+  isCompleted: boolean;
   onConfirmDone: () => void;
   onConfirmMissed: () => void;
 };
 
-function LeftAction() {
+type Progress = Animated.AnimatedInterpolation<number>;
+
+function renderLeft(progress: Progress) {
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [0, 0.7, 1],
+    extrapolate: 'clamp',
+  });
+  const scale = progress.interpolate({
+    inputRange: [0, 0.6, 1],
+    outputRange: [0.6, 0.95, 1],
+    extrapolate: 'clamp',
+  });
   return (
     <View style={styles.leftAction}>
-      <Check size={24} color="#FFF" strokeWidth={3} />
-      <Text style={styles.actionLabel}>Done</Text>
+      <Animated.View style={[styles.actionContent, { opacity, transform: [{ scale }] }]}>
+        <Check size={22} color="#FFF" strokeWidth={3} />
+        <Text style={styles.actionLabel}>Done</Text>
+      </Animated.View>
     </View>
   );
 }
 
-function RightAction() {
+function renderRight(progress: Progress) {
+  const opacity = progress.interpolate({
+    inputRange: [0, 0.4, 1],
+    outputRange: [0, 0.7, 1],
+    extrapolate: 'clamp',
+  });
+  const scale = progress.interpolate({
+    inputRange: [0, 0.6, 1],
+    outputRange: [0.6, 0.95, 1],
+    extrapolate: 'clamp',
+  });
   return (
     <View style={styles.rightAction}>
-      <X size={24} color="#FFF" strokeWidth={3} />
-      <Text style={styles.actionLabel}>Missed</Text>
+      <Animated.View style={[styles.actionContent, { opacity, transform: [{ scale }] }]}>
+        <X size={22} color="#FFF" strokeWidth={3} />
+        <Text style={styles.actionLabel}>Missed</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -35,21 +60,17 @@ function RightAction() {
 export function SwipeableScheduleItem({
   children,
   needsConfirmation,
-  confirmation,
+  isCompleted,
   onConfirmDone,
   onConfirmMissed,
 }: Props) {
   const swipeRef = useRef<Swipeable>(null);
 
-  // Items that are already confirmed or don't need confirmation are not swipeable
-  if (!needsConfirmation || confirmation) {
+  if (!needsConfirmation || isCompleted) {
     return <>{children}</>;
   }
 
   const handleOpen = (direction: 'left' | 'right') => {
-    // onSwipeableOpen fires with the side that opened:
-    // 'left'  = left side revealed  = user swiped RIGHT → done
-    // 'right' = right side revealed = user swiped LEFT  → missed
     swipeRef.current?.close();
     if (direction === 'left') {
       onConfirmDone();
@@ -62,13 +83,15 @@ export function SwipeableScheduleItem({
     <Swipeable
       ref={swipeRef}
       friction={2}
-      leftThreshold={60}
-      rightThreshold={60}
-      renderLeftActions={() => <LeftAction />}
-      renderRightActions={() => <RightAction />}
-      onSwipeableOpen={handleOpen}
+      leftThreshold={48}
+      rightThreshold={48}
       overshootLeft={false}
       overshootRight={false}
+      containerStyle={styles.container}
+      childrenContainerStyle={styles.childrenContainer}
+      renderLeftActions={renderLeft}
+      renderRightActions={renderRight}
+      onSwipeableOpen={handleOpen}
     >
       {children}
     </Swipeable>
@@ -76,36 +99,35 @@ export function SwipeableScheduleItem({
 }
 
 const styles = StyleSheet.create({
-  leftAction: {
+  container: {
     flex: 1,
-    backgroundColor: '#16A34A',
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    paddingLeft: 20,
     borderRadius: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: 20,
-    alignSelf: 'stretch',
+    overflow: 'hidden',
+  },
+  childrenContainer: {
+    flex: 1,
+  },
+  leftAction: {
+    backgroundColor: Colors.light.success,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 88,
+    borderRadius: 16,
   },
   rightAction: {
-    flex: 1,
     backgroundColor: Colors.light.error,
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 20,
+    alignItems: 'center',
+    width: 88,
     borderRadius: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    gap: 8,
-    paddingLeft: 20,
-    alignSelf: 'stretch',
+  },
+  actionContent: {
+    alignItems: 'center',
+    gap: 4,
   },
   actionLabel: {
     color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-    alignSelf: 'center',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

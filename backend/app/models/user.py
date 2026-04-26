@@ -1,8 +1,12 @@
 from datetime import date, time
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, Float, Integer, String, Time
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from app.models.progress import UserArchivedGoal, UserBodyFatLog, UserWeightLog
 
 from app.db.base_class import Base
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
@@ -27,6 +31,10 @@ class User(Base):
     target_weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
     target_body_fat: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
     target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Active goal period — set when a new goal starts or the goal definition changes
+    goal_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    goal_start_weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Scheduling Anchors
     wake_up_time: Mapped[time | None] = mapped_column(Time, nullable=True)
@@ -66,6 +74,12 @@ class User(Base):
     user_busy_times: Mapped[list["UserBusyTime"]] = relationship(  # type: ignore[name-defined] # noqa: F821
         "UserBusyTime", back_populates="user", cascade="all, delete-orphan"
     )
-    saved_meal_plans: Mapped[list["SavedMealPlan"]] = relationship(  # type: ignore[name-defined] # noqa: F821
-        "SavedMealPlan", back_populates="user", cascade="all, delete-orphan"
+    weight_logs: Mapped[list["UserWeightLog"]] = relationship(
+        "UserWeightLog", back_populates="user", cascade="all, delete-orphan", order_by="UserWeightLog.date"
+    )
+    body_fat_logs: Mapped[list["UserBodyFatLog"]] = relationship(
+        "UserBodyFatLog", back_populates="user", cascade="all, delete-orphan", order_by="UserBodyFatLog.date"
+    )
+    archived_goals: Mapped[list["UserArchivedGoal"]] = relationship(
+        "UserArchivedGoal", back_populates="user", cascade="all, delete-orphan", order_by="UserArchivedGoal.archived_at.desc()"
     )

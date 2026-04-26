@@ -1,5 +1,3 @@
-import type { Recipe } from '@/api/types.gen';
-
 export type ItemType = 'meal' | 'workout' | 'sleep';
 
 export type WeeklyScheduleItem = {
@@ -9,11 +7,15 @@ export type WeeklyScheduleItem = {
   subtitle?: string;
   duration: string;
   type: ItemType;
-  calories?: number;
+  status?: 'completed' | 'current' | 'upcoming';
   workoutType?: string;
   targetHours?: number;
   alternatives?: WeeklyScheduleItem[];
-  recipe?: Recipe;
+  recipe?: Record<string, unknown>;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 };
 
 export type DaySchedule = {

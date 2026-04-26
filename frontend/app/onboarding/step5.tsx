@@ -118,7 +118,7 @@ export default function Step5Screen() {
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[styles.continueButton, !canContinue && styles.continueButtonDisabled]}
-            onPress={() => router.push('/onboarding/step6')}
+            onPress={() => router.push('/onboarding/step6' as never)}
             disabled={!canContinue}
             activeOpacity={0.8}
           >

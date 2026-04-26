@@ -1,16 +1,19 @@
-import type { Day } from '@/api/types.gen';
+import type { ScheduleItemRead } from '@/api/types.gen';
 import { MacroNutrients } from '@/components/MacroNutrients';
+import { MealDetailModal } from '@/components/MealDetailModal';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useConfirmations } from '@/contexts/ConfirmationsContext';
+import { useUser } from '@/contexts/UserContext';
 import { useNow } from '@/hooks/useNow';
-import { useSavedWeekPlanQuery } from '@/lib/queries/mealPlan';
+import type { HealthKitInputs } from '@/lib/healthkit';
+import { useActiveEnergyToday, useSleepLastNight, useStepsToday } from '@/lib/healthkit';
+import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
+import { mondayOf } from '@/utils/date';
 import { calculateHealthScore } from '@/utils/healthScore';
-import { mapDailyPlanToScheduleItems } from '@/utils/mealPlanMapper';
 import { useUser as useClerkUser } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import { ChevronRight, Utensils } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -21,22 +24,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const JS_DAY_TO_API_DAY: Record<number, Day> = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+function formatDisplayTime(isoDatetime: string): string {
+  const d = new Date(isoDatetime);
+  const h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const period = h >= 12 ? 'PM' : 'AM';
+  const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${displayH}:${m} ${period}`;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
 
   const { user: clerkUser } = useClerkUser();
   const userName = clerkUser?.firstName || 'there';
-  const { confirmations } = useConfirmations();
 
   const now = useNow();
   const day = now.getDate();
@@ -46,110 +47,100 @@ export default function DashboardPage() {
   const currentMinute = now.getMinutes();
 
   // Compute this week's Monday to fetch the saved plan
-  const weekStartStr = useMemo(() => {
-    const d = new Date(now);
-    const dow = d.getDay();
-    const diff = dow === 0 ? -6 : 1 - dow;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const weekStartStr = useMemo(() => mondayOf(now), [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const todayDateStr = useMemo(() => {
-    const y = now.getFullYear();
-    const m = (now.getMonth() + 1).toString().padStart(2, '0');
-    const d = now.getDate().toString().padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const { data: savedPlan, isLoading: isLoadingPlan } = useSavedWeekPlanQuery(weekStartStr);
+  const { data: scheduleItems = [], isLoading: isLoadingPlan } = useWeekScheduleQuery(weekStartStr);
   const { data: targets, isLoading: isLoadingTargets } = useUserTargetsQuery();
-  const { data: user, isLoading: isLoadingUser } = useUserQuery();
+  const { isLoading: isLoadingUser } = useUserQuery();
+  const { user: backendUser } = useUser();
+
+  const { data: hkActive } = useActiveEnergyToday();
+  const { data: hkSteps } = useStepsToday();
+  const { data: hkSleep } = useSleepLastNight();
+
+  const hkInputs: HealthKitInputs = useMemo(
+    () => ({
+      activeEnergyKcal: hkActive?.kcalToday ?? null,
+      stepCount: hkSteps?.valueToday ?? null,
+      sleepMinutes: hkSleep?.minutesLastNight ?? null,
+    }),
+    [hkActive, hkSteps, hkSleep]
+  );
 
   const isLoading = isLoadingPlan || isLoadingTargets || isLoadingUser;
 
-  // Derive today's plan
-  const todayPlan = useMemo(() => {
-    const todayApiDay = JS_DAY_TO_API_DAY[now.getDay()];
-    return savedPlan?.plan_data?.daily_plans?.find((p) => p.day === todayApiDay);
-  }, [savedPlan, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Compute health score
-  const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan),
-    [todayPlan, targets, user]
-  );
-
-  // Parse a display time string to minutes-from-midnight
-  const parseDisplayMins = (displayTime: string): number => {
-    const [timePart, period] = displayTime.split(' ');
-    const [h, m] = timePart.split(':').map(Number);
-    let hours = h;
-    if (period === 'PM' && h !== 12) hours += 12;
-    if (period === 'AM' && h === 12) hours = 0;
-    return hours * 60 + (m || 0);
-  };
-
   const nowMins = currentHour * 60 + currentMinute;
 
-  // Derive upcoming meals (items whose time is still in the future and not confirmed missed)
+  const todayMealItems = useMemo(() => {
+    return scheduleItems.filter((item) => {
+      const d = new Date(item.date);
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate() &&
+        item.activity_type === 'meal'
+      );
+    });
+  }, [scheduleItems, now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Compute health score — uses the same calculator as the detail page so the
+  // two screens never disagree.
+  const healthScore = useMemo(() => {
+    const completed = todayMealItems.filter((i) => i.is_completed && i.meal);
+    const totals = completed.reduce(
+      (acc, i) => ({
+        total_calories: acc.total_calories + (i.meal?.calories ?? 0),
+        total_protein: acc.total_protein + (i.meal?.protein ?? 0),
+        total_carbs: acc.total_carbs + (i.meal?.carbohydrates ?? 0),
+        total_fat: acc.total_fat + (i.meal?.fat ?? 0),
+      }),
+      { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+    );
+    const hasPlan = todayMealItems.length > 0;
+    return calculateHealthScore(totals, targets, backendUser, hasPlan, hkInputs);
+  }, [todayMealItems, targets, backendUser, hkInputs]);
+
+  // Derive upcoming meals (items whose time is still in the future and not completed)
   const upcomingItems = useMemo(() => {
-    if (!todayPlan) return [];
-
-    const mapped = mapDailyPlanToScheduleItems(todayPlan);
-
-    return mapped
+    return todayMealItems
       .filter((item) => {
-        const conf = confirmations[item.id];
-        // Only honour confirmations that belong to today
-        const isToday = !conf || conf.dateStr === todayDateStr;
-        if (isToday && conf?.status === 'missed') return false;
-        if (isToday && conf?.status === 'done') return false;
-        return parseDisplayMins(item.time) >= nowMins;
+        if (item.is_completed) return false;
+        const itemMins = new Date(item.date).getHours() * 60 + new Date(item.date).getMinutes();
+        return itemMins >= nowMins;
       })
       .slice(0, 3)
       .map((item) => ({
-        time: item.time,
-        title: item.title,
-        subtitle: item.subtitle || '',
+        item,
+        time: formatDisplayTime(item.date),
+        title: item.meal?.title ?? 'Meal',
+        subtitle: item.meal ? `${item.meal.calories} cal` : '',
         icon: Utensils,
         color: Colors.light.secondary,
       }));
-  }, [todayPlan, confirmations, nowMins, todayDateStr]);
+  }, [todayMealItems, nowMins]);
 
-  // Sum nutrients of confirmed-done items for today only.
-  // Filter by dateStr to avoid counting confirmations from other days
-  // (same recipe ID can appear across multiple days in a rotation).
+  const [selectedItem, setSelectedItem] = useState<ScheduleItemRead | null>(null);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+
+  const handleUpcomingPress = useCallback((item: ScheduleItemRead) => {
+    setSelectedItem(item);
+    setDetailModalVisible(true);
+  }, []);
+
+  // Sum nutrients of completed meal items for today
   const consumedTotals = useMemo(() => {
-    if (!todayPlan) return { calories: 0, protein: 0, carbs: 0, fat: 0 };
-
-    let calories = 0;
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-
-    for (const slot of todayPlan.slots) {
-      const recipeId = slot.plan?.main_recipe?.id?.toString();
-      if (!recipeId) continue;
-      const conf = confirmations[recipeId];
-      if (conf?.status !== 'done') continue;
-      if (conf.dateStr !== todayDateStr) continue; // only today's confirmations
-
-      const n = slot.plan?.main_recipe?.nutrients;
-      if (n) {
-        calories += n.calories;
-        protein += n.protein;
-        carbs += n.carbohydrates;
-        fat += n.fat;
-      } else {
-        calories += slot.calories;
-        protein += slot.protein;
-        carbs += slot.carbohydrates;
-        fat += slot.fat;
-      }
-    }
-
-    return { calories, protein, carbs, fat };
-  }, [todayPlan, confirmations, todayDateStr]);
+    return todayMealItems
+      .filter((item) => item.meal && item.is_completed)
+      .reduce(
+        (acc, item) => ({
+          calories: acc.calories + (item.meal?.calories ?? 0),
+          protein: acc.protein + (item.meal?.protein ?? 0),
+          carbs: acc.carbs + (item.meal?.carbohydrates ?? 0),
+          fat: acc.fat + (item.meal?.fat ?? 0),
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+  }, [todayMealItems, nowMins]);
 
   // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {
@@ -161,7 +152,7 @@ export default function DashboardPage() {
     const carbTarget = targets?.carbohydrates.target;
     const fatTarget = targets?.fat.target;
 
-    if (!todayPlan) {
+    if (todayMealItems.length === 0) {
       return {
         calories: {
           value: '--',
@@ -190,7 +181,7 @@ export default function DashboardPage() {
       };
     }
 
-    // Always show confirmed-consumed amounts. Progress bar shows consumed vs target.
+    // Always show consumed amounts. Progress bar shows consumed vs target.
     return {
       calories: {
         value: `${consumedTotals.calories}`,
@@ -217,7 +208,7 @@ export default function DashboardPage() {
         subtitle: fatTarget ? `of ${Math.round(fatTarget)}g` : undefined,
       },
     };
-  }, [todayPlan, targets, consumedTotals]);
+  }, [todayMealItems, targets, consumedTotals]);
 
   // Determine greeting based on time of day
   const greeting =
@@ -265,30 +256,34 @@ export default function DashboardPage() {
             <View style={styles.scoreHeader}>
               <View>
                 <Text style={styles.scoreLabel}>Health Score</Text>
-                <Text style={styles.scoreValue}>{healthScore.overall}</Text>
+                <Text style={styles.scoreValue}>
+                  {healthScore.overall == null ? '—' : healthScore.overall}
+                </Text>
               </View>
               <View style={styles.statusBadge}>
                 <Text style={styles.statusText}>
-                  {healthScore.overall >= 90
-                    ? 'Excellent'
-                    : healthScore.overall >= 70
-                      ? 'Good'
-                      : healthScore.overall >= 50
-                        ? 'Fair'
-                        : 'Needs Work'}
+                  {healthScore.overall == null
+                    ? 'Not measured'
+                    : healthScore.overall >= 90
+                      ? 'Excellent'
+                      : healthScore.overall >= 70
+                        ? 'Good'
+                        : healthScore.overall >= 50
+                          ? 'Fair'
+                          : 'Needs Work'}
                 </Text>
               </View>
             </View>
 
             <View style={styles.scoreDetails}>
               {[
-                { label: 'Nutrition', value: healthScore.nutrition.score },
-                { label: 'Exercise', value: healthScore.exercise.score },
-                { label: 'Sleep', value: healthScore.sleep.score },
+                { label: 'Nutrition', sub: healthScore.nutrition },
+                { label: 'Exercise', sub: healthScore.exercise },
+                { label: 'Sleep', sub: healthScore.sleep },
               ].map((item, i) => (
                 <View key={i} style={styles.scoreItem}>
                   <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: `${item.value}%` }]} />
+                    <View style={[styles.progressBarFill, { width: `${item.sub?.score ?? 0}%` }]} />
                   </View>
                   <Text style={styles.scoreItemLabel}>{item.label}</Text>
                 </View>
@@ -311,25 +306,26 @@ export default function DashboardPage() {
 
             {upcomingItems.length > 0 ? (
               <View style={styles.listContainer}>
-                {upcomingItems.map((item, i) => (
+                {upcomingItems.map((entry, i) => (
                   <TouchableOpacity
-                    key={i}
+                    key={entry.item.id}
                     style={[styles.listItem, i === 0 && styles.activeListItem]}
+                    onPress={() => handleUpcomingPress(entry.item)}
                   >
-                    <View style={[styles.iconBox, { backgroundColor: `${item.color}15` }]}>
-                      <item.icon size={24} color={item.color} />
+                    <View style={[styles.iconBox, { backgroundColor: `${entry.color}15` }]}>
+                      <entry.icon size={24} color={entry.color} />
                     </View>
                     <View style={styles.itemContent}>
                       <Text style={styles.itemTitle} numberOfLines={1}>
-                        {item.title}
+                        {entry.title}
                       </Text>
                       <Text style={styles.itemSubtitle} numberOfLines={1}>
-                        {item.subtitle}
+                        {entry.subtitle}
                       </Text>
                     </View>
                     <View style={styles.timeBox}>
                       <View style={styles.timeBadge}>
-                        <Text style={styles.timeText}>{item.time}</Text>
+                        <Text style={styles.timeText}>{entry.time}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -338,7 +334,9 @@ export default function DashboardPage() {
             ) : (
               <View style={styles.emptyUpcoming}>
                 <Text style={styles.emptyText}>
-                  No meals planned yet. Head to the Schedule tab to plan your week!
+                  {todayMealItems.length > 0
+                    ? 'All done for today — check back tomorrow!'
+                    : 'No meals planned yet. Head to the Schedule tab to plan your week!'}
                 </Text>
               </View>
             )}
@@ -355,6 +353,22 @@ export default function DashboardPage() {
           </View>
         </ScrollView>
       )}
+
+      <MealDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        readOnly
+        meal={
+          selectedItem
+            ? {
+                time: formatDisplayTime(selectedItem.date),
+                title: selectedItem.meal?.title ?? 'Meal',
+                type: selectedItem.activity_type,
+                meal: selectedItem.meal,
+              }
+            : null
+        }
+      />
     </SafeAreaView>
   );
 }

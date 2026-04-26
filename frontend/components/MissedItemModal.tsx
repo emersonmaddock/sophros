@@ -1,15 +1,7 @@
-import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 type Props = {
   visible: boolean;
@@ -79,10 +71,7 @@ export function MissedItemModal({ visible, itemTitle, itemType, onSave, onClose 
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
     >
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <BottomSheetScrollView contentContainerStyle={styles.body}>
         <View style={styles.header}>
           <Text style={styles.title}>Missed {typeLabel}?</Text>
           <Text style={styles.subtitle} numberOfLines={1}>
@@ -114,25 +103,23 @@ export function MissedItemModal({ visible, itemTitle, itemType, onSave, onClose 
             textAlignVertical="top"
           />
         )}
+      </BottomSheetScrollView>
 
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+      <View style={styles.actions}>
+        <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveText}>Save</Text>
+        </TouchableOpacity>
+      </View>
     </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  body: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   header: {
     paddingVertical: 16,
@@ -192,7 +179,9 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 'auto',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
   cancelButton: {
     flex: 1,

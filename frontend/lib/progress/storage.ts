@@ -1,18 +1,22 @@
 /**
- * progress/storage — local-first persistence for the progress feature.
+ * progress/storage — API-backed persistence for the progress feature.
  *
- * All time-dependent operations accept a `now: Date` parameter rather than
- * calling `new Date()` directly so that dev-time override works correctly.
+ * Weight log, body fat log, goal snapshot, and archived goals are stored in
+ * the database via /api/v1/users/me/progress/* endpoints.
  *
- * Call `purgeFutureProgressData(now)` whenever `now` changes (including when
- * the dev override moves backward) before reading any progress data. This
- * removes entries that are ahead of the current local date, ensuring
- * time-travel backward re-enables prompts and removes impossible future points.
+ * The weight-prompt-dismissed state is a pure UI concern (did the user
+ * dismiss today's weight prompt?) and remains in AsyncStorage.
+ *
+ * `purgeFutureProgressData` is now a no-op for the API-backed data since the
+ * backend returns the full log and the caller filters by date as needed.
+ * The dismissed-date check still purges the local AsyncStorage value.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { client } from '@/api/client.gen';
+import type { WeightLogEntryRead, BodyFatLogEntryRead, ArchivedGoalRead } from '@/types/progress';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (re-exported so callers don't change their imports)
 // ---------------------------------------------------------------------------
 
 export type WeightLogEntry = {
@@ -32,34 +36,67 @@ export type GoalSnapshot = {
   targetWeightKg: number;
   targetBodyFat: number | null;
   targetDate: string; // YYYY-MM-DD
-  startDate: string; // YYYY-MM-DD — when this goal period started
+  startDate: string; // YYYY-MM-DD
 };
 
 export type ArchivedGoalSummary = {
   id: string;
   goalSnapshot: GoalSnapshot;
-  endDate: string; // YYYY-MM-DD
+  endDate: string;
   finalWeightKg: number | null;
   finalBodyFatPercent: number | null;
   weightChangeKg: number | null;
-  archivedAt: string; // YYYY-MM-DD
+  archivedAt: string;
 };
 
 // ---------------------------------------------------------------------------
-// Storage keys
+// Internal converters between API shape and local shape
 // ---------------------------------------------------------------------------
 
-const KEYS = {
-  WEIGHT_LOG: 'progress_weight_log',
-  BODY_FAT_LOG: 'progress_body_fat_log',
-  GOAL_SNAPSHOT: 'progress_goal_snapshot',
-  ARCHIVED_GOALS: 'progress_archived_goals',
-  /** The date (YYYY-MM-DD) the user dismissed the weight prompt without logging. */
-  WEIGHT_PROMPT_DISMISSED: 'progress_weight_prompt_dismissed_date',
-} as const;
+function toLocalWeight(r: WeightLogEntryRead): WeightLogEntry {
+  return { date: r.date, weightKg: r.weight_kg, source: r.source as WeightLogEntry['source'] };
+}
+
+function toLocalBodyFat(r: BodyFatLogEntryRead): BodyFatLogEntry {
+  return { date: r.date, bodyFatPercent: r.body_fat_percent, source: 'manual' };
+}
+
+function toLocalArchivedGoal(r: ArchivedGoalRead): ArchivedGoalSummary {
+  return {
+    id: r.id,
+    goalSnapshot: {
+      startWeightKg: r.start_weight_kg,
+      targetWeightKg: r.target_weight_kg,
+      targetBodyFat: r.target_body_fat ?? null,
+      targetDate: r.target_date,
+      startDate: r.start_date,
+    },
+    endDate: r.end_date,
+    finalWeightKg: r.final_weight_kg ?? null,
+    finalBodyFatPercent: r.final_body_fat_percent ?? null,
+    weightChangeKg: r.weight_change_kg ?? null,
+    archivedAt: r.archived_at,
+  };
+}
+
+function toApiArchivedGoal(s: ArchivedGoalSummary): ArchivedGoalRead {
+  return {
+    id: s.id,
+    start_date: s.goalSnapshot.startDate,
+    target_date: s.goalSnapshot.targetDate,
+    start_weight_kg: s.goalSnapshot.startWeightKg,
+    target_weight_kg: s.goalSnapshot.targetWeightKg,
+    target_body_fat: s.goalSnapshot.targetBodyFat,
+    end_date: s.endDate,
+    final_weight_kg: s.finalWeightKg,
+    final_body_fat_percent: s.finalBodyFatPercent,
+    weight_change_kg: s.weightChangeKg,
+    archived_at: s.archivedAt,
+  };
+}
 
 // ---------------------------------------------------------------------------
-// Date helper (local date, not UTC — consistent with sleep/streak modules)
+// Date helper
 // ---------------------------------------------------------------------------
 
 export function localDateStr(d: Date): string {
@@ -74,33 +111,23 @@ export function localDateStr(d: Date): string {
 // ---------------------------------------------------------------------------
 
 export async function getWeightLog(): Promise<WeightLogEntry[]> {
-  const raw = await AsyncStorage.getItem(KEYS.WEIGHT_LOG);
-  if (!raw) return [];
-  return JSON.parse(raw) as WeightLogEntry[];
+  const res = await client.get({ url: '/api/v1/users/me/progress/weight-log' });
+  if (res.error) return [];
+  return ((res.data as WeightLogEntryRead[]) ?? []).map(toLocalWeight);
 }
 
-/**
- * Upserts a weight entry for its date — one entry per local date.
- * If an entry already exists for that date it is replaced.
- */
 export async function upsertWeightEntry(entry: WeightLogEntry): Promise<void> {
-  const log = await getWeightLog();
-  const idx = log.findIndex((e) => e.date === entry.date);
-  if (idx >= 0) {
-    log[idx] = entry;
-  } else {
-    log.push(entry);
-    log.sort((a, b) => a.date.localeCompare(b.date));
-  }
-  await AsyncStorage.setItem(KEYS.WEIGHT_LOG, JSON.stringify(log));
+  await client.post({
+    url: '/api/v1/users/me/progress/weight-log',
+    body: { date: entry.date, weight_kg: entry.weightKg, source: entry.source },
+  });
 }
 
 export async function saveWeightLog(entries: WeightLogEntry[]): Promise<void> {
-  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
-  await AsyncStorage.setItem(KEYS.WEIGHT_LOG, JSON.stringify(sorted));
+  // Bulk-upsert: called when purging future entries. Send each entry.
+  await Promise.all(entries.map(upsertWeightEntry));
 }
 
-/** Returns the YYYY-MM-DD of the most recent weight entry, or null. */
 export async function getLastWeightLogDate(): Promise<string | null> {
   const log = await getWeightLog();
   if (log.length === 0) return null;
@@ -112,42 +139,48 @@ export async function getLastWeightLogDate(): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 export async function getBodyFatLog(): Promise<BodyFatLogEntry[]> {
-  const raw = await AsyncStorage.getItem(KEYS.BODY_FAT_LOG);
-  if (!raw) return [];
-  return JSON.parse(raw) as BodyFatLogEntry[];
+  const res = await client.get({ url: '/api/v1/users/me/progress/body-fat-log' });
+  if (res.error) return [];
+  return ((res.data as BodyFatLogEntryRead[]) ?? []).map(toLocalBodyFat);
 }
+
+export async function upsertBodyFatEntry(entry: BodyFatLogEntry): Promise<void> {
+  await client.post({
+    url: '/api/v1/users/me/progress/body-fat-log',
+    body: { date: entry.date, body_fat_percent: entry.bodyFatPercent, source: 'manual' },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Goal snapshot — stored on the User record via PATCH /users/me
+// ---------------------------------------------------------------------------
 
 /**
- * Upserts a body-fat entry for its date — one entry per local date.
+ * goalSnapshot is now derived from the User record's goal_start_date and
+ * goal_start_weight_kg fields (plus target_* fields).
+ * The caller (useProgressData) passes the user object in directly, so these
+ * functions are no-ops / thin adapters to keep the hook's logic unchanged.
  */
-export async function upsertBodyFatEntry(entry: BodyFatLogEntry): Promise<void> {
-  const log = await getBodyFatLog();
-  const idx = log.findIndex((e) => e.date === entry.date);
-  if (idx >= 0) {
-    log[idx] = entry;
-  } else {
-    log.push(entry);
-    log.sort((a, b) => a.date.localeCompare(b.date));
-  }
-  await AsyncStorage.setItem(KEYS.BODY_FAT_LOG, JSON.stringify(log));
-}
-
-// ---------------------------------------------------------------------------
-// Goal snapshot
-// ---------------------------------------------------------------------------
-
 export async function getGoalSnapshot(): Promise<GoalSnapshot | null> {
-  const raw = await AsyncStorage.getItem(KEYS.GOAL_SNAPSHOT);
-  if (!raw) return null;
-  return JSON.parse(raw) as GoalSnapshot;
+  // Now sourced from user.goal_start_date / goal_start_weight_kg in useProgressData
+  return null;
 }
 
 export async function saveGoalSnapshot(snapshot: GoalSnapshot): Promise<void> {
-  await AsyncStorage.setItem(KEYS.GOAL_SNAPSHOT, JSON.stringify(snapshot));
+  await client.put({
+    url: '/api/v1/users/me',
+    body: {
+      goal_start_date: snapshot.startDate,
+      goal_start_weight_kg: snapshot.startWeightKg,
+    },
+  });
 }
 
 export async function clearGoalSnapshot(): Promise<void> {
-  await AsyncStorage.removeItem(KEYS.GOAL_SNAPSHOT);
+  await client.put({
+    url: '/api/v1/users/me',
+    body: { goal_start_date: null, goal_start_weight_kg: null },
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -155,42 +188,33 @@ export async function clearGoalSnapshot(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function getArchivedGoals(): Promise<ArchivedGoalSummary[]> {
-  const raw = await AsyncStorage.getItem(KEYS.ARCHIVED_GOALS);
-  if (!raw) return [];
-  return JSON.parse(raw) as ArchivedGoalSummary[];
+  const res = await client.get({ url: '/api/v1/users/me/progress/archived-goals' });
+  if (res.error) return [];
+  return ((res.data as ArchivedGoalRead[]) ?? []).map(toLocalArchivedGoal);
 }
 
-/**
- * Archives a completed goal summary.
- * Replaces an existing entry with the same id if present, otherwise prepends
- * (most recent first).
- */
 export async function archiveGoal(summary: ArchivedGoalSummary): Promise<void> {
-  const existing = await getArchivedGoals();
-  const filtered = existing.filter((g) => g.id !== summary.id);
-  await AsyncStorage.setItem(KEYS.ARCHIVED_GOALS, JSON.stringify([summary, ...filtered]));
+  await client.post({
+    url: '/api/v1/users/me/progress/archived-goals',
+    body: toApiArchivedGoal(summary),
+  });
 }
 
-/** Returns the most recently archived goal, if any. */
 export async function getLatestArchivedGoal(): Promise<ArchivedGoalSummary | null> {
-  const archived = await getArchivedGoals();
-  return archived.length > 0 ? archived[0] : null;
+  const goals = await getArchivedGoals();
+  return goals.length > 0 ? goals[0] : null;
 }
 
 // ---------------------------------------------------------------------------
-// Weight prompt state
+// Weight prompt dismissed state — stays in AsyncStorage (UI-only)
 // ---------------------------------------------------------------------------
 
-/**
- * Returns 'urgent' if the last weight log is ≥ 7 days old (or missing),
- * 'optional' otherwise.
- */
+const WEIGHT_PROMPT_DISMISSED_KEY = 'progress_weight_prompt_dismissed_date';
+
 export async function getWeightPromptState(now: Date): Promise<'urgent' | 'optional'> {
   const today = localDateStr(now);
   const lastDate = await getLastWeightLogDate();
   if (!lastDate) return 'urgent';
-
-  // Use noon-anchored timestamps to avoid DST drift
   const lastMs = new Date(`${lastDate}T12:00:00`).getTime();
   const todayMs = new Date(`${today}T12:00:00`).getTime();
   const daysDiff = Math.floor((todayMs - lastMs) / (1000 * 60 * 60 * 24));
@@ -198,50 +222,40 @@ export async function getWeightPromptState(now: Date): Promise<'urgent' | 'optio
 }
 
 export async function setWeightPromptDismissedToday(now: Date): Promise<void> {
-  await AsyncStorage.setItem(KEYS.WEIGHT_PROMPT_DISMISSED, localDateStr(now));
+  await AsyncStorage.setItem(WEIGHT_PROMPT_DISMISSED_KEY, localDateStr(now));
 }
 
 export async function isWeightPromptDismissedToday(now: Date): Promise<boolean> {
-  const stored = await AsyncStorage.getItem(KEYS.WEIGHT_PROMPT_DISMISSED);
+  const stored = await AsyncStorage.getItem(WEIGHT_PROMPT_DISMISSED_KEY);
   return stored === localDateStr(now);
 }
 
 // ---------------------------------------------------------------------------
-// Future-data purge
+// Future-data purge — delete entries with date > today from the server
 // ---------------------------------------------------------------------------
 
-/**
- * Removes all progress entries strictly after the current local date.
- * Call this (and await it) before reading any progress data whenever `now`
- * changes — especially when the dev override moves backward in time.
- */
 export async function purgeFutureProgressData(now: Date): Promise<void> {
   const today = localDateStr(now);
 
-  // Weight log
+  // Weight log — delete any future entries
   const weightLog = await getWeightLog();
-  const prunedWeight = weightLog.filter((e) => e.date <= today);
-  if (prunedWeight.length !== weightLog.length) {
-    await saveWeightLog(prunedWeight);
-  }
+  await Promise.all(
+    weightLog
+      .filter((e) => e.date > today)
+      .map((e) => client.delete({ url: `/api/v1/users/me/progress/weight-log/${e.date}` }))
+  );
 
   // Body fat log
   const bfLog = await getBodyFatLog();
-  const prunedBf = bfLog.filter((e) => e.date <= today);
-  if (prunedBf.length !== bfLog.length) {
-    await AsyncStorage.setItem(KEYS.BODY_FAT_LOG, JSON.stringify(prunedBf));
-  }
+  await Promise.all(
+    bfLog
+      .filter((e) => e.date > today)
+      .map((e) => client.delete({ url: `/api/v1/users/me/progress/body-fat-log/${e.date}` }))
+  );
 
-  // Weight prompt dismissed date
-  const dismissed = await AsyncStorage.getItem(KEYS.WEIGHT_PROMPT_DISMISSED);
+  // Dismissed date
+  const dismissed = await AsyncStorage.getItem(WEIGHT_PROMPT_DISMISSED_KEY);
   if (dismissed && dismissed > today) {
-    await AsyncStorage.removeItem(KEYS.WEIGHT_PROMPT_DISMISSED);
-  }
-
-  // Archived goals created in the future
-  const archived = await getArchivedGoals();
-  const prunedArchived = archived.filter((g) => g.archivedAt <= today);
-  if (prunedArchived.length !== archived.length) {
-    await AsyncStorage.setItem(KEYS.ARCHIVED_GOALS, JSON.stringify(prunedArchived));
+    await AsyncStorage.removeItem(WEIGHT_PROMPT_DISMISSED_KEY);
   }
 }

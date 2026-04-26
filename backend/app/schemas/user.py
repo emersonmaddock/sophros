@@ -42,6 +42,10 @@ class UserBase(BaseModel):
     target_body_fat: float | None = None  # Percentage
     target_date: date | None = None  # Enrollment date or goal deadline
 
+    # Active goal period
+    goal_start_date: date | None = None
+    goal_start_weight_kg: float | None = None
+
     # Scheduling Anchors
     wake_up_time: time = time(7, 0)
     sleep_time: time = time(23, 0)
@@ -80,6 +84,8 @@ class UserUpdate(BaseModel):
     target_weight: float | None = None
     target_body_fat: float | None = None
     target_date: date | None = None
+    goal_start_date: date | None = None
+    goal_start_weight_kg: float | None = None
     wake_up_time: time | None = None
     sleep_time: time | None = None
     busy_times: list[BusyTime] | None = None
@@ -140,6 +146,8 @@ class UserRead(UserBase):
             "target_weight": data.target_weight,
             "target_body_fat": data.target_body_fat,
             "target_date": data.target_date,
+            "goal_start_date": data.goal_start_date,
+            "goal_start_weight_kg": data.goal_start_weight_kg,
             "wake_up_time": data.wake_up_time or time(7, 0),
             "sleep_time": data.sleep_time or time(23, 0),
             "busy_times": [

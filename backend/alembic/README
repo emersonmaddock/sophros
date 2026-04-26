@@ -6,5 +6,5 @@ To update the database schema:
 3. Run: alembic upgrade head
 
 Notes:
-- Make sure that the DATABASE_URL in .env is set correctly.
+- Make sure that the DATABASE_URL in .env is set TO A **DATABASE AT THE CURRENT REVISION HEAD**!!
 - If adding a new model, make sure to import it in env.py
