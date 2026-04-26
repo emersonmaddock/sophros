@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import {
   getMostRecentQuantitySample,
+  isHealthDataAvailableAsync,
   queryCategorySamples,
   queryQuantitySamples,
   queryWorkoutSamples,
@@ -21,6 +22,15 @@ import type {
 
 function isIOS(): boolean {
   return Platform.OS === 'ios';
+}
+
+async function isHealthKitAvailable(): Promise<boolean> {
+  if (!isIOS()) return false;
+  try {
+    return await isHealthDataAvailableAsync();
+  } catch {
+    return false;
+  }
 }
 
 function startOfToday(): Date {
@@ -62,7 +72,7 @@ function workoutActivityNameFromValue(value: number): string {
 }
 
 export async function initAuthorization(direction: Direction): Promise<void> {
-  if (!isIOS()) return;
+  if (!(await isHealthKitAvailable())) return;
   const spec = permissionsFor(direction);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await requestAuthorization(spec as any);
