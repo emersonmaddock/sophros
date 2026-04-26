@@ -75,7 +75,7 @@ async def create_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    item = ScheduleItem(**item_in.model_dump(), user_id=current_user.id)
+    item = ScheduleItem(**item_in.model_dump(exclude={"custom_meal"}), user_id=current_user.id)
     db.add(item)
     await db.commit()
     await db.refresh(item)

@@ -337,3 +337,71 @@ async def test_swap_primary_cascades_to_leftovers(client, db, mock_user):
     assert source.meal_id == meal_b.id
     assert refreshed is not None
     assert refreshed.meal_id == meal_b.id, "leftover's meal_id should follow the source"
+
+
+@pytest.mark.asyncio
+async def test_create_meal_item_rejects_neither_meal_id_nor_custom_meal(client: AsyncClient):
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 422
+    assert "exactly one of meal_id or custom_meal" in response.text
+
+
+@pytest.mark.asyncio
+async def test_create_meal_item_rejects_both_meal_id_and_custom_meal(client: AsyncClient, db):
+    meal = await _create_meal(db)
+    await db.commit()
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+        "meal_id": meal.id,
+        "custom_meal": {
+            "title": "Avocado Toast",
+            "calories": 350,
+            "protein": 12,
+            "carbohydrates": 40,
+            "fat": 15,
+        },
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 422
+    assert "exactly one of meal_id or custom_meal" in response.text
+
+
+@pytest.mark.asyncio
+async def test_create_workout_rejects_meal_id(client: AsyncClient, db):
+    meal = await _create_meal(db)
+    await db.commit()
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "exercise",
+        "duration_minutes": 45,
+        "meal_id": meal.id,
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 422
+    assert "only valid for meal items" in response.text
+
+
+@pytest.mark.asyncio
+async def test_create_workout_rejects_custom_meal(client: AsyncClient):
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "exercise",
+        "duration_minutes": 45,
+        "custom_meal": {
+            "title": "ignored",
+            "calories": 0,
+            "protein": 0,
+            "carbohydrates": 0,
+            "fat": 0,
+        },
+    }
+    response = await client.post(BASE, json=payload)
+    assert response.status_code == 422
+    assert "only valid for meal items" in response.text
