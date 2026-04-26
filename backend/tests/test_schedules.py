@@ -502,3 +502,62 @@ async def test_create_schedule_item_with_meal_id_does_not_create_new_meal(
 # insert leaves no orphan custom Meal row. Spec section 5 guarantees this
 # ("Both rows are written in one transaction; failure leaves no orphans"), but
 # it is not exercised by the current happy-path tests.
+
+
+@pytest.mark.asyncio
+async def test_delete_schedule_item_cascades_custom_meal(
+    client: AsyncClient, db, mock_user
+):
+    payload = {
+        "date": "2025-06-15T08:00:00",
+        "activity_type": "meal",
+        "duration_minutes": 30,
+        "custom_meal": {
+            "title": "Avocado Toast",
+            "calories": 350,
+            "protein": 12,
+            "carbohydrates": 40,
+            "fat": 15,
+        },
+    }
+    create_resp = await client.post(BASE, json=payload)
+    assert create_resp.status_code == 200
+    item_id = create_resp.json()["id"]
+    meal_id = create_resp.json()["meal_id"]
+
+    delete_resp = await client.delete(f"{BASE}/{item_id}")
+    assert delete_resp.status_code == 204
+
+    # The custom Meal row should be gone too
+    fresh = await db.get(Meal, meal_id)
+    assert fresh is None, (
+        "custom Meal should be deleted when its ScheduleItem is removed"
+    )
+
+
+@pytest.mark.asyncio
+async def test_delete_schedule_item_preserves_spoonacular_meal(
+    client: AsyncClient, db, mock_user
+):
+    meal = await _create_meal(db, recipe_id="spoon-keep", title="Shared Recipe")
+    await db.commit()
+    meal_id = meal.id
+
+    create_resp = await client.post(
+        BASE,
+        json={
+            "date": "2025-06-15T08:00:00",
+            "activity_type": "meal",
+            "duration_minutes": 30,
+            "meal_id": meal_id,
+        },
+    )
+    assert create_resp.status_code == 200
+    item_id = create_resp.json()["id"]
+
+    delete_resp = await client.delete(f"{BASE}/{item_id}")
+    assert delete_resp.status_code == 204
+
+    fresh = await db.get(Meal, meal_id)
+    assert fresh is not None, "non-custom Meal must remain (it is shared library data)"
+    assert fresh.is_custom is False

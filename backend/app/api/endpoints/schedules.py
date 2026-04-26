@@ -207,15 +207,23 @@ async def delete_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    item = await db.get(ScheduleItem, item_id)
+    stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
+    result = await db.execute(stmt)
+    item = result.scalar_one_or_none()
     if not item or item.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
         )
+
+    custom_meal_to_delete: Meal | None = None
+    if item.meal is not None and item.meal.is_custom:
+        custom_meal_to_delete = item.meal
 
     # Cascade: remove any downstream leftovers that point at this item
     await db.execute(
         delete(ScheduleItem).where(ScheduleItem.source_schedule_item_id == item_id)
     )
     await db.delete(item)
+    if custom_meal_to_delete is not None:
+        await db.delete(custom_meal_to_delete)
     await db.commit()
