@@ -32,8 +32,17 @@ def upgrade() -> None:
     sa.UniqueConstraint('user_id', name='uq_google_calendar_user')
     )
     op.create_index(op.f('ix_google_calendar_connections_user_id'), 'google_calendar_connections', ['user_id'], unique=False)
-    op.add_column('schedules', sa.Column('source_type', sa.String(), nullable=False))
+    op.add_column(
+        'schedules',
+        sa.Column(
+            'source_type',
+            sa.String(),
+            nullable=False,
+            server_default='sophros',
+        ),
+    )
     op.add_column('schedules', sa.Column('source_calendar_id', sa.String(), nullable=True))
+    op.alter_column('schedules', 'source_type', server_default=None)
     # ### end Alembic commands ###
 
 
