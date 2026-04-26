@@ -84,6 +84,7 @@ async def create_schedule_item(
             protein=item_in.custom_meal.protein,
             carbohydrates=item_in.custom_meal.carbohydrates,
             fat=item_in.custom_meal.fat,
+            # mirror duration so MealRead consumers stay source-agnostic
             prep_time_minutes=item_in.duration_minutes,
             ingredients=[],
             tags=[],
@@ -91,7 +92,7 @@ async def create_schedule_item(
             user_id=current_user.id,
         )
         db.add(meal)
-        await db.flush()
+        await db.flush()  # populate meal.id; both INSERTs share one txn until commit
         meal_id = meal.id
 
     item = ScheduleItem(

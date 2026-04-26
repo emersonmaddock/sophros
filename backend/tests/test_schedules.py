@@ -496,3 +496,9 @@ async def test_create_schedule_item_with_meal_id_does_not_create_new_meal(
     assert after_count == before_count, (
         "no new Meal row should be created when meal_id is provided"
     )
+
+
+# TODO: atomicity regression test — assert that a failure during ScheduleItem
+# insert leaves no orphan custom Meal row. Spec section 5 guarantees this
+# ("Both rows are written in one transaction; failure leaves no orphans"), but
+# it is not exercised by the current happy-path tests.
