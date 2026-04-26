@@ -27,6 +27,7 @@ class Meal(Base):
     user_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("user.id"), nullable=True, index=True
     )
+    user: Mapped["User | None"] = relationship("User", lazy="select")  # type: ignore[name-defined] # noqa: F821
 
 
 class ScheduleItemAlternative(Base):
