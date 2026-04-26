@@ -63,16 +63,49 @@ export function EditItemModal({
   const currentType = item?.type || itemType;
   const config = TYPE_CONFIG[currentType];
 
+  // For meal+edit, the only editable thing is time. Title/nutrition are not rendered.
+  const isMealEdit = currentType === 'meal' && mode === 'edit';
+  const isMealAdd = currentType === 'meal' && mode === 'add';
+
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (!title.trim()) e.title = 'Title is required';
-    // Macros are read-only on meal; no validation needed.
+    if (!isMealEdit && !title.trim()) e.title = 'Title is required';
+    if (isMealAdd) {
+      const checkInt = (key: string, raw: string, label: string) => {
+        if (!raw.trim()) {
+          e[key] = `${label} is required`;
+          return;
+        }
+        const n = parseInt(raw, 10);
+        if (Number.isNaN(n) || n < 0) e[key] = `${label} must be a non-negative number`;
+      };
+      checkInt('calories', calories, 'Calories');
+      checkInt('protein', protein, 'Protein');
+      checkInt('carbs', carbs, 'Carbs');
+      checkInt('fat', fat, 'Fat');
+
+      const durMins = parseInt(duration, 10);
+      if (!Number.isFinite(durMins) || durMins <= 0) {
+        e.duration = 'Duration must be greater than 0';
+      }
+    }
     if (currentType === 'sleep' && targetHours) {
       const h = parseFloat(targetHours);
       if (isNaN(h) || h < 1 || h > 24) e.targetHours = 'Must be 1–24';
     }
     return e;
-  }, [title, targetHours, currentType]);
+  }, [
+    title,
+    targetHours,
+    currentType,
+    isMealAdd,
+    isMealEdit,
+    calories,
+    protein,
+    carbs,
+    fat,
+    duration,
+  ]);
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -99,27 +132,22 @@ export function EditItemModal({
     setTouched(true);
     if (!isValid) return;
 
-    const cal = calories ? parseInt(calories) : undefined;
-    const pro = protein ? parseInt(protein) : undefined;
-    const carb = carbs ? parseInt(carbs) : undefined;
-    const f = fat ? parseInt(fat) : undefined;
-
     const baseItem: WeeklyScheduleItem = {
       id: item?.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       time,
-      title,
+      title: isMealEdit ? item?.title || '' : title,
       duration,
       type: currentType,
     };
 
-    if (currentType === 'meal') {
-      baseItem.calories = cal;
-      baseItem.protein = pro;
-      baseItem.carbs = carb;
-      baseItem.fat = f;
+    if (isMealAdd) {
+      baseItem.calories = parseInt(calories, 10);
+      baseItem.protein = parseInt(protein, 10);
+      baseItem.carbs = parseInt(carbs, 10);
+      baseItem.fat = parseInt(fat, 10);
     } else if (currentType === 'workout') {
       baseItem.workoutType = workoutType || title;
-      baseItem.calories = caloriesBurned ? parseInt(caloriesBurned) : undefined;
+      baseItem.calories = caloriesBurned ? parseInt(caloriesBurned, 10) : undefined;
     } else if (currentType === 'sleep') {
       baseItem.targetHours = targetHours ? parseFloat(targetHours) : 8;
     }
@@ -170,7 +198,8 @@ export function EditItemModal({
           </View>
           <View>
             <Text style={styles.headerTitle}>
-              {mode === 'edit' ? 'Edit' : 'Add'} {config.label}
+              {mode === 'edit' ? (currentType === 'meal' ? 'Reschedule' : 'Edit') : 'Add'}{' '}
+              {config.label}
             </Text>
             <Text style={styles.headerSubtitle}>{config.subtitle}</Text>
           </View>
@@ -182,56 +211,79 @@ export function EditItemModal({
           <TimePickerInput label="Time" value={time} onChange={setTime} format="12h" />
         </View>
 
-        <View style={styles.field}>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={inputStyle('title')}
-            value={title}
-            onChangeText={setTitle}
-            placeholder={
-              currentType === 'meal'
-                ? 'e.g., Greek Yogurt Bowl'
-                : currentType === 'workout'
-                  ? 'e.g., HIIT Training'
-                  : 'Sleep'
-            }
-            placeholderTextColor={Colors.light.textMuted}
-          />
-          {renderError('title')}
-        </View>
+        {!isMealEdit && (
+          <View style={styles.field}>
+            <Text style={styles.label}>Title</Text>
+            <TextInput
+              style={inputStyle('title')}
+              value={title}
+              onChangeText={setTitle}
+              placeholder={
+                currentType === 'meal'
+                  ? 'e.g., Greek Yogurt Bowl'
+                  : currentType === 'workout'
+                    ? 'e.g., HIIT Training'
+                    : 'Sleep'
+              }
+              placeholderTextColor={Colors.light.textMuted}
+            />
+            {renderError('title')}
+          </View>
+        )}
 
-        {currentType === 'meal' && (
+        {isMealAdd && (
           <>
             <Text style={styles.sectionLabel}>Nutrition</Text>
-            <Text style={[styles.macroLabel, { marginBottom: 8 }]}>
-              Set by the recipe — cannot be edited here.
-            </Text>
             <View style={styles.macroRow}>
               <View style={[styles.field, styles.macroField]}>
                 <Text style={styles.macroLabel}>Calories</Text>
-                <View style={[styles.input, styles.readonly]}>
-                  <Text style={styles.readonlyText}>{calories || '—'}</Text>
-                </View>
+                <TextInput
+                  style={inputStyle('calories')}
+                  value={calories}
+                  onChangeText={setCalories}
+                  placeholder="Calories"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('calories')}
               </View>
               <View style={[styles.field, styles.macroField]}>
                 <Text style={styles.macroLabel}>Protein (g)</Text>
-                <View style={[styles.input, styles.readonly]}>
-                  <Text style={styles.readonlyText}>{protein || '—'}</Text>
-                </View>
+                <TextInput
+                  style={inputStyle('protein')}
+                  value={protein}
+                  onChangeText={setProtein}
+                  placeholder="Protein"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('protein')}
               </View>
             </View>
             <View style={styles.macroRow}>
               <View style={[styles.field, styles.macroField]}>
                 <Text style={styles.macroLabel}>Carbs (g)</Text>
-                <View style={[styles.input, styles.readonly]}>
-                  <Text style={styles.readonlyText}>{carbs || '—'}</Text>
-                </View>
+                <TextInput
+                  style={inputStyle('carbs')}
+                  value={carbs}
+                  onChangeText={setCarbs}
+                  placeholder="Carbs"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('carbs')}
               </View>
               <View style={[styles.field, styles.macroField]}>
                 <Text style={styles.macroLabel}>Fat (g)</Text>
-                <View style={[styles.input, styles.readonly]}>
-                  <Text style={styles.readonlyText}>{fat || '—'}</Text>
-                </View>
+                <TextInput
+                  style={inputStyle('fat')}
+                  value={fat}
+                  onChangeText={setFat}
+                  placeholder="Fat"
+                  keyboardType="numeric"
+                  placeholderTextColor={Colors.light.textMuted}
+                />
+                {renderError('fat')}
               </View>
             </View>
           </>
@@ -280,18 +332,12 @@ export function EditItemModal({
           </View>
         )}
 
-        <View style={styles.field}>
-          {currentType === 'meal' ? (
-            <>
-              <Text style={styles.label}>Duration</Text>
-              <View style={[styles.input, styles.readonly]}>
-                <Text style={styles.readonlyText}>{duration}</Text>
-              </View>
-            </>
-          ) : (
+        {!isMealEdit && (
+          <View style={styles.field}>
             <DurationPickerInput label="Duration" value={duration} onChange={setDuration} />
-          )}
-        </View>
+            {renderError('duration')}
+          </View>
+        )}
       </BottomSheetScrollView>
 
       <View style={styles.actions}>
@@ -310,9 +356,7 @@ export function EditItemModal({
 }
 
 const styles = StyleSheet.create({
-  headerStrip: {
-    height: 4,
-  },
+  headerStrip: { height: 4 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -321,11 +365,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconCircle: {
     width: 40,
     height: 40,
@@ -333,22 +373,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.light.text,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: Colors.light.textMuted,
-    marginTop: 1,
-  },
-  form: {
-    padding: 20,
-  },
-  field: {
-    marginBottom: 16,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: Colors.light.text },
+  headerSubtitle: { fontSize: 13, color: Colors.light.textMuted, marginTop: 1 },
+  form: { padding: 20 },
+  field: { marginBottom: 16 },
   label: {
     fontSize: 14,
     fontWeight: '600',
@@ -377,21 +405,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  inputError: {
-    borderColor: Colors.light.error,
-  },
-  errorText: {
-    color: Colors.light.error,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  macroRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  macroField: {
-    flex: 1,
-  },
+  inputError: { borderColor: Colors.light.error },
+  errorText: { color: Colors.light.error, fontSize: 12, marginTop: 4 },
+  macroRow: { flexDirection: 'row', gap: 12 },
+  macroField: { flex: 1 },
   actions: {
     flexDirection: 'row',
     gap: 12,
@@ -406,11 +423,7 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-  },
+  cancelButtonText: { fontSize: 16, fontWeight: '600', color: Colors.light.text },
   saveButton: {
     flex: 1,
     backgroundColor: Colors.light.primary,
@@ -418,22 +431,6 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  readonly: {
-    backgroundColor: Colors.light.background,
-    justifyContent: 'center',
-    minHeight: 46,
-  },
-  readonlyText: {
-    fontSize: 15,
-    color: Colors.light.textMuted,
-    fontWeight: '600',
-  },
+  saveButtonDisabled: { opacity: 0.5 },
+  saveButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 });
