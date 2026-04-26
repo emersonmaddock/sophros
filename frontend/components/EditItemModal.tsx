@@ -136,7 +136,7 @@ export function EditItemModal({
       id: item?.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       time,
       title: isMealEdit ? item?.title || '' : title,
-      duration,
+      duration: isMealEdit ? item?.duration || duration : duration,
       type: currentType,
     };
 

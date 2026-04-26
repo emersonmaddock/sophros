@@ -57,6 +57,12 @@ describe('EditItemModal — meal add mode', () => {
     expect(screen.getByText('Protein (g)')).toBeTruthy();
     expect(screen.getByText('Carbs (g)')).toBeTruthy();
     expect(screen.getByText('Fat (g)')).toBeTruthy();
+    // Placeholder assertions confirm the macro inputs are real TextInputs (editable),
+    // not read-only Views with the same label.
+    expect(screen.getByPlaceholderText('Calories')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Protein')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Carbs')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Fat')).toBeTruthy();
     // The "Set by the recipe — cannot be edited here." note must be gone.
     expect(screen.queryByText(/Set by the recipe/i)).toBeNull();
   });
