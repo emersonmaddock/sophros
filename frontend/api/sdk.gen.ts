@@ -2,20 +2,62 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateScheduleItemApiV1SchedulesPostData, CreateScheduleItemApiV1SchedulesPostErrors, CreateScheduleItemApiV1SchedulesPostResponses, CreateUserApiV1UsersPostData, CreateUserApiV1UsersPostErrors, CreateUserApiV1UsersPostResponses, DeleteScheduleItemApiV1SchedulesItemIdDeleteData, DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors, DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses, GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors, GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses, GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData, GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses, GetScheduleItemsApiV1SchedulesGetData, GetScheduleItemsApiV1SchedulesGetErrors, GetScheduleItemsApiV1SchedulesGetResponses, GetWeekScheduleApiV1SchedulesWeekGetData, GetWeekScheduleApiV1SchedulesWeekGetErrors, GetWeekScheduleApiV1SchedulesWeekGetResponses, HealthCheckHealthGetData, HealthCheckHealthGetResponses, ReadUserMeApiV1UsersMeGetData, ReadUserMeApiV1UsersMeGetErrors, ReadUserMeApiV1UsersMeGetResponses, ReadUserTargetsApiV1UsersMeTargetsGetData, ReadUserTargetsApiV1UsersMeTargetsGetResponses, RootGetData, RootGetResponses, SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData, SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors, SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses, UpdateScheduleItemApiV1SchedulesItemIdPutData, UpdateScheduleItemApiV1SchedulesItemIdPutErrors, UpdateScheduleItemApiV1SchedulesItemIdPutResponses, UpdateUserMeApiV1UsersMePutData, UpdateUserMeApiV1UsersMePutErrors, UpdateUserMeApiV1UsersMePutResponses } from './types.gen';
+import type {
+  CreateScheduleItemApiV1SchedulesPostData,
+  CreateScheduleItemApiV1SchedulesPostErrors,
+  CreateScheduleItemApiV1SchedulesPostResponses,
+  CreateUserApiV1UsersPostData,
+  CreateUserApiV1UsersPostErrors,
+  CreateUserApiV1UsersPostResponses,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
+  DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
+  GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+  GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData,
+  GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
+  GetScheduleItemsApiV1SchedulesGetData,
+  GetScheduleItemsApiV1SchedulesGetErrors,
+  GetScheduleItemsApiV1SchedulesGetResponses,
+  GetWeekScheduleApiV1SchedulesWeekGetData,
+  GetWeekScheduleApiV1SchedulesWeekGetErrors,
+  GetWeekScheduleApiV1SchedulesWeekGetResponses,
+  HealthCheckHealthGetData,
+  HealthCheckHealthGetResponses,
+  ReadUserMeApiV1UsersMeGetData,
+  ReadUserMeApiV1UsersMeGetErrors,
+  ReadUserMeApiV1UsersMeGetResponses,
+  ReadUserTargetsApiV1UsersMeTargetsGetData,
+  ReadUserTargetsApiV1UsersMeTargetsGetResponses,
+  RootGetData,
+  RootGetResponses,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
+  SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
+  UpdateScheduleItemApiV1SchedulesItemIdPutData,
+  UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
+  UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
+  UpdateUserMeApiV1UsersMePutData,
+  UpdateUserMeApiV1UsersMePutErrors,
+  UpdateUserMeApiV1UsersMePutResponses,
+} from './types.gen';
 
-export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
-    /**
-     * You can provide a client instance returned by `createClient()` instead of
-     * individual options. This might be also useful if you want to implement a
-     * custom client.
-     */
-    client?: Client;
-    /**
-     * You can pass arbitrary values through the `meta` object. This can be
-     * used to access values that aren't defined as part of the SDK function.
-     */
-    meta?: Record<string, unknown>;
+export type Options<
+  TData extends TDataShape = TDataShape,
+  ThrowOnError extends boolean = boolean,
+> = Options2<TData, ThrowOnError> & {
+  /**
+   * You can provide a client instance returned by `createClient()` instead of
+   * individual options. This might be also useful if you want to implement a
+   * custom client.
+   */
+  client?: Client;
+  /**
+   * You can pass arbitrary values through the `meta` object. This can be
+   * used to access values that aren't defined as part of the SDK function.
+   */
+  meta?: Record<string, unknown>;
 };
 
 /**
@@ -24,26 +66,40 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Create new user.
  * Called by frontend after Clerk signup, or via Webhook (secure).
  */
-export const createUserApiV1UsersPost = <ThrowOnError extends boolean = false>(options: Options<CreateUserApiV1UsersPostData, ThrowOnError>) => (options.client ?? client).post<CreateUserApiV1UsersPostResponses, CreateUserApiV1UsersPostErrors, ThrowOnError>({
+export const createUserApiV1UsersPost = <ThrowOnError extends boolean = false>(
+  options: Options<CreateUserApiV1UsersPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    CreateUserApiV1UsersPostResponses,
+    CreateUserApiV1UsersPostErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Read User Me
  *
  * Get current user profile.
  */
-export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(options?: Options<ReadUserMeApiV1UsersMeGetData, ThrowOnError>) => (options?.client ?? client).get<ReadUserMeApiV1UsersMeGetResponses, ReadUserMeApiV1UsersMeGetErrors, ThrowOnError>({
+export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
+  options?: Options<ReadUserMeApiV1UsersMeGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    ReadUserMeApiV1UsersMeGetResponses,
+    ReadUserMeApiV1UsersMeGetErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Update User Me
@@ -52,26 +108,40 @@ export const readUserMeApiV1UsersMeGet = <ThrowOnError extends boolean = false>(
  * Dietary list fields (allergies, include_cuisine, exclude_cuisine) are
  * replaced wholesale — existing rows are deleted and new ones inserted.
  */
-export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false>(options: Options<UpdateUserMeApiV1UsersMePutData, ThrowOnError>) => (options.client ?? client).put<UpdateUserMeApiV1UsersMePutResponses, UpdateUserMeApiV1UsersMePutErrors, ThrowOnError>({
+export const updateUserMeApiV1UsersMePut = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateUserMeApiV1UsersMePutData, ThrowOnError>
+) =>
+  (options.client ?? client).put<
+    UpdateUserMeApiV1UsersMePutResponses,
+    UpdateUserMeApiV1UsersMePutErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Read User Targets
  *
  * Get nutrient targets based on user profile.
  */
-export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boolean = false>(options?: Options<ReadUserTargetsApiV1UsersMeTargetsGetData, ThrowOnError>) => (options?.client ?? client).get<ReadUserTargetsApiV1UsersMeTargetsGetResponses, unknown, ThrowOnError>({
+export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boolean = false>(
+  options?: Options<ReadUserTargetsApiV1UsersMeTargetsGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    ReadUserTargetsApiV1UsersMeTargetsGetResponses,
+    unknown,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/users/me/targets',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Get Week Schedule
@@ -79,70 +149,114 @@ export const readUserTargetsApiV1UsersMeTargetsGet = <ThrowOnError extends boole
  * Return all schedule items for the 7-day week starting on week_start_date (Monday).
  * Includes meal and alternatives for meal-type items.
  */
-export const getWeekScheduleApiV1SchedulesWeekGet = <ThrowOnError extends boolean = false>(options: Options<GetWeekScheduleApiV1SchedulesWeekGetData, ThrowOnError>) => (options.client ?? client).get<GetWeekScheduleApiV1SchedulesWeekGetResponses, GetWeekScheduleApiV1SchedulesWeekGetErrors, ThrowOnError>({
+export const getWeekScheduleApiV1SchedulesWeekGet = <ThrowOnError extends boolean = false>(
+  options: Options<GetWeekScheduleApiV1SchedulesWeekGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetWeekScheduleApiV1SchedulesWeekGetResponses,
+    GetWeekScheduleApiV1SchedulesWeekGetErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules/week',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Get Schedule Items
  */
-export const getScheduleItemsApiV1SchedulesGet = <ThrowOnError extends boolean = false>(options: Options<GetScheduleItemsApiV1SchedulesGetData, ThrowOnError>) => (options.client ?? client).get<GetScheduleItemsApiV1SchedulesGetResponses, GetScheduleItemsApiV1SchedulesGetErrors, ThrowOnError>({
+export const getScheduleItemsApiV1SchedulesGet = <ThrowOnError extends boolean = false>(
+  options: Options<GetScheduleItemsApiV1SchedulesGetData, ThrowOnError>
+) =>
+  (options.client ?? client).get<
+    GetScheduleItemsApiV1SchedulesGetResponses,
+    GetScheduleItemsApiV1SchedulesGetErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Create Schedule Item
  */
-export const createScheduleItemApiV1SchedulesPost = <ThrowOnError extends boolean = false>(options: Options<CreateScheduleItemApiV1SchedulesPostData, ThrowOnError>) => (options.client ?? client).post<CreateScheduleItemApiV1SchedulesPostResponses, CreateScheduleItemApiV1SchedulesPostErrors, ThrowOnError>({
+export const createScheduleItemApiV1SchedulesPost = <ThrowOnError extends boolean = false>(
+  options: Options<CreateScheduleItemApiV1SchedulesPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    CreateScheduleItemApiV1SchedulesPostResponses,
+    CreateScheduleItemApiV1SchedulesPostErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Delete Schedule Item
  */
-export const deleteScheduleItemApiV1SchedulesItemIdDelete = <ThrowOnError extends boolean = false>(options: Options<DeleteScheduleItemApiV1SchedulesItemIdDeleteData, ThrowOnError>) => (options.client ?? client).delete<DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses, DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors, ThrowOnError>({
+export const deleteScheduleItemApiV1SchedulesItemIdDelete = <ThrowOnError extends boolean = false>(
+  options: Options<DeleteScheduleItemApiV1SchedulesItemIdDeleteData, ThrowOnError>
+) =>
+  (options.client ?? client).delete<
+    DeleteScheduleItemApiV1SchedulesItemIdDeleteResponses,
+    DeleteScheduleItemApiV1SchedulesItemIdDeleteErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules/{item_id}',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Update Schedule Item
  */
-export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends boolean = false>(options: Options<UpdateScheduleItemApiV1SchedulesItemIdPutData, ThrowOnError>) => (options.client ?? client).put<UpdateScheduleItemApiV1SchedulesItemIdPutResponses, UpdateScheduleItemApiV1SchedulesItemIdPutErrors, ThrowOnError>({
+export const updateScheduleItemApiV1SchedulesItemIdPut = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateScheduleItemApiV1SchedulesItemIdPutData, ThrowOnError>
+) =>
+  (options.client ?? client).put<
+    UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
+    UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules/{item_id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Swap Schedule Item Meal
  *
  * Swap the active meal on a slot. meal_id must be in the item's alternatives.
  */
-export const swapScheduleItemMealApiV1SchedulesItemIdSwapPost = <ThrowOnError extends boolean = false>(options: Options<SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData, ThrowOnError>) => (options.client ?? client).post<SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses, SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors, ThrowOnError>({
+export const swapScheduleItemMealApiV1SchedulesItemIdSwapPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
+    SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/schedules/{item_id}/swap',
     ...options,
     headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
 
 /**
  * Generate Week Plan
@@ -152,29 +266,57 @@ export const swapScheduleItemMealApiV1SchedulesItemIdSwapPost = <ThrowOnError ex
  * Replaces any existing meal-type schedule items for the given week.
  * week_start_date must be a Monday.
  */
-export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <ThrowOnError extends boolean = false>(options: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>) => (options.client ?? client).post<GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses, GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors, ThrowOnError>({
+export const generateWeekPlanApiV1MealPlansGenerateWeekPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GenerateWeekPlanApiV1MealPlansGenerateWeekPostData, ThrowOnError>
+) =>
+  (options.client ?? client).post<
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
+    GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/generate-week',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Get Planned Weeks
  *
  * Return the Monday start date for every week that has meal-type schedule items.
  */
-export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extends boolean = false>(options?: Options<GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData, ThrowOnError>) => (options?.client ?? client).get<GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses, unknown, ThrowOnError>({
+export const getPlannedWeeksApiV1MealPlansPlannedWeeksGet = <ThrowOnError extends boolean = false>(
+  options?: Options<GetPlannedWeeksApiV1MealPlansPlannedWeeksGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses,
+    unknown,
+    ThrowOnError
+  >({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/v1/meal-plans/planned-weeks',
-    ...options
-});
+    ...options,
+  });
 
 /**
  * Health Check
  */
-export const healthCheckHealthGet = <ThrowOnError extends boolean = false>(options?: Options<HealthCheckHealthGetData, ThrowOnError>) => (options?.client ?? client).get<HealthCheckHealthGetResponses, unknown, ThrowOnError>({ url: '/health', ...options });
+export const healthCheckHealthGet = <ThrowOnError extends boolean = false>(
+  options?: Options<HealthCheckHealthGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<HealthCheckHealthGetResponses, unknown, ThrowOnError>({
+    url: '/health',
+    ...options,
+  });
 
 /**
  * Root
  */
-export const rootGet = <ThrowOnError extends boolean = false>(options?: Options<RootGetData, ThrowOnError>) => (options?.client ?? client).get<RootGetResponses, unknown, ThrowOnError>({ url: '/', ...options });
+export const rootGet = <ThrowOnError extends boolean = false>(
+  options?: Options<RootGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<RootGetResponses, unknown, ThrowOnError>({
+    url: '/',
+    ...options,
+  });
