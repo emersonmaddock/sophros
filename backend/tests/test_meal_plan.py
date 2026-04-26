@@ -243,17 +243,25 @@ async def test_generate_weekly_plan(mock_exercise):
 
 
 def test_google_calendar_busy_blocks_are_merged_into_user_schedule():
+    # generate_and_persist converts google_calendar ScheduleItems via
+    # _google_blocks_to_busy_times and merges them into user.busy_times
+    # before calling _get_user_schedule.  Simulate that here.
     service = MealPlanService()
-    user = create_mock_user()
-    user.busy_times = []
-    user.schedules = [
+    blocks = [
         SimpleNamespace(
             source_type="google_calendar",
-            date=datetime(2026, 4, 27, 6, 0),
+            date=datetime(2026, 4, 27, 6, 0),  # Monday
             duration_minutes=210,
             activity_type=ActivityType.OTHER,
         )
     ]
+    converted = MealPlanService._google_blocks_to_busy_times(blocks)
+    assert len(converted) == 1
+    assert converted[0].start == time(6, 0)
+    assert converted[0].end == time(9, 30)
+
+    user = create_mock_user()
+    user.busy_times = converted
 
     monday_schedule = service._get_user_schedule(user, Day.MONDAY)
 
