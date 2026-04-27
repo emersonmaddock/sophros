@@ -12,16 +12,13 @@
  *   - Weight history line (in-domain entries only)
  *   - Dashed target-weight reference line
  *   - Today vertical marker
- *   - Maintain-mode stability band
- *   - Legend below the chart area
  */
-import type { StabilityBand } from '@/lib/progress/compute';
 import type { WeightLogEntry } from '@/lib/progress/storage';
 import { Colors } from '@/constants/theme';
 import { kgToLbs } from '@/utils/units';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Line, Polyline, Text as SvgText } from 'react-native-svg';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,7 +27,6 @@ import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native
 type Props = {
   weightHistory: WeightLogEntry[];
   targetWeightKg: number;
-  stabilityBand: StabilityBand | null;
   showImperial: boolean;
   width: number;
   startDate: string; // YYYY-MM-DD — goal start (x-axis left edge)
@@ -104,7 +100,6 @@ function niceStep(roughStep: number): number {
 export function WeightChart({
   weightHistory,
   targetWeightKg,
-  stabilityBand,
   showImperial,
   width,
   startDate,
@@ -137,7 +132,7 @@ export function WeightChart({
   );
 
   // --- Stage 3: visible chart points filtered to [startDate, targetDate] ---
-  const { points, targetY, bandRect, yLabels } = useMemo(() => {
+  const { points, targetY, yLabels } = useMemo(() => {
     const visibleHistory = weightHistory.filter((e) =>
       isDateInDomain(e.date, startDate, targetDate)
     );
@@ -146,11 +141,10 @@ export function WeightChart({
     // line all share the same coordinate space with no rounding mismatch.
     const toDisplay = (kg: number) => (showImperial ? kgToLbs(kg) : kg);
 
-    // Y-range is based only on visible data + target + band references.
+    // Y-range is based only on visible data + target references.
     const allValues = [
       ...visibleHistory.map((e) => toDisplay(e.weightKg)),
       toDisplay(targetWeightKg),
-      ...(stabilityBand ? [toDisplay(stabilityBand.low), toDisplay(stabilityBand.high)] : []),
     ];
     const dataMin = Math.min(...allValues);
     const dataMax = Math.max(...allValues);
@@ -173,25 +167,17 @@ export function WeightChart({
 
     const tY = toY(toDisplay(targetWeightKg));
 
-    let band = null;
-    if (stabilityBand) {
-      const bHigh = toY(toDisplay(stabilityBand.high));
-      const bLow = toY(toDisplay(stabilityBand.low));
-      band = { x: PAD_LEFT, y: bHigh, w: chartW, h: bLow - bHigh };
-    }
-
     const labels: { val: number; y: number }[] = [];
     for (let v = lo; v <= hi + step * 0.001; v += step) {
       labels.push({ val: v, y: toY(v) });
     }
 
-    return { points: pts, targetY: tY, bandRect: band, yLabels: labels };
+    return { points: pts, targetY: tY, yLabels: labels };
     // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     weightHistory,
     targetWeightKg,
-    stabilityBand,
     showImperial,
     chartW,
     chartH,
@@ -283,18 +269,6 @@ export function WeightChart({
               />
             );
           })}
-
-          {/* Maintain stability band */}
-          {bandRect && (
-            <Rect
-              x={bandRect.x}
-              y={bandRect.y}
-              width={bandRect.w}
-              height={bandRect.h}
-              fill={Colors.light.primary}
-              opacity={0.1}
-            />
-          )}
 
           {/* Target reference line */}
           <Line

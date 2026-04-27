@@ -5,19 +5,14 @@
  * No AsyncStorage access here — all I/O is handled by storage.ts and
  * useProgressData.ts. These functions are pure so they're easy to test.
  */
-import type { WeightLogEntry, BodyFatLogEntry, GoalSnapshot, ArchivedGoalSummary } from './storage';
+import type { WeightLogEntry, GoalSnapshot, ArchivedGoalSummary } from './storage';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type GoalMode = 'lose' | 'gain' | 'maintain';
+export type GoalMode = 'lose' | 'gain';
 export type ConfidenceLevel = 'low' | 'medium' | 'high';
-
-export type StabilityBand = {
-  low: number; // kg
-  high: number; // kg
-};
 
 export type ProgressSnapshot = {
   goalMode: GoalMode;
@@ -27,16 +22,10 @@ export type ProgressSnapshot = {
   targetWeightKg: number;
   targetDate: string;
   weightHistory: WeightLogEntry[];
-  bodyFatHistory: BodyFatLogEntry[];
   confidenceScore: number;
   confidenceLevel: ConfidenceLevel;
   goalComplete: boolean;
   archivedGoal: ArchivedGoalSummary | null;
-  /** Only set when goalMode === 'maintain'. */
-  stabilityBand: StabilityBand | null;
-  /** For maintain mode: is latest weight within the stability band? Null when not maintain. */
-  maintainInRange: boolean | null;
-  hasBodyFatData: boolean;
   /** True when target_weight or target_date is missing on the user profile. */
   missingGoalData: boolean;
 };
@@ -45,29 +34,8 @@ export type ProgressSnapshot = {
 // Goal mode
 // ---------------------------------------------------------------------------
 
-/** Difference smaller than this (in kg) is treated as maintain. */
-const MAINTAIN_THRESHOLD_KG = 0.5;
-
-export function inferGoalMode(currentWeightKg: number, targetWeightKg: number): GoalMode {
-  const diff = targetWeightKg - currentWeightKg;
-  if (Math.abs(diff) < MAINTAIN_THRESHOLD_KG) return 'maintain';
-  return diff > 0 ? 'gain' : 'lose';
-}
-
-// ---------------------------------------------------------------------------
-// Maintain-mode stability band
-// ---------------------------------------------------------------------------
-
-/** Default band: ±2% of target weight. */
-const MAINTAIN_BAND_PCT = 0.02;
-
-export function computeStabilityBand(targetWeightKg: number): StabilityBand {
-  const delta = targetWeightKg * MAINTAIN_BAND_PCT;
-  return { low: targetWeightKg - delta, high: targetWeightKg + delta };
-}
-
-export function isMaintainInRange(latestWeightKg: number, band: StabilityBand): boolean {
-  return latestWeightKg >= band.low && latestWeightKg <= band.high;
+export function inferGoalMode(startWeightKg: number, targetWeightKg: number): GoalMode {
+  return targetWeightKg >= startWeightKg ? 'gain' : 'lose';
 }
 
 // ---------------------------------------------------------------------------
@@ -173,20 +141,16 @@ export function buildArchivedGoalSummary(
   id: string,
   goalSnapshot: GoalSnapshot,
   weightHistory: WeightLogEntry[],
-  bodyFatHistory: BodyFatLogEntry[],
   now: Date
 ): ArchivedGoalSummary {
   const sorted = [...weightHistory].sort((a, b) => a.date.localeCompare(b.date));
   const finalWeight = sorted.length > 0 ? sorted[sorted.length - 1].weightKg : null;
-  const sortedBf = [...bodyFatHistory].sort((a, b) => a.date.localeCompare(b.date));
-  const finalBodyFat = sortedBf.length > 0 ? sortedBf[sortedBf.length - 1].bodyFatPercent : null;
 
   return {
     id,
     goalSnapshot,
     endDate: goalSnapshot.targetDate,
     finalWeightKg: finalWeight,
-    finalBodyFatPercent: finalBodyFat,
     weightChangeKg: finalWeight !== null ? finalWeight - goalSnapshot.startWeightKg : null,
     archivedAt: localDateStr(now),
   };
@@ -228,8 +192,6 @@ export function weightProgressLabel(
 ): string {
   const fmt = (kg: number) =>
     showImperial ? `${kgToLbs(kg).toFixed(1)} lbs` : `${kg.toFixed(1)} kg`;
-
-  if (goalMode === 'maintain') return `Maintaining around ${fmt(targetKg)}`;
 
   const totalNeeded = Math.abs(targetKg - startKg);
   const progress = Math.abs(latestKg - startKg);

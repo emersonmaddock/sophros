@@ -6,7 +6,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
-    from app.models.progress import UserArchivedGoal, UserBodyFatLog, UserWeightLog
+    from app.models.progress import UserArchivedGoal, UserWeightLog
 
 from app.db.base_class import Base
 from app.domain.enums import ActivityLevel, PregnancyStatus, Sex
@@ -29,7 +29,6 @@ class User(Base):
 
     # Goals
     target_weight: Mapped[float | None] = mapped_column(Float, nullable=True)  # kg
-    target_body_fat: Mapped[float | None] = mapped_column(Float, nullable=True)  # %
     target_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Active goal period — set when a new goal starts or the goal definition changes
@@ -79,12 +78,6 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
         order_by="UserWeightLog.date",
-    )
-    body_fat_logs: Mapped[list["UserBodyFatLog"]] = relationship(
-        "UserBodyFatLog",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        order_by="UserBodyFatLog.date",
     )
     archived_goals: Mapped[list["UserArchivedGoal"]] = relationship(
         "UserArchivedGoal",

@@ -25,27 +25,6 @@ class WeightLogEntryRead(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Body fat log
-# ---------------------------------------------------------------------------
-
-BodyFatSource = Literal["manual"]
-
-
-class BodyFatLogEntryCreate(BaseModel):
-    date: date
-    body_fat_percent: float
-    source: BodyFatSource = "manual"
-
-
-class BodyFatLogEntryRead(BaseModel):
-    date: date
-    body_fat_percent: float
-    source: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# ---------------------------------------------------------------------------
 # Archived goals
 # ---------------------------------------------------------------------------
 
@@ -61,10 +40,8 @@ class ArchivedGoalCreate(BaseModel):
     target_date: date
     start_weight_kg: float
     target_weight_kg: float
-    target_body_fat: float | None = None
     end_date: date
     final_weight_kg: float | None = None
-    final_body_fat_percent: float | None = None
     weight_change_kg: float | None = None
     archived_at: date
 

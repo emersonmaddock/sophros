@@ -1,19 +1,18 @@
 /**
  * progress/storage — API-backed persistence for the progress feature.
  *
- * Weight log, body fat log, goal snapshot, and archived goals are stored in
- * the database via /api/v1/users/me/progress/* endpoints.
+ * Weight log, goal snapshot, and archived goals are stored in the database
+ * via /api/v1/users/me/progress/* endpoints.
  *
  * The weight-prompt-dismissed state is a pure UI concern (did the user
  * dismiss today's weight prompt?) and remains in AsyncStorage.
  *
- * `purgeFutureProgressData` is now a no-op for the API-backed data since the
- * backend returns the full log and the caller filters by date as needed.
- * The dismissed-date check still purges the local AsyncStorage value.
+ * `purgeFutureProgressData` deletes future-dated weight entries from the
+ * server and clears any stale dismissed-date from AsyncStorage.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { client } from '@/api/client.gen';
-import type { WeightLogEntryRead, BodyFatLogEntryRead, ArchivedGoalRead } from '@/types/progress';
+import type { WeightLogEntryRead, ArchivedGoalRead } from '@/types/progress';
 
 // Raw client calls don't go through sdk.gen.ts so they don't pick up the
 // security option automatically. We must pass it explicitly so hey-api calls
@@ -32,16 +31,9 @@ export type WeightLogEntry = {
   source: 'prompt' | 'manual' | 'baseline';
 };
 
-export type BodyFatLogEntry = {
-  date: string; // YYYY-MM-DD
-  bodyFatPercent: number;
-  source: 'manual';
-};
-
 export type GoalSnapshot = {
   startWeightKg: number;
   targetWeightKg: number;
-  targetBodyFat: number | null;
   targetDate: string; // YYYY-MM-DD
   startDate: string; // YYYY-MM-DD
 };
@@ -51,7 +43,6 @@ export type ArchivedGoalSummary = {
   goalSnapshot: GoalSnapshot;
   endDate: string;
   finalWeightKg: number | null;
-  finalBodyFatPercent: number | null;
   weightChangeKg: number | null;
   archivedAt: string;
 };
@@ -64,23 +55,17 @@ function toLocalWeight(r: WeightLogEntryRead): WeightLogEntry {
   return { date: r.date, weightKg: r.weight_kg, source: r.source as WeightLogEntry['source'] };
 }
 
-function toLocalBodyFat(r: BodyFatLogEntryRead): BodyFatLogEntry {
-  return { date: r.date, bodyFatPercent: r.body_fat_percent, source: 'manual' };
-}
-
 function toLocalArchivedGoal(r: ArchivedGoalRead): ArchivedGoalSummary {
   return {
     id: r.id,
     goalSnapshot: {
       startWeightKg: r.start_weight_kg,
       targetWeightKg: r.target_weight_kg,
-      targetBodyFat: r.target_body_fat ?? null,
       targetDate: r.target_date,
       startDate: r.start_date,
     },
     endDate: r.end_date,
     finalWeightKg: r.final_weight_kg ?? null,
-    finalBodyFatPercent: r.final_body_fat_percent ?? null,
     weightChangeKg: r.weight_change_kg ?? null,
     archivedAt: r.archived_at,
   };
@@ -93,10 +78,8 @@ function toApiArchivedGoal(s: ArchivedGoalSummary): ArchivedGoalRead {
     target_date: s.goalSnapshot.targetDate,
     start_weight_kg: s.goalSnapshot.startWeightKg,
     target_weight_kg: s.goalSnapshot.targetWeightKg,
-    target_body_fat: s.goalSnapshot.targetBodyFat,
     end_date: s.endDate,
     final_weight_kg: s.finalWeightKg,
-    final_body_fat_percent: s.finalBodyFatPercent,
     weight_change_kg: s.weightChangeKg,
     archived_at: s.archivedAt,
   };
@@ -141,24 +124,6 @@ export async function getLastWeightLogDate(): Promise<string | null> {
   const log = await getWeightLog();
   if (log.length === 0) return null;
   return log[log.length - 1].date;
-}
-
-// ---------------------------------------------------------------------------
-// Body fat log
-// ---------------------------------------------------------------------------
-
-export async function getBodyFatLog(): Promise<BodyFatLogEntry[]> {
-  const res = await client.get({ url: '/api/v1/users/me/progress/body-fat-log', ...BEARER });
-  if (res.error) return [];
-  return ((res.data as BodyFatLogEntryRead[]) ?? []).map(toLocalBodyFat);
-}
-
-export async function upsertBodyFatEntry(entry: BodyFatLogEntry): Promise<void> {
-  await client.post({
-    url: '/api/v1/users/me/progress/body-fat-log',
-    body: { date: entry.date, body_fat_percent: entry.bodyFatPercent, source: 'manual' },
-    ...BEARER,
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -270,35 +235,29 @@ export async function isWeightPromptDismissedToday(now: Date): Promise<boolean> 
 }
 
 // ---------------------------------------------------------------------------
-// Future-data purge — delete entries with date > today from the server
+// Future-data purge — delete weight entries with date > today from the server
 // ---------------------------------------------------------------------------
 
 /**
- * Purge future-dated log entries.  Accepts already-fetched log data so the
- * caller can avoid a redundant network round-trip when it has the data in hand.
- * If prefetched data is not provided the function fetches it itself (legacy path).
+ * Purge future-dated weight log entries.  Accepts already-fetched log data so
+ * the caller can avoid a redundant network round-trip when it has the data in
+ * hand.  If prefetched data is not provided the function fetches it itself.
  */
 export async function purgeFutureProgressData(
   now: Date,
-  prefetched?: { weightLog: WeightLogEntry[]; bfLog: BodyFatLogEntry[] }
+  prefetched?: { weightLog: WeightLogEntry[] }
 ): Promise<void> {
   const today = localDateStr(now);
 
   const weightLog = prefetched?.weightLog ?? (await getWeightLog());
-  const bfLog = prefetched?.bfLog ?? (await getBodyFatLog());
 
-  await Promise.all([
-    ...weightLog
+  await Promise.all(
+    weightLog
       .filter((e) => e.date > today)
       .map((e) =>
         client.delete({ url: `/api/v1/users/me/progress/weight-log/${e.date}`, ...BEARER })
-      ),
-    ...bfLog
-      .filter((e) => e.date > today)
-      .map((e) =>
-        client.delete({ url: `/api/v1/users/me/progress/body-fat-log/${e.date}`, ...BEARER })
-      ),
-  ]);
+      )
+  );
 
   // Dismissed date (AsyncStorage — unrelated to the API logs)
   const dismissed = await AsyncStorage.getItem(WEIGHT_PROMPT_DISMISSED_KEY);

@@ -39,7 +39,6 @@ class UserBase(BaseModel):
 
     # Goals
     target_weight: float | None = None
-    target_body_fat: float | None = None  # Percentage
     target_date: date | None = None  # Enrollment date or goal deadline
 
     # Active goal period
@@ -82,7 +81,6 @@ class UserUpdate(BaseModel):
     pregnancy_status: PregnancyStatus | None = None
 
     target_weight: float | None = None
-    target_body_fat: float | None = None
     target_date: date | None = None
     goal_start_date: date | None = None
     goal_start_weight_kg: float | None = None
@@ -144,7 +142,6 @@ class UserRead(UserBase):
             "is_vegan": data.is_vegan,
             "is_pescatarian": data.is_pescatarian,
             "target_weight": data.target_weight,
-            "target_body_fat": data.target_body_fat,
             "target_date": data.target_date,
             "goal_start_date": data.goal_start_date,
             "goal_start_weight_kg": data.goal_start_weight_kg,

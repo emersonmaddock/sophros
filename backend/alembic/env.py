@@ -22,7 +22,6 @@ from app.models.google_calendar import GoogleCalendarConnection  # noqa: F401
 from app.models.meal import Meal, ScheduleItemAlternative  # noqa: F401
 from app.models.progress import (  # noqa: F401
     UserArchivedGoal,
-    UserBodyFatLog,
     UserWeightLog,
 )
 from app.models.schedule import ScheduleItem  # noqa: F401

@@ -9,7 +9,7 @@
  *   3. Read the active goal snapshot from user.goal_start_date / goal_start_weight_kg
  *      and detect when it changes (saving the new snapshot via PUT /users/me).
  *   4. Detect goal completion and archive the summary to the DB.
- *   5. Compute goal mode, chart data, confidence score, and maintain-mode band.
+ *   5. Compute goal mode, chart data, and confidence score.
  *
  * `reload()` triggers a re-run without waiting for the next date tick.
  */
@@ -19,7 +19,6 @@ import { useUpdateUserMutation, useUserQuery } from '@/lib/queries/user';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import {
   archiveGoal,
-  getBodyFatLog,
   getLatestArchivedGoal,
   getStoredGoalTarget,
   getWeightLog,
@@ -32,12 +31,9 @@ import type { GoalSnapshot } from '@/lib/progress/storage';
 import {
   buildArchivedGoalSummary,
   computeConfidenceScore,
-  computeStabilityBand,
   goalId,
-  hasGoalChanged,
   inferGoalMode,
   isGoalComplete,
-  isMaintainInRange,
   toConfidenceLevel,
 } from '@/lib/progress/compute';
 import type { ProgressSnapshot } from '@/lib/progress/compute';
@@ -97,20 +93,17 @@ export function useProgressData(): {
     async function load() {
       setIsLoading(true);
 
-      // Step 1: fetch all log data in a single parallel round-trip
-      const [rawWeightLog, rawBfLog, rawSleepCount] = await Promise.all([
+      // Step 1: fetch weight log and sleep count in parallel
+      const [rawWeightLog, rawSleepCount] = await Promise.all([
         getWeightLog(),
-        getBodyFatLog(),
         getSleepLogCount(),
       ]);
 
       // Step 1b: purge future entries using already-fetched data — fire-and-forget
-      // so the render isn't blocked waiting for deletions (rare in production).
-      void purgeFutureProgressData(now, { weightLog: rawWeightLog, bfLog: rawBfLog });
+      void purgeFutureProgressData(now, { weightLog: rawWeightLog });
 
       // Filter future-dated entries out of the local data used for rendering.
-      const prefilteredWeightLog = rawWeightLog.filter((e) => e.date <= today);
-      const prefilteredBfLog = rawBfLog.filter((e) => e.date <= today);
+      const weightLog = rawWeightLog.filter((e) => e.date <= today);
 
       // Step 2: check if goal data is complete
       const targetWeightKg = user!.target_weight ?? null;
@@ -123,21 +116,17 @@ export function useProgressData(): {
       if (targetWeightKg === null || targetDate === null) {
         if (!cancelled) {
           setSnapshot({
-            goalMode: 'maintain',
+            goalMode: 'gain',
             startDate: today,
             startWeightKg: user!.weight,
             latestWeightKg: user!.weight,
             targetWeightKg: user!.weight,
             targetDate: '',
             weightHistory: [],
-            bodyFatHistory: [],
             confidenceScore: 0,
             confidenceLevel: 'low',
             goalComplete: false,
             archivedGoal: null,
-            stabilityBand: null,
-            maintainInRange: null,
-            hasBodyFatData: false,
             missingGoalData: true,
           });
           setIsLoading(false);
@@ -145,12 +134,7 @@ export function useProgressData(): {
         return;
       }
 
-      // Step 3: use the already-fetched (and future-filtered) logs
-      const weightLog = prefilteredWeightLog;
-      const bfLog = prefilteredBfLog;
-      const sleepCount = rawSleepCount;
-
-      // Step 4: seed baseline from user weight if no weight log exists
+      // Step 3: seed baseline from user weight if no weight log exists
       let finalWeightLog = weightLog;
       if (weightLog.length === 0) {
         const baseline = { date: today, weightKg: user!.weight, source: 'baseline' as const };
@@ -158,15 +142,14 @@ export function useProgressData(): {
         finalWeightLog = [baseline];
       }
 
-      // Step 5: manage goal snapshot.
+      // Step 4: manage goal snapshot.
       // goal_start_date / goal_start_weight_kg live on the User record and record
       // when the current goal period started and the weight at that time.
       //
       // To detect when the user has changed their goal (new target_date / target_weight),
       // we compare against a locally-stored "goal target at last period start". This is
       // necessary because the user record only stores the *current* target, not the one
-      // that was active when the goal period began — so we cannot derive the previous
-      // target from the user record alone.
+      // that was active when the goal period began.
       const cachedUser = user as {
         goal_start_date?: string | null;
         goal_start_weight_kg?: number | null;
@@ -187,7 +170,6 @@ export function useProgressData(): {
         activeSnapshot = {
           startWeightKg: storedStartWeight,
           targetWeightKg,
-          targetBodyFat: user!.target_body_fat ?? null,
           targetDate,
           startDate: storedStartDate,
         };
@@ -198,7 +180,6 @@ export function useProgressData(): {
         activeSnapshot = {
           startWeightKg: startWeight,
           targetWeightKg,
-          targetBodyFat: user!.target_body_fat ?? null,
           targetDate,
           startDate: today,
         };
@@ -216,7 +197,7 @@ export function useProgressData(): {
         await setStoredGoalTarget(targetDate, targetWeightKg);
       }
 
-      // Step 6: detect goal completion and archive
+      // Step 5: detect goal completion and archive
       const complete = isGoalComplete(targetDate, now);
       let archivedGoal = null;
 
@@ -224,7 +205,7 @@ export function useProgressData(): {
         const id = goalId(activeSnapshot!);
         const existing = await getLatestArchivedGoal();
         if (!existing || existing.id !== id) {
-          const summary = buildArchivedGoalSummary(id, activeSnapshot!, finalWeightLog, bfLog, now);
+          const summary = buildArchivedGoalSummary(id, activeSnapshot!, finalWeightLog, now);
           await archiveGoal(summary);
           archivedGoal = summary;
         } else {
@@ -232,7 +213,7 @@ export function useProgressData(): {
         }
       }
 
-      // Step 7: count confirmed meals/workouts from the 2-week schedule window
+      // Step 6: count confirmed meals/workouts from the 2-week schedule window
       const mealsConfirmed = scheduleItemsRef.current.filter(
         (i) => i.is_completed === true && i.activity_type === 'meal'
       ).length;
@@ -240,7 +221,7 @@ export function useProgressData(): {
         (i) => i.is_completed === true && i.activity_type === 'exercise'
       ).length;
 
-      // Step 8: compute display values
+      // Step 7: compute display values
       const latestWeight =
         finalWeightLog.length > 0
           ? finalWeightLog[finalWeightLog.length - 1].weightKg
@@ -250,14 +231,12 @@ export function useProgressData(): {
 
       const confidenceScore = computeConfidenceScore({
         weightHistory: finalWeightLog,
-        sleepLogCount: sleepCount,
+        sleepLogCount: rawSleepCount,
         mealConfirmedCount: mealsConfirmed,
         workoutConfirmedCount: workoutsConfirmed,
         now,
       });
       const confLevel = toConfidenceLevel(confidenceScore);
-      const band = goalMode === 'maintain' ? computeStabilityBand(targetWeightKg) : null;
-      const maintainInRange = band !== null ? isMaintainInRange(latestWeight, band) : null;
 
       if (!cancelled) {
         setSnapshot({
@@ -268,14 +247,10 @@ export function useProgressData(): {
           targetWeightKg,
           targetDate,
           weightHistory: finalWeightLog,
-          bodyFatHistory: bfLog,
           confidenceScore,
           confidenceLevel: confLevel,
           goalComplete: complete,
           archivedGoal,
-          stabilityBand: band,
-          maintainInRange,
-          hasBodyFatData: bfLog.length > 0,
           missingGoalData: false,
         });
         setIsLoading(false);

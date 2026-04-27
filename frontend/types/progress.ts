@@ -10,22 +10,14 @@ export type WeightLogEntryRead = {
   source: string;
 };
 
-export type BodyFatLogEntryRead = {
-  date: string; // YYYY-MM-DD
-  body_fat_percent: number;
-  source: string;
-};
-
 export type ArchivedGoalRead = {
   id: string;
   start_date: string;
   target_date: string;
   start_weight_kg: number;
   target_weight_kg: number;
-  target_body_fat: number | null;
   end_date: string;
   final_weight_kg: number | null;
-  final_body_fat_percent: number | null;
   weight_change_kg: number | null;
   archived_at: string;
 };

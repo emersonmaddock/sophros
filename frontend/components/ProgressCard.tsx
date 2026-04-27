@@ -4,12 +4,11 @@
  * Renders one of three states:
  *   1. missingGoalData — compact setup card routing to Profile/Settings
  *   2. goalComplete — completed-goal summary with CTA to update goal
- *   3. active goal — weight chart + confidence indicator + optional body-fat stat
+ *   3. active goal — weight chart + confidence indicator
  *
- * Log-entry actions (weight, body-fat) are surfaced inline and call
- * `onLogged()` after a save so the parent can trigger a data reload.
+ * Log-entry actions (weight) are surfaced inline and call `onLogged()` after
+ * a save so the parent can trigger a data reload.
  */
-import { BodyFatLogForm } from '@/components/BodyFatLogForm';
 import { WeightChart } from '@/components/WeightChart';
 import { WeightLogForm } from '@/components/WeightLogForm';
 import { Colors, Layout, Shadows } from '@/constants/theme';
@@ -19,7 +18,7 @@ import { confidenceExplainerText, confidenceLevelLabel } from '@/lib/progress/co
 import { localDateStr } from '@/lib/progress/storage';
 import { kgToLbs } from '@/utils/units';
 import { useRouter } from 'expo-router';
-import { Activity, ChevronRight, Settings, TrendingUp } from 'lucide-react-native';
+import { ChevronRight, Settings, TrendingUp } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
@@ -105,12 +104,6 @@ function CompletedGoalCard({
         <StatBox label="Target" value={fmt(archived.goalSnapshot.targetWeightKg)} />
       </View>
 
-      {archived.finalBodyFatPercent !== null && (
-        <Text style={styles.bfStat}>
-          Final body fat: {archived.finalBodyFatPercent.toFixed(1)}%
-        </Text>
-      )}
-
       <TouchableOpacity
         style={styles.ctaButton}
         onPress={() => router.push('/profile/edit')}
@@ -134,7 +127,6 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
   const { width } = useWindowDimensions();
   const chartWidth = width - 40 - 32; // screen padding + card padding
   const [showWeightForm, setShowWeightForm] = useState(false);
-  const [showBfForm, setShowBfForm] = useState(false);
   const [showConfExplainer, setShowConfExplainer] = useState(false);
 
   const confLevel = snapshot.confidenceLevel;
@@ -148,26 +140,15 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
         : Colors.light.error;
 
   const goalModeLabel =
-    snapshot.goalMode === 'lose'
-      ? 'Weight loss'
-      : snapshot.goalMode === 'gain'
-        ? 'Weight gain'
-        : 'Maintain weight';
+    snapshot.goalMode === 'lose' ? 'Weight loss' : 'Weight gain';
 
+  const totalNeeded = Math.abs(snapshot.targetWeightKg - snapshot.startWeightKg);
   const progressBadgeLabel = (() => {
-    if (snapshot.goalMode === 'maintain') {
-      return snapshot.maintainInRange ? 'In range' : 'Off target';
-    }
-    const totalNeeded = Math.abs(snapshot.targetWeightKg - snapshot.startWeightKg);
     if (totalNeeded < 0.01) return 'At target';
     const progress = Math.abs(snapshot.latestWeightKg - snapshot.startWeightKg);
     const pct = Math.min(100, Math.round((progress / totalNeeded) * 100));
     return `${pct}% to goal`;
   })();
-
-  const latestBf = snapshot.hasBodyFatData
-    ? snapshot.bodyFatHistory[snapshot.bodyFatHistory.length - 1].bodyFatPercent
-    : null;
 
   return (
     <View style={styles.card}>
@@ -205,7 +186,6 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
         <WeightChart
           weightHistory={snapshot.weightHistory}
           targetWeightKg={snapshot.targetWeightKg}
-          stabilityBand={snapshot.stabilityBand}
           showImperial={showImperial}
           width={chartWidth}
           startDate={snapshot.startDate}
@@ -214,40 +194,14 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
         />
       </View>
 
-      {/* Body fat mini-stat */}
-      {latestBf !== null && (
-        <View style={styles.bfRow}>
-          <Activity size={13} color={Colors.light.charts.carbs} />
-          <Text style={styles.bfText}>
-            Body fat: {latestBf.toFixed(1)}%
-            {snapshot.bodyFatHistory.length > 1 ? ` · ${bfChangeStr(snapshot.bodyFatHistory)}` : ''}
-          </Text>
-        </View>
-      )}
-
-      {/* Log actions */}
+      {/* Log weight action */}
       <View style={styles.logActionsRow}>
         <TouchableOpacity
           style={styles.logActionButton}
-          onPress={() => {
-            setShowWeightForm((v) => !v);
-            setShowBfForm(false);
-          }}
+          onPress={() => setShowWeightForm((v) => !v)}
           activeOpacity={0.8}
         >
           <Text style={styles.logActionText}>{showWeightForm ? 'Cancel' : 'Log weight'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.logActionButton, styles.logActionButtonSecondary]}
-          onPress={() => {
-            setShowBfForm((v) => !v);
-            setShowWeightForm(false);
-          }}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.logActionText, styles.logActionTextSecondary]}>
-            {showBfForm ? 'Cancel' : 'Log body fat'}
-          </Text>
         </TouchableOpacity>
       </View>
 
@@ -256,15 +210,6 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
           showImperial={showImperial}
           onLogged={() => {
             setShowWeightForm(false);
-            onLogged();
-          }}
-        />
-      )}
-
-      {showBfForm && (
-        <BodyFatLogForm
-          onLogged={() => {
-            setShowBfForm(false);
             onLogged();
           }}
         />
@@ -328,14 +273,6 @@ function formatDate(dateStr: string): string {
     'Dec',
   ];
   return `${months[m - 1]} ${d}, ${y}`;
-}
-
-function bfChangeStr(history: { bodyFatPercent: number }[]): string {
-  const first = history[0].bodyFatPercent;
-  const last = history[history.length - 1].bodyFatPercent;
-  const diff = last - first;
-  if (Math.abs(diff) < 0.1) return 'no change';
-  return diff < 0 ? `${Math.abs(diff).toFixed(1)}% decrease` : `${diff.toFixed(1)}% increase`;
 }
 
 // ---------------------------------------------------------------------------
@@ -409,10 +346,6 @@ const styles = StyleSheet.create({
   statValueHighlight: {
     color: Colors.light.primary,
   },
-  bfStat: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
-  },
   // Active goal card
   badgeRow: {
     flexDirection: 'row',
@@ -444,15 +377,6 @@ const styles = StyleSheet.create({
   chartContainer: {
     marginHorizontal: -4,
   },
-  bfRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  bfText: {
-    fontSize: 12,
-    color: Colors.light.textMuted,
-  },
   logActionsRow: {
     flexDirection: 'row',
     gap: 8,
@@ -465,18 +389,10 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     alignItems: 'center',
   },
-  logActionButtonSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: Colors.light.textMuted,
-  },
   logActionText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#FFF',
-  },
-  logActionTextSecondary: {
-    color: Colors.light.textMuted,
   },
   // CTA button (shared)
   ctaButton: {

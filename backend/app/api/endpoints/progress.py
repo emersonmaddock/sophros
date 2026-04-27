@@ -3,13 +3,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
-from app.models.progress import UserArchivedGoal, UserBodyFatLog, UserWeightLog
+from app.models.progress import UserArchivedGoal, UserWeightLog
 from app.models.user import User
 from app.schemas.progress import (
     ArchivedGoalCreate,
     ArchivedGoalRead,
-    BodyFatLogEntryCreate,
-    BodyFatLogEntryRead,
     WeightLogEntryCreate,
     WeightLogEntryRead,
 )
@@ -87,75 +85,6 @@ async def delete_weight_entry(
 
 
 # ---------------------------------------------------------------------------
-# Body fat log
-# ---------------------------------------------------------------------------
-
-
-@router.get("/body-fat-log", response_model=list[BodyFatLogEntryRead])
-async def get_body_fat_log(
-    current_user: User = Depends(deps.get_current_user),
-    db: AsyncSession = Depends(deps.get_db),
-) -> list[UserBodyFatLog]:
-    """Return all body fat log entries for the current user, oldest first."""
-    result = await db.execute(
-        select(UserBodyFatLog)
-        .where(UserBodyFatLog.user_id == current_user.id)
-        .order_by(UserBodyFatLog.date)
-    )
-    return list(result.scalars().all())
-
-
-@router.post(
-    "/body-fat-log", response_model=BodyFatLogEntryRead, status_code=status.HTTP_200_OK
-)
-async def upsert_body_fat_entry(
-    entry_in: BodyFatLogEntryCreate,
-    current_user: User = Depends(deps.get_current_user),
-    db: AsyncSession = Depends(deps.get_db),
-) -> UserBodyFatLog:
-    """Upsert a body fat entry for the given date (one entry per user per date)."""
-    result = await db.execute(
-        select(UserBodyFatLog).where(
-            UserBodyFatLog.user_id == current_user.id,
-            UserBodyFatLog.date == entry_in.date,
-        )
-    )
-    entry = result.scalar_one_or_none()
-
-    if entry is None:
-        entry = UserBodyFatLog(
-            user_id=current_user.id,
-            date=entry_in.date,
-            body_fat_percent=entry_in.body_fat_percent,
-            source=entry_in.source,
-        )
-        db.add(entry)
-    else:
-        entry.body_fat_percent = entry_in.body_fat_percent
-        entry.source = entry_in.source
-
-    await db.commit()
-    await db.refresh(entry)
-    return entry
-
-
-@router.delete("/body-fat-log/{entry_date}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_body_fat_entry(
-    entry_date: str,
-    current_user: User = Depends(deps.get_current_user),
-    db: AsyncSession = Depends(deps.get_db),
-) -> None:
-    """Delete the body fat log entry for a specific date (YYYY-MM-DD)."""
-    await db.execute(
-        delete(UserBodyFatLog).where(
-            UserBodyFatLog.user_id == current_user.id,
-            UserBodyFatLog.date == entry_date,
-        )
-    )
-    await db.commit()
-
-
-# ---------------------------------------------------------------------------
 # Archived goals
 # ---------------------------------------------------------------------------
 
@@ -199,10 +128,8 @@ async def upsert_archived_goal(
             target_date=goal_in.target_date,
             start_weight_kg=goal_in.start_weight_kg,
             target_weight_kg=goal_in.target_weight_kg,
-            target_body_fat=goal_in.target_body_fat,
             end_date=goal_in.end_date,
             final_weight_kg=goal_in.final_weight_kg,
-            final_body_fat_percent=goal_in.final_body_fat_percent,
             weight_change_kg=goal_in.weight_change_kg,
             archived_at=goal_in.archived_at,
         )
