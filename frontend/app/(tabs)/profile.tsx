@@ -145,7 +145,8 @@ export default function ProfilePage() {
     {
       label: 'Sync Calendar',
       icon: Calendar,
-      value: 'Connected',
+      value: 'Google Calendar',
+      onPress: () => router.push('/profile/calendar'),
     },
     {
       label: 'Account Settings',

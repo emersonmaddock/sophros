@@ -7,9 +7,11 @@
 **Purpose:** Register for Sophros to access personalized meal planning.
 
 **Preconditions:**
+
 - The Sophros app installed on your device (or running locally via Expo Go).
 
 **Steps:**
+
 1. Open the app. You land on the Sign Up screen.
 2. Enter your first name, last name, email address, and password.
 3. Tap **Sign Up**. A verification code is sent to your email.
@@ -26,9 +28,11 @@ Alternatively, tap **Sign in with Google** to skip email/password registration.
 **Purpose:** Provide Sophros with the data it needs to generate personalized plans.
 
 **Preconditions:**
+
 - A signed-in Sophros account that has not completed onboarding.
 
 **Steps:**
+
 1. On the welcome screen, review the three benefit cards and tap **Get Started**.
 2. **Step 1 (20%):** Enter your age and select your biological sex (Male or Female).
 3. **Step 2 (40%):** Enter your weight and height. Use the kg/lbs toggle to switch between metric and imperial units. Imperial height uses separate feet and inches fields.
@@ -47,9 +51,11 @@ Dietary preferences, allergies, and cuisine selections are not part of onboardin
 **Purpose:** Get a full week of personalized breakfast, lunch, and dinner recipes.
 
 **Preconditions:**
+
 - Onboarding completed.
 
 **Steps:**
+
 1. Tap the **Schedule** tab.
 2. Navigate to the week you want to plan. If no plan exists for that week, an empty state appears with a **Plan This Week** button.
 3. Tap **Plan This Week**. The week-planning screen opens and generates meals for all seven days.
@@ -67,9 +73,11 @@ Dietary preferences, allergies, and cuisine selections are not part of onboardin
 **Purpose:** See your daily meals and workouts and make changes as needed.
 
 **Preconditions:**
+
 - At least one saved weekly meal plan.
 
 **Steps:**
+
 1. Tap the **Schedule** tab.
 2. Use the left/right arrows to navigate between weeks. Use the day cards (Mon-Sun) to select a day.
 3. The timeline shows each item with its time, type badge, and duration. A "NOW" badge marks the current time slot. Completed items show a checkmark.
@@ -88,9 +96,11 @@ Dietary preferences, allergies, and cuisine selections are not part of onboardin
 **Purpose:** See a composite score (0-100) summarizing your nutrition, exercise, and sleep adherence.
 
 **Preconditions:**
+
 - Onboarding completed and at least one saved meal plan for the current week.
 
 **Steps:**
+
 1. From the Home tab, tap the Health Score card.
 2. The score screen shows a circular progress indicator with your overall score and a status label (Excellent, Good, Fair, or Needs Work).
 3. Below that, three component breakdowns each show a score, weight, and progress bar:
@@ -107,16 +117,19 @@ Dietary preferences, allergies, and cuisine selections are not part of onboardin
 **Purpose:** Change your body metrics, goals, allergies, or cuisine preferences after onboarding.
 
 **Preconditions:**
+
 - Onboarding completed.
 
 **Steps:**
 
 To edit your profile:
+
 1. Tap the **Profile** tab, then tap **Edit Profile**.
 2. Update any of: age, unit preference (Metric/Imperial), weight, height, activity level, target weight, target body fat %, target date, wake-up/sleep times, or busy times.
 3. Tap **Save Changes**.
 
 To edit dietary preferences:
+
 1. Tap the **Profile** tab, then tap **Allergies & Preferences**.
 2. Toggle allergy chips on/off (e.g. Dairy, Egg, Gluten, Peanut, Shellfish, Soy, Tree Nut).
 3. Toggle diet switches (Gluten-Free, Ketogenic, Vegetarian, Vegan, Pescatarian).
@@ -134,6 +147,7 @@ To edit dietary preferences:
 **Purpose:** Get the backend and frontend running locally.
 
 **Preconditions:**
+
 - Python 3.11+
 - Node.js 24+
 - pnpm 10+
@@ -144,6 +158,7 @@ To edit dietary preferences:
 **Steps:**
 
 #### Backend
+
 1. Install `uv`:
    ```bash
    pip install uv
@@ -168,6 +183,7 @@ To edit dietary preferences:
    The API is now at `http://localhost:8000`. Swagger docs are at `/docs`.
 
 #### Frontend
+
 1. Install dependencies:
    ```bash
    cd frontend
@@ -192,29 +208,34 @@ To edit dietary preferences:
 **Purpose:** Set the required secrets and configuration for backend and frontend.
 
 **Preconditions:**
+
 - `.env.example` files exist in both `backend/` and `frontend/`.
 
 **Steps:**
 
 #### Backend (`backend/.env`)
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string with `asyncpg` driver |
-| `CLERK_PEM_PUBLIC_KEY` | Yes | Clerk PEM public key, required for JWT authentication |
-| `SPOONACULAR_API_KEY` | Yes | From spoonacular.com, required for meal plan generation |
-| `PROJECT_NAME` | No | App name (default: `Sophros`) |
-| `CLERK_PUBLISHABLE_KEY` | No | Clerk publishable key (used by frontend, not backend) |
-| `CLERK_SECRET_KEY` | No | Clerk secret key (not used in current backend code) |
-| `CLERK_WEBHOOK_SECRET` | No | For Clerk webhook integration (not implemented) |
-| `OPENAI_API_KEY` | No | Defined in config but not used in current code |
+| Variable                | Required                 | Description                                                                        |
+| ----------------------- | ------------------------ | ---------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | Yes                      | PostgreSQL connection string with `asyncpg` driver                                 |
+| `CLERK_PEM_PUBLIC_KEY`  | Yes                      | Clerk PEM public key, required for JWT authentication                              |
+| `SPOONACULAR_API_KEY`   | Yes                      | From spoonacular.com, required for meal plan generation                            |
+| `PROJECT_NAME`          | No                       | App name (default: `Sophros`)                                                      |
+| `CLERK_PUBLISHABLE_KEY` | No                       | Clerk publishable key (used by frontend, not backend)                              |
+| `CLERK_SECRET_KEY`      | Yes, for Google Calendar | Clerk secret key used by the backend to retrieve Clerk-managed Google OAuth tokens |
+| `CLERK_WEBHOOK_SECRET`  | No                       | For Clerk webhook integration (not implemented)                                    |
+| `OPENAI_API_KEY`        | No                       | Defined in config but not used in current code                                     |
+
+For Google Calendar sync, configure Google as a Clerk social connection and add
+`https://www.googleapis.com/auth/calendar.freebusy` to the Google OAuth scopes in
+the Clerk Dashboard.
 
 #### Frontend (`frontend/.env`)
 
-| Variable | Required | Description |
-|---|---|---|
-| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key from your Clerk dashboard |
-| `EXPO_PUBLIC_API_URL` | No | Backend URL (default: `http://localhost:8000`) |
+| Variable                            | Required | Description                                     |
+| ----------------------------------- | -------- | ----------------------------------------------- |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Yes      | Clerk publishable key from your Clerk dashboard |
+| `EXPO_PUBLIC_API_URL`               | No       | Backend URL (default: `http://localhost:8000`)  |
 
 **Expected result:** The app starts without missing-variable errors.
 
@@ -225,10 +246,12 @@ To edit dietary preferences:
 **Purpose:** Apply schema changes to your PostgreSQL database.
 
 **Preconditions:**
+
 - `DATABASE_URL` set in `backend/.env`.
 - The target database exists and is reachable.
 
 **Steps:**
+
 1. Apply all pending migrations:
    ```bash
    cd backend
@@ -249,9 +272,11 @@ To edit dietary preferences:
 **Purpose:** Update the auto-generated TypeScript client after backend API changes.
 
 **Preconditions:**
+
 - Backend and frontend dependencies installed (`uv sync` and `pnpm install`).
 
 **Steps:**
+
 1. From the project root, run the generate script:
    ```bash
    uv run bash scripts/generate-client.sh
@@ -270,10 +295,12 @@ This also runs automatically in CI on pull requests that change backend code. Th
 **Purpose:** Verify backend logic before committing.
 
 **Preconditions:**
+
 - Backend dependencies installed (`uv sync`).
 - A test PostgreSQL database reachable (set `DATABASE_URL` for tests, or use the CI default: `postgresql+asyncpg://postgres:postgres@localhost:5432/test_db`).
 
 **Steps:**
+
 1. Run all tests:
    ```bash
    cd backend
@@ -297,11 +324,13 @@ This also runs automatically in CI on pull requests that change backend code. Th
 **Purpose:** Catch style and type issues before CI does.
 
 **Preconditions:**
+
 - Dependencies installed in both `backend/` and `frontend/`.
 
 **Steps:**
 
 Backend:
+
 ```bash
 cd backend
 uv run ruff check app          # lint
@@ -310,6 +339,7 @@ uv run mypy app                # type check
 ```
 
 Frontend:
+
 ```bash
 cd frontend
 pnpm lint           # ESLint
@@ -318,6 +348,7 @@ pnpm typecheck      # TypeScript
 ```
 
 Or run all frontend checks at once:
+
 ```bash
 pnpm check
 ```
@@ -331,6 +362,7 @@ pnpm check
 **Purpose:** Create a native debug build on your machine without cloud services.
 
 **Preconditions:**
+
 - Frontend dependencies installed (`pnpm install`).
 - Android: Android SDK and an emulator or connected device.
 - iOS: macOS with Xcode installed.
@@ -340,19 +372,23 @@ pnpm check
 Neither Android nor iOS native code is checked into the repository (both are gitignored). Generate it with `expo prebuild` before building.
 
 Android:
+
 ```bash
 cd frontend
 npx expo prebuild --platform android --clean
 cd android && ./gradlew assembleDebug
 ```
+
 The APK is written to `android/app/build/outputs/apk/debug/`.
 
 iOS:
+
 ```bash
 cd frontend
 npx expo prebuild --platform ios --clean
 cd ios && xcodebuild -workspace sophros.xcworkspace -scheme sophros -configuration Debug -sdk iphonesimulator
 ```
+
 Or open `sophros.xcworkspace` in Xcode and build from there.
 
 **Expected result:** A debug APK (Android) or simulator app (iOS) ready to install.

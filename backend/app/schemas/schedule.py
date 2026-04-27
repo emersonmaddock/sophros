@@ -37,6 +37,8 @@ class ScheduleItemRead(ScheduleItemBase):
     user_id: str
     meal_id: int | None = None
     source_schedule_item_id: int | None = None
+    source_type: str = "sophros"
+    source_calendar_id: str | None = None
     meal: MealRead | None = None
     alternatives: list[MealRead] = []
 
