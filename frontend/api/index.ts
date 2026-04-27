@@ -41,6 +41,7 @@ export type {
   CreateUserApiV1UsersPostResponse,
   CreateUserApiV1UsersPostResponses,
   Cuisine,
+  CustomMealInput,
   Day,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteData,
   DeleteScheduleItemApiV1SchedulesItemIdDeleteError,

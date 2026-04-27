@@ -79,6 +79,32 @@ export type Cuisine =
   | 'Vietnamese';
 
 /**
+ * CustomMealInput
+ */
+export type CustomMealInput = {
+  /**
+   * Title
+   */
+  title: string;
+  /**
+   * Calories
+   */
+  calories: number;
+  /**
+   * Protein
+   */
+  protein: number;
+  /**
+   * Carbohydrates
+   */
+  carbohydrates: number;
+  /**
+   * Fat
+   */
+  fat: number;
+};
+
+/**
  * DRIOutput
  */
 export type DriOutput = {
@@ -176,7 +202,7 @@ export type MealRead = {
   /**
    * Recipe Id
    */
-  recipe_id: string;
+  recipe_id?: string | null;
   /**
    * Title
    */
@@ -217,6 +243,10 @@ export type MealRead = {
    * Tags
    */
   tags?: Array<string>;
+  /**
+   * Is Custom
+   */
+  is_custom?: boolean;
 };
 
 /**
@@ -280,6 +310,7 @@ export type ScheduleItemCreate = {
    * Meal Id
    */
   meal_id?: number | null;
+  custom_meal?: CustomMealInput | null;
 };
 
 /**
