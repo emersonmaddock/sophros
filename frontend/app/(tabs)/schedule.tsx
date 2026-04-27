@@ -1,7 +1,6 @@
 import type { ScheduleItemRead } from '@/api/types.gen';
 import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
-import { MissedItemModal } from '@/components/MissedItemModal';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { Colors } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
@@ -91,13 +90,6 @@ function parseTimeToMins(displayTime: string): number {
   return hours * 60 + (m || 0);
 }
 
-/** Map ScheduleItemRead activity_type to MissedItemModal's expected type */
-function getMissedItemType(item: ScheduleItemRead): 'meal' | 'workout' | 'sleep' {
-  if (item.activity_type === 'meal') return 'meal';
-  if (item.activity_type === 'sleep') return 'sleep';
-  return 'workout';
-}
-
 export default function SchedulePage() {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
@@ -109,8 +101,6 @@ export default function SchedulePage() {
   const [editModalItem, setEditModalItem] = useState<WeeklyScheduleItem | null>(null);
   const [editModalMode, setEditModalMode] = useState<'edit' | 'add'>('edit');
   const [editModalItemType, setEditModalItemType] = useState<ItemType>('meal');
-
-  const [missedModalItem, setMissedModalItem] = useState<ScheduleItemRead | null>(null);
 
   const now = useNow();
   const todayDayOfWeek = now.getDay();
@@ -139,10 +129,12 @@ export default function SchedulePage() {
 
   const dayItems: ScheduleItemRead[] = useMemo(() => {
     const monday = mondayDate.getTime();
-    return scheduleItems.filter((item) => {
-      const itemDay = Math.floor((getItemDate(item).getTime() - monday) / (1000 * 60 * 60 * 24));
-      return itemDay === selectedDayIndex;
-    });
+    return scheduleItems
+      .filter((item) => {
+        const itemDay = Math.floor((getItemDate(item).getTime() - monday) / (1000 * 60 * 60 * 24));
+        return itemDay === selectedDayIndex;
+      })
+      .sort((a, b) => getItemDate(a).getTime() - getItemDate(b).getTime());
   }, [scheduleItems, selectedDayIndex, mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasPlannedItems = useMemo(
@@ -319,14 +311,12 @@ export default function SchedulePage() {
     [completeMutation, weekStartStr]
   );
 
-  const handleConfirmMissed = useCallback((item: ScheduleItemRead) => {
-    setMissedModalItem(item);
-  }, []);
-
-  const handleMissedSave = useCallback((_actual: string | null) => {
-    // Completion is handled by the done swipe; missed just records locally for now
-    setMissedModalItem(null);
-  }, []);
+  const handleRemove = useCallback(
+    (item: ScheduleItemRead) => {
+      deleteMutation.mutate({ itemId: item.id, weekStartDate: weekStartStr });
+    },
+    [deleteMutation, weekStartStr]
+  );
 
   const handleWeekChange = (direction: number) => {
     setWeekOffset((prev) => prev + direction);
@@ -495,7 +485,7 @@ export default function SchedulePage() {
                       needsConfirmation={needsConfirmation}
                       isCompleted={isCompleted}
                       onConfirmDone={() => handleConfirmDone(item)}
-                      onConfirmMissed={() => handleConfirmMissed(item)}
+                      onRemove={() => handleRemove(item)}
                     >
                       <TouchableOpacity
                         style={[
@@ -535,7 +525,9 @@ export default function SchedulePage() {
                           </View>
                         )}
                         {needsConfirmation && !isCompleted && (
-                          <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
+                          <Text style={styles.swipeHint}>
+                            ← swipe to remove · swipe to confirm →
+                          </Text>
                         )}
                       </TouchableOpacity>
                     </SwipeableScheduleItem>
@@ -611,14 +603,6 @@ export default function SchedulePage() {
         onSave={handleEditSave}
         mode={editModalMode}
         itemType={editModalItemType}
-      />
-
-      <MissedItemModal
-        visible={missedModalItem !== null}
-        itemTitle={missedModalItem ? getItemTitle(missedModalItem) : ''}
-        itemType={missedModalItem ? getMissedItemType(missedModalItem) : 'meal'}
-        onSave={handleMissedSave}
-        onClose={() => setMissedModalItem(null)}
       />
     </SafeAreaView>
   );
