@@ -45,6 +45,10 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_constraint('ck_meals_custom_requires_user', 'meals', type_='check')
+    # Custom meals (recipe_id IS NULL) can't satisfy the pre-migration NOT NULL
+    # constraint. They're the rows this migration was added to support, so a
+    # downgrade necessarily discards them.
+    op.execute("DELETE FROM meals WHERE recipe_id IS NULL")
     op.alter_column('meals', 'recipe_id', existing_type=sa.String(), nullable=False)
     op.drop_constraint('fk_meals_user_id_user', 'meals', type_='foreignkey')
     op.drop_column('meals', 'user_id')

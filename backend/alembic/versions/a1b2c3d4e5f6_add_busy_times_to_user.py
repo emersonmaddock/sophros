@@ -36,3 +36,4 @@ def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index(op.f('ix_user_busy_times_id'), table_name='user_busy_times')
     op.drop_table('user_busy_times')
+    sa.Enum(name='day_enum').drop(op.get_bind(), checkfirst=True)
