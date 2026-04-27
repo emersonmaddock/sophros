@@ -94,10 +94,7 @@ export function useProgressData(): {
       setIsLoading(true);
 
       // Step 1: fetch weight log and sleep count in parallel
-      const [rawWeightLog, rawSleepCount] = await Promise.all([
-        getWeightLog(),
-        getSleepLogCount(),
-      ]);
+      const [rawWeightLog, rawSleepCount] = await Promise.all([getWeightLog(), getSleepLogCount()]);
 
       // Step 1b: purge future entries using already-fetched data — fire-and-forget
       void purgeFutureProgressData(now, { weightLog: rawWeightLog });

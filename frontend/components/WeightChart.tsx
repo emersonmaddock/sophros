@@ -175,15 +175,7 @@ export function WeightChart({
     return { points: pts, targetY: tY, yLabels: labels };
     // toX is a stable function of startDate, targetDate, and chartW — all already in deps.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    weightHistory,
-    targetWeightKg,
-    showImperial,
-    chartW,
-    chartH,
-    startDate,
-    targetDate,
-  ]);
+  }, [weightHistory, targetWeightKg, showImperial, chartW, chartH, startDate, targetDate]);
 
   const fmtWeight = (displayVal: number) =>
     showImperial ? `${Math.round(displayVal)}` : `${displayVal.toFixed(1)}`;

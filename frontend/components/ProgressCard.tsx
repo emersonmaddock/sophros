@@ -139,8 +139,7 @@ function ActiveGoalCard({ snapshot, showImperial, onLogged }: Props) {
         ? '#D97706'
         : Colors.light.error;
 
-  const goalModeLabel =
-    snapshot.goalMode === 'lose' ? 'Weight loss' : 'Weight gain';
+  const goalModeLabel = snapshot.goalMode === 'lose' ? 'Weight loss' : 'Weight gain';
 
   const totalNeeded = Math.abs(snapshot.targetWeightKg - snapshot.startWeightKg);
   const progressBadgeLabel = (() => {
