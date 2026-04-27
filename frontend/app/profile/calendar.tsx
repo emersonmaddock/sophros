@@ -57,16 +57,16 @@ function formatWeekRange(monday: Date): string {
   return `${monday.toLocaleDateString('en-US', opts)} – ${sunday.toLocaleDateString('en-US', opts)}`;
 }
 
-// Backend stores naive UTC datetimes serialized without a 'Z'. Appending 'Z'
-// tells JS to treat the value as UTC so it converts to the device's local time.
-function toLocalDate(isoUtc: string): Date {
-  return new Date(isoUtc.endsWith('Z') ? isoUtc : isoUtc + 'Z');
+// Backend now stores Google Calendar busy times as naive local datetimes
+// (converted from UTC during sync using the device's UTC offset). Treat the
+// stored string directly as local time — do NOT append 'Z'.
+function toLocalDate(iso: string): Date {
+  return new Date(iso);
 }
 
-// Returns a YYYY-MM-DD key in the device's LOCAL timezone for grouping.
-function localDateKey(isoUtc: string): string {
-  const d = toLocalDate(isoUtc);
-  return d.toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
+// Returns a YYYY-MM-DD key in the device's local timezone for grouping.
+function localDateKey(iso: string): string {
+  return toLocalDate(iso).toLocaleDateString('en-CA'); // 'en-CA' gives YYYY-MM-DD
 }
 
 function formatDayHeading(localDateStr: string): string {

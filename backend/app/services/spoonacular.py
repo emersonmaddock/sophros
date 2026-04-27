@@ -55,6 +55,7 @@ class SpoonacularClient:
         add_recipe_information: bool = True,
         add_recipe_nutrition: bool = True,
         add_recipe_instructions: bool = True,
+        max_ready_time: int | None = None,
     ) -> list[dict[str, Any]]:
         """
         Search for recipes using the complexSearch endpoint.
@@ -90,6 +91,9 @@ class SpoonacularClient:
 
         if sort:
             params["sort"] = sort
+
+        if max_ready_time is not None:
+            params["maxReadyTime"] = max_ready_time
 
         if query:
             params["query"] = query

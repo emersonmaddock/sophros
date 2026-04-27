@@ -439,6 +439,10 @@ export type ScheduleItemRead = {
    */
   meal_id?: number | null;
   /**
+   * Meal Type
+   */
+  meal_type?: string | null;
+  /**
    * Source Schedule Item Id
    */
   source_schedule_item_id?: number | null;

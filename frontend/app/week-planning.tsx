@@ -43,16 +43,17 @@ function formatDisplayTime(isoDatetime: string): string {
   return `${displayH}:${m} ${period}`;
 }
 
-function getActivityLabel(activityType: string): string {
-  switch (activityType) {
+function getActivityLabel(item: ScheduleItemRead): string {
+  switch (item.activity_type) {
     case 'meal':
-      return 'Meal';
+      // Use the stored slot name (Breakfast / Lunch / Dinner) when available
+      return item.meal_type ?? 'Meal';
     case 'exercise':
-      return 'Workout';
+      return item.exercise_category ?? 'Workout';
     case 'sleep':
       return 'Sleep';
     default:
-      return activityType.charAt(0).toUpperCase() + activityType.slice(1);
+      return item.activity_type.charAt(0).toUpperCase() + item.activity_type.slice(1);
   }
 }
 
@@ -103,14 +104,17 @@ export default function WeekPlanningScreen() {
     generateMutation.isError,
   ]);
 
-  const dayItems = useMemo(
-    () =>
-      scheduleItems.filter(
-        (item) =>
-          item.activity_type !== 'sleep' && getDayIndex(item.date, weekStart) === selectedDayIndex
-      ),
-    [scheduleItems, selectedDayIndex, weekStart]
-  );
+  const dayItems = useMemo(() => {
+    const filtered = scheduleItems.filter((item) => {
+      if (item.activity_type === 'sleep') return false;
+      // Exclude Google Calendar busy blocks — they are planning constraints, not schedule items
+      if ((item as Record<string, unknown>).source_type === 'google_calendar') return false;
+      return getDayIndex(item.date, weekStart) === selectedDayIndex;
+    });
+    // Sort by scheduled time ascending
+    filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return filtered;
+  }, [scheduleItems, selectedDayIndex, weekStart]);
 
   const handleRegenerate = () => {
     generateMutation.mutate(weekStart, {
@@ -250,7 +254,7 @@ export default function WeekPlanningScreen() {
                 <View style={styles.itemContent}>
                   <Text style={styles.itemTime}>{formatDisplayTime(item.date)}</Text>
                   <Text style={styles.itemTitle} numberOfLines={1}>
-                    {item.meal?.title ?? getActivityLabel(item.activity_type)}
+                    {item.meal?.title ?? getActivityLabel(item)}
                   </Text>
                   {item.meal && (
                     <Text style={styles.itemMacros}>
