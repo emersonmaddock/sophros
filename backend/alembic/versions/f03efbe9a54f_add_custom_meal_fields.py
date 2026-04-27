@@ -5,7 +5,7 @@ relaxes recipe_id to nullable, and adds a CHECK constraint enforcing that
 custom meals always have an owner.
 
 Revision ID: f03efbe9a54f
-Revises: db1bc88ad384
+Revises: 500d7ca07f8b
 Create Date: 2026-04-25 20:05:36.112420
 """
 from typing import Sequence, Union
@@ -16,7 +16,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = 'f03efbe9a54f'
-down_revision: Union[str, Sequence[str], None] = 'db1bc88ad384'
+down_revision: Union[str, Sequence[str], None] = '500d7ca07f8b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
