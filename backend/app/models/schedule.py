@@ -35,6 +35,11 @@ class ScheduleItem(Base):
         Integer, ForeignKey("schedules.id", ondelete="SET NULL"), nullable=True
     )
 
+    # Source metadata — identifies where this row came from
+    # "sophros" for app-generated rows; "google_calendar" for imported busy blocks
+    source_type: Mapped[str] = mapped_column(String, nullable=False, default="sophros")
+    source_calendar_id: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="schedules")  # type: ignore[name-defined] # noqa: F821
     meal: Mapped["Meal | None"] = relationship("Meal")  # type: ignore[name-defined] # noqa: F821

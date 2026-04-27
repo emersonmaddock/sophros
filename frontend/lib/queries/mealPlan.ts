@@ -31,7 +31,12 @@ export function useGenerateWeekPlanMutation() {
       return response.data;
     },
     onSuccess: (data, weekStartDate) => {
-      queryClient.setQueryData(scheduleKeys.week(weekStartDate), data);
+      // Preserve any Google Calendar busy blocks already in the cache — the
+      // generate endpoint only returns newly created items (meals/exercises).
+      const existing =
+        queryClient.getQueryData<ScheduleItemRead[]>(scheduleKeys.week(weekStartDate)) ?? [];
+      const googleBlocks = existing.filter((i) => i.source_type === 'google_calendar');
+      queryClient.setQueryData(scheduleKeys.week(weekStartDate), [...googleBlocks, ...data]);
       queryClient.invalidateQueries({ queryKey: mealPlanKeys.plannedWeeks() });
     },
   });

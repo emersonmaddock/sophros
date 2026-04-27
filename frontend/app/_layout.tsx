@@ -59,6 +59,7 @@ export default function RootLayout() {
                           options={{ headerShown: false }}
                         />
                         <Stack.Screen name="profile/health" options={{ headerShown: false }} />
+                        <Stack.Screen name="profile/calendar" options={{ headerShown: false }} />
                       </Stack>
                       <StatusBar style="dark" />
                     </ThemeProvider>

@@ -140,7 +140,7 @@ export default function DashboardPage() {
         }),
         { calories: 0, protein: 0, carbs: 0, fat: 0 }
       );
-  }, [todayMealItems, nowMins]);
+  }, [todayMealItems]);
 
   // Derive macro data — when items have been confirmed, show consumed vs planned
   const macroData = useMemo(() => {

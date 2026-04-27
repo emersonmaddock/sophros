@@ -47,14 +47,6 @@ export function HealthKitProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isSignedIn, userId, queryClient]);
 
-  // Request authorization whenever direction moves off `off`.
-  useEffect(() => {
-    if (!isIOS || direction === 'off') return;
-    initAuthorization(direction).catch((err) => {
-      console.warn('[HealthKit] authorization failed:', err);
-    });
-  }, [direction, isIOS]);
-
   // AppState: invalidate HK queries on foreground.
   const subRef = useRef<NativeEventSubscription | null>(null);
   useEffect(() => {

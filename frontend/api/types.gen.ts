@@ -132,6 +132,56 @@ export type Day =
 export type ExerciseCategory = 'Cardio' | 'Weight Lifting';
 
 /**
+ * GoogleCalendarDisconnectResult
+ */
+export type GoogleCalendarDisconnectResult = {
+  /**
+   * Removed Busy Blocks
+   */
+  removed_busy_blocks: number;
+};
+
+/**
+ * GoogleCalendarStatus
+ */
+export type GoogleCalendarStatus = {
+  /**
+   * Connected
+   */
+  connected: boolean;
+  /**
+   * Email
+   */
+  email?: string | null;
+  /**
+   * Last Synced At
+   */
+  last_synced_at?: string | null;
+  /**
+   * Sync Status
+   */
+  sync_status?: string | null;
+  /**
+   * Needs Reconnect
+   */
+  needs_reconnect?: boolean;
+};
+
+/**
+ * GoogleCalendarSyncResult
+ */
+export type GoogleCalendarSyncResult = {
+  /**
+   * Synced Count
+   */
+  synced_count: number;
+  /**
+   * Sync Batch Id
+   */
+  sync_batch_id: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -305,6 +355,14 @@ export type ScheduleItemRead = {
    * Source Schedule Item Id
    */
   source_schedule_item_id?: number | null;
+  /**
+   * Source Type
+   */
+  source_type?: string;
+  /**
+   * Source Calendar Id
+   */
+  source_calendar_id?: string | null;
   meal?: MealRead | null;
   /**
    * Alternatives
@@ -988,6 +1046,91 @@ export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses = {
 
 export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponse =
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses[keyof GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses];
+
+export type ConnectCalendarApiV1CalendarGoogleConnectPostData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/calendar/google/connect';
+};
+
+export type ConnectCalendarApiV1CalendarGoogleConnectPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: GoogleCalendarStatus;
+};
+
+export type ConnectCalendarApiV1CalendarGoogleConnectPostResponse =
+  ConnectCalendarApiV1CalendarGoogleConnectPostResponses[keyof ConnectCalendarApiV1CalendarGoogleConnectPostResponses];
+
+export type GetStatusApiV1CalendarGoogleStatusGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/calendar/google/status';
+};
+
+export type GetStatusApiV1CalendarGoogleStatusGetResponses = {
+  /**
+   * Successful Response
+   */
+  200: GoogleCalendarStatus;
+};
+
+export type GetStatusApiV1CalendarGoogleStatusGetResponse =
+  GetStatusApiV1CalendarGoogleStatusGetResponses[keyof GetStatusApiV1CalendarGoogleStatusGetResponses];
+
+export type SyncCalendarApiV1CalendarGoogleSyncPostData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/calendar/google/sync';
+};
+
+export type SyncCalendarApiV1CalendarGoogleSyncPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: GoogleCalendarSyncResult;
+};
+
+export type SyncCalendarApiV1CalendarGoogleSyncPostResponse =
+  SyncCalendarApiV1CalendarGoogleSyncPostResponses[keyof SyncCalendarApiV1CalendarGoogleSyncPostResponses];
+
+export type DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * Remove Busy Blocks
+     *
+     * Also delete imported Google busy blocks from the schedule
+     */
+    remove_busy_blocks?: boolean;
+  };
+  url: '/api/v1/calendar/google/disconnect';
+};
+
+export type DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteError =
+  DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteErrors[keyof DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteErrors];
+
+export type DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  200: GoogleCalendarDisconnectResult;
+};
+
+export type DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponse =
+  DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponses[keyof DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponses];
 
 export type HealthCheckHealthGetData = {
   body?: never;

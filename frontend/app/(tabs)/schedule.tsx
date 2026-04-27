@@ -38,11 +38,23 @@ function getMonday(weekOffset: number): Date {
   return monday;
 }
 
-/** Derive a display time string (e.g. "7:30 AM") from an ISO date string */
-function getDisplayTime(isoDate: string): string {
-  const d = new Date(isoDate);
-  const h = d.getHours();
-  const m = d.getMinutes();
+/**
+ * Returns a Date for a schedule item, interpreting the timestamp correctly.
+ * Google Calendar items are stored as naive UTC strings; all other items are
+ * stored as naive local-time strings. Appending 'Z' makes JS parse as UTC.
+ */
+function getItemDate(item: ScheduleItemRead): Date {
+  const sourceType = (item as Record<string, unknown>).source_type as string | undefined;
+  const iso = item.date;
+  return sourceType === 'google_calendar'
+    ? new Date(iso.endsWith('Z') ? iso : iso + 'Z')
+    : new Date(iso);
+}
+
+/** Derive a display time string (e.g. "7:30 AM") from a Date */
+function getDisplayTime(date: Date): string {
+  const h = date.getHours();
+  const m = date.getMinutes();
   const period = h >= 12 ? 'PM' : 'AM';
   const displayH = h === 0 ? 12 : h > 12 ? h - 12 : h;
   return `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
@@ -51,6 +63,9 @@ function getDisplayTime(isoDate: string): string {
 /** Derive a display title from a ScheduleItemRead */
 function getItemTitle(item: ScheduleItemRead): string {
   if (item.meal?.title) return item.meal.title;
+  // Google Calendar imported busy blocks
+  const sourceType = (item as Record<string, unknown>).source_type as string | undefined;
+  if (sourceType === 'google_calendar') return 'Busy';
   switch (item.activity_type) {
     case 'meal':
       return 'Meal';
@@ -138,10 +153,16 @@ export default function SchedulePage() {
   const dayItems: ScheduleItemRead[] = useMemo(() => {
     const monday = mondayDate.getTime();
     return scheduleItems.filter((item) => {
-      const itemDay = Math.floor((new Date(item.date).getTime() - monday) / (1000 * 60 * 60 * 24));
+      const itemDay = Math.floor((getItemDate(item).getTime() - monday) / (1000 * 60 * 60 * 24));
       return itemDay === selectedDayIndex;
     });
   }, [scheduleItems, selectedDayIndex, mondayDate.getTime()]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasPlannedItems = useMemo(
+    () =>
+      dayItems.some((item) => (item as Record<string, unknown>).source_type !== 'google_calendar'),
+    [dayItems]
+  );
 
   const handleItemPress = useCallback((item: ScheduleItemRead) => {
     if (item.activity_type === 'meal' && item.meal) {
@@ -149,7 +170,7 @@ export default function SchedulePage() {
       setModalVisible(true);
     } else {
       // Non-meal items open EditItemModal for editing
-      const displayTime = getDisplayTime(item.date);
+      const displayTime = getDisplayTime(getItemDate(item));
       setEditModalItem({
         id: String(item.id),
         time: displayTime,
@@ -325,7 +346,8 @@ export default function SchedulePage() {
     setSelectedDayIndex(0); // Reset to Monday when changing weeks
   };
 
-  const getBorderColor = (activityType: string) => {
+  const getBorderColor = (activityType: string, sourceType?: string) => {
+    if (sourceType === 'google_calendar') return Colors.light.textMuted;
     switch (activityType) {
       case 'meal':
         return Colors.light.secondary;
@@ -354,7 +376,7 @@ export default function SchedulePage() {
     const nowRow: TimelineRow = { kind: 'now', label: nowLabel };
 
     const insertIdx = itemRows.findIndex(
-      (r) => r.kind === 'item' && parseTimeToMins(getDisplayTime(r.item.date)) > nowMins
+      (r) => r.kind === 'item' && parseTimeToMins(getDisplayTime(getItemDate(r.item))) > nowMins
     );
     if (insertIdx === -1) return [...itemRows, nowRow];
     return [...itemRows.slice(0, insertIdx), nowRow, ...itemRows.slice(insertIdx)];
@@ -444,92 +466,115 @@ export default function SchedulePage() {
             <Text style={styles.emptySubtitle}>Loading...</Text>
           </View>
         ) : dayItems.length > 0 ? (
-          <View style={styles.timeline}>
-            {timelineRows.map((row, i) => {
-              if (row.kind === 'now') {
+          <>
+            <View style={styles.timeline}>
+              {timelineRows.map((row, i) => {
+                if (row.kind === 'now') {
+                  return (
+                    <View key="now-indicator" style={styles.nowIndicatorRow}>
+                      <View style={styles.nowDot} />
+                      <View style={styles.nowLine} />
+                      <Text style={styles.nowLineLabel}>{row.label}</Text>
+                    </View>
+                  );
+                }
+                const item = row.item;
+                const itemDate = getItemDate(item);
+                const isInPast = itemDate < now;
+                const itemSourceType = (item as Record<string, unknown>).source_type as
+                  | string
+                  | undefined;
+                const isGoogleBusy = itemSourceType === 'google_calendar';
+                const needsConfirmation =
+                  isInPast && item.activity_type === 'meal' && !isGoogleBusy;
+                const isCompleted = item.is_completed ?? false;
+                const isDone = isCompleted;
+
+                const borderColor = isDone
+                  ? '#16A34A'
+                  : needsConfirmation && !isCompleted
+                    ? '#F59E0B'
+                    : getBorderColor(item.activity_type, itemSourceType);
+
+                const displayTime = getDisplayTime(itemDate);
+                const title = getItemTitle(item);
+                const durationDisplay = getDurationDisplay(item.duration_minutes);
+
                 return (
-                  <View key="now-indicator" style={styles.nowIndicatorRow}>
-                    <View style={styles.nowDot} />
-                    <View style={styles.nowLine} />
-                    <Text style={styles.nowLineLabel}>{row.label}</Text>
-                  </View>
-                );
-              }
-              const item = row.item;
-              const itemDate = new Date(item.date);
-              const isInPast = itemDate < now;
-              const needsConfirmation = isInPast && item.activity_type === 'meal';
-              const isCompleted = item.is_completed ?? false;
-              const isDone = isCompleted;
+                  <View key={item.id || i} style={styles.timelineItem}>
+                    <View style={styles.timeColumn}>
+                      <Text style={styles.itemTime}>{displayTime}</Text>
+                      {needsConfirmation && !isCompleted && (
+                        <Text style={styles.pendingDot}>●</Text>
+                      )}
+                    </View>
 
-              const borderColor = isDone
-                ? '#16A34A'
-                : needsConfirmation && !isCompleted
-                  ? '#F59E0B'
-                  : getBorderColor(item.activity_type);
-
-              const displayTime = getDisplayTime(item.date);
-              const title = getItemTitle(item);
-              const durationDisplay = getDurationDisplay(item.duration_minutes);
-
-              return (
-                <View key={item.id || i} style={styles.timelineItem}>
-                  <View style={styles.timeColumn}>
-                    <Text style={styles.itemTime}>{displayTime}</Text>
-                    {needsConfirmation && !isCompleted && <Text style={styles.pendingDot}>●</Text>}
-                  </View>
-
-                  <SwipeableScheduleItem
-                    needsConfirmation={needsConfirmation}
-                    isCompleted={isCompleted}
-                    onConfirmDone={() => handleConfirmDone(item)}
-                    onConfirmMissed={() => handleConfirmMissed(item)}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.eventCard,
-                        { borderLeftColor: borderColor },
-                        needsConfirmation && !isCompleted && styles.pendingCard,
-                        isDone && { opacity: 0.6 },
-                      ]}
-                      onPress={() => handleItemPress(item)}
+                    <SwipeableScheduleItem
+                      needsConfirmation={needsConfirmation}
+                      isCompleted={isCompleted}
+                      onConfirmDone={() => handleConfirmDone(item)}
+                      onConfirmMissed={() => handleConfirmMissed(item)}
                     >
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: 4,
-                        }}
+                      <TouchableOpacity
+                        style={[
+                          styles.eventCard,
+                          { borderLeftColor: borderColor },
+                          needsConfirmation && !isCompleted && styles.pendingCard,
+                          isDone && { opacity: 0.6 },
+                        ]}
+                        onPress={() => handleItemPress(item)}
                       >
                         <View
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: 4,
+                          }}
                         >
-                          <Text style={styles.eventTitle} numberOfLines={1}>
-                            {title}
-                          </Text>
-                        </View>
-                        <View style={styles.durationBadge}>
-                          <Text style={styles.durationText}>{durationDisplay}</Text>
-                        </View>
-                      </View>
-
-                      {item.source_schedule_item_id != null && (
-                        <View style={styles.leftoverPillRow}>
-                          <View style={styles.leftoverPill}>
-                            <Text style={styles.leftoverPillText}>Leftover</Text>
+                          <View
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}
+                          >
+                            <Text style={styles.eventTitle} numberOfLines={1}>
+                              {title}
+                            </Text>
+                          </View>
+                          <View style={styles.durationBadge}>
+                            <Text style={styles.durationText}>{durationDisplay}</Text>
                           </View>
                         </View>
-                      )}
-                      {needsConfirmation && !isCompleted && (
-                        <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
-                      )}
-                    </TouchableOpacity>
-                  </SwipeableScheduleItem>
-                </View>
-              );
-            })}
-          </View>
+
+                        {isGoogleBusy && <Text style={styles.eventSubtitle}>Google Calendar</Text>}
+                        {!isGoogleBusy && item.source_schedule_item_id != null && (
+                          <View style={styles.leftoverPillRow}>
+                            <View style={styles.leftoverPill}>
+                              <Text style={styles.leftoverPillText}>Leftover</Text>
+                            </View>
+                          </View>
+                        )}
+                        {needsConfirmation && !isCompleted && (
+                          <Text style={styles.swipeHint}>← swipe to log · swipe to confirm →</Text>
+                        )}
+                      </TouchableOpacity>
+                    </SwipeableScheduleItem>
+                  </View>
+                );
+              })}
+            </View>
+            {!hasPlannedItems && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>No items planned</Text>
+                <Text style={styles.emptySubtitle}>No items scheduled for this day</Text>
+                <TouchableOpacity
+                  style={styles.planThisWeekButton}
+                  onPress={() => router.push(`/week-planning?weekStart=${weekStartStr}`)}
+                >
+                  <Calendar size={18} color="#FFF" />
+                  <Text style={styles.planThisWeekText}>Plan This Week</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No items planned</Text>
@@ -566,7 +611,7 @@ export default function SchedulePage() {
         meal={
           selectedItem
             ? {
-                time: getDisplayTime(selectedItem.date),
+                time: getDisplayTime(getItemDate(selectedItem)),
                 title: getItemTitle(selectedItem),
                 type: selectedItem.activity_type,
                 meal: selectedItem.meal,
