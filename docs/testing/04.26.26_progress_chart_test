@@ -1,37 +1,42 @@
 # Manual Test: Progress Chart
 
 ## Date
+
 04/26/2026
 
 ## Name of the person performing the test
+
 Evan Stonestreet
 
 ## Test Steps
 
-1. Logged in and opened Sophros
-2. Navigated to the Progress tab
-3. Verified that the progress chart loaded in the Health Progress section
-4. Reviewed the chart for the current goal period and confirmed the start date, target date, and target weight were displayed correctly
-5. Clicked the Log weight button
-6. Entered a new weight value and saved it
-7. Verified that the chart updated to include the new data point for today
-8. Confirmed that the progress badge and confidence indicator still displayed correctly after the update
+1. Logged in and opened Sophros.
+2. Navigated to the Progress tab.
+3. Verified that the progress chart loaded in the Health Progress section.
+4. Reviewed the chart for the current goal period and confirmed the start date, target date, and target weight were displayed correctly.
+5. Clicked the Log Weight button.
+6. Entered a new weight value and saved it.
+7. Verified that the chart updated to include the new data point for today.
+8. Confirmed that the progress badge and confidence indicator still displayed correctly after the update.
 
-## Expected results
+## Expected Results
 
-1. The progress chart loads successfully when valid goal data exists
-2. The chart displays the user’s weight trend, target line, and timeline labels correctly
-3. Saving a new weight entry adds a new point to the chart
-4. The chart refreshes without errors after the new weight is logged
-5. The progress badge and confidence indicator remain accurate after the update
+1. The progress chart loads successfully when valid goal data exists.
+2. The chart displays the user’s weight trend, target line, and timeline labels correctly.
+3. Saving a new weight entry adds a new point to the chart.
+4. The chart refreshes without errors after the new weight is logged.
+5. The progress badge and confidence indicator remain accurate after the update.
 
-## Actual results
+## Actual Results
 
-The progress chart loaded succesfully, and the chart displayed all past logged weights as well as the target line and appropriate labels.
+The progress chart loaded successfully, and the chart displayed all past logged weights as well as the target line and appropriate labels.
+
 When I saved a new weight, the chart refreshed with the new weight present in the chart.
 
-## Outcome (pass/fail)
+## Outcome
+
 Pass
 
-## Logs/screenshots/evidence
+## Logs/Screenshots/Evidence
 
+![Progress chart screenshot](images/progress-chart.png)
