@@ -37,6 +37,7 @@ async def mock_client() -> AsyncClient:
     mock_user.include_cuisines = []
     mock_user.exclude_cuisines = []
     mock_user.busy_times = []
+    mock_user.goal_start_date = None
 
     # Mock db.execute() to return an object with all() method
     class MockResult:
