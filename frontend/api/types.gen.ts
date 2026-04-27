@@ -59,10 +59,6 @@ export type ArchivedGoalCreate = {
    */
   target_weight_kg: number;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * End Date
    */
   end_date: string;
@@ -70,10 +66,6 @@ export type ArchivedGoalCreate = {
    * Final Weight Kg
    */
   final_weight_kg?: number | null;
-  /**
-   * Final Body Fat Percent
-   */
-  final_body_fat_percent?: number | null;
   /**
    * Weight Change Kg
    */
@@ -109,10 +101,6 @@ export type ArchivedGoalRead = {
    */
   target_weight_kg: number;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * End Date
    */
   end_date: string;
@@ -121,10 +109,6 @@ export type ArchivedGoalRead = {
    */
   final_weight_kg?: number | null;
   /**
-   * Final Body Fat Percent
-   */
-  final_body_fat_percent?: number | null;
-  /**
    * Weight Change Kg
    */
   weight_change_kg?: number | null;
@@ -132,42 +116,6 @@ export type ArchivedGoalRead = {
    * Archived At
    */
   archived_at: string;
-};
-
-/**
- * BodyFatLogEntryCreate
- */
-export type BodyFatLogEntryCreate = {
-  /**
-   * Date
-   */
-  date: string;
-  /**
-   * Body Fat Percent
-   */
-  body_fat_percent: number;
-  /**
-   * Source
-   */
-  source?: 'manual';
-};
-
-/**
- * BodyFatLogEntryRead
- */
-export type BodyFatLogEntryRead = {
-  /**
-   * Date
-   */
-  date: string;
-  /**
-   * Body Fat Percent
-   */
-  body_fat_percent: number;
-  /**
-   * Source
-   */
-  source: string;
 };
 
 /**
@@ -576,10 +524,6 @@ export type UserCreate = {
    */
   target_weight?: number | null;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * Target Date
    */
   target_date?: string | null;
@@ -668,10 +612,6 @@ export type UserRead = {
    * Target Weight
    */
   target_weight?: number | null;
-  /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
   /**
    * Target Date
    */
@@ -769,10 +709,6 @@ export type UserUpdate = {
    * Target Weight
    */
   target_weight?: number | null;
-  /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
   /**
    * Target Date
    */
@@ -1323,84 +1259,6 @@ export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteRespons
 
 export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponse =
   DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses[keyof DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses];
-
-export type GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: '/api/v1/users/me/progress/body-fat-log';
-};
-
-export type GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponses = {
-  /**
-   * Response Get Body Fat Log Api V1 Users Me Progress Body Fat Log Get
-   *
-   * Successful Response
-   */
-  200: Array<BodyFatLogEntryRead>;
-};
-
-export type GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponse =
-  GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponses[keyof GetBodyFatLogApiV1UsersMeProgressBodyFatLogGetResponses];
-
-export type UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostData = {
-  body: BodyFatLogEntryCreate;
-  path?: never;
-  query?: never;
-  url: '/api/v1/users/me/progress/body-fat-log';
-};
-
-export type UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostError =
-  UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostErrors[keyof UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostErrors];
-
-export type UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponses = {
-  /**
-   * Successful Response
-   */
-  200: BodyFatLogEntryRead;
-};
-
-export type UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponse =
-  UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponses[keyof UpsertBodyFatEntryApiV1UsersMeProgressBodyFatLogPostResponses];
-
-export type DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteData = {
-  body?: never;
-  path: {
-    /**
-     * Entry Date
-     */
-    entry_date: string;
-  };
-  query?: never;
-  url: '/api/v1/users/me/progress/body-fat-log/{entry_date}';
-};
-
-export type DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteErrors = {
-  /**
-   * Validation Error
-   */
-  422: HttpValidationError;
-};
-
-export type DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteError =
-  DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteErrors[keyof DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteErrors];
-
-export type DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponses = {
-  /**
-   * Successful Response
-   */
-  204: void;
-};
-
-export type DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponse =
-  DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponses[keyof DeleteBodyFatEntryApiV1UsersMeProgressBodyFatLogEntryDateDeleteResponses];
 
 export type GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetData = {
   body?: never;
