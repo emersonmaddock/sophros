@@ -1,5 +1,6 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
+import { Image } from 'expo-image';
 import { ArrowRight, Edit, Trash2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -64,6 +65,7 @@ export const MealDetailModal = ({
   const fat = m?.fat;
   const ingredients = m?.ingredients ?? [];
   const sourceUrl = m?.source_url ?? null;
+  const imageUrl = m?.image_url ?? null;
   const prepTime = m?.prep_time_minutes ?? null;
   const showMacros = calories != null || protein != null || carbs != null || fat != null;
 
@@ -76,6 +78,15 @@ export const MealDetailModal = ({
       onDismiss={onClose}
     >
       <BottomSheetScrollView contentContainerStyle={styles.scrollContent}>
+        {imageUrl && (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+            accessibilityLabel={title}
+          />
+        )}
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>
           Scheduled for {meal.time}
@@ -172,6 +183,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     paddingBottom: 40,
+  },
+  image: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    borderRadius: 16,
+    marginBottom: 16,
+    backgroundColor: Colors.light.background,
   },
   title: {
     fontSize: 24,

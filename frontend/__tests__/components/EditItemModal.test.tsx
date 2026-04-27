@@ -168,27 +168,84 @@ describe('EditItemModal — meal edit mode', () => {
   });
 });
 
-describe('EditItemModal — workout edit mode (regression)', () => {
-  it('still renders Title and Workout Type fields', () => {
+describe('EditItemModal — workout edit mode', () => {
+  const existingWorkout = {
+    id: '7',
+    time: '6:00 PM',
+    title: 'HIIT',
+    duration: '45 min',
+    type: 'workout' as const,
+    exerciseCategory: 'Cardio' as const,
+  };
+
+  it('renders only time, duration, and the Cardio/Weight Lifting category control', () => {
     render(
       <EditItemModal
         visible
         onClose={jest.fn()}
-        item={{
-          id: '7',
-          time: '6:00 PM',
-          title: 'HIIT',
-          duration: '45 min',
-          type: 'workout',
-          workoutType: 'HIIT',
-        }}
+        item={existingWorkout}
         onSave={jest.fn()}
         mode="edit"
         itemType="workout"
       />
     );
-    expect(screen.getByText('Title')).toBeTruthy();
-    expect(screen.getByText('Workout Type')).toBeTruthy();
+    expect(screen.getByText('Time')).toBeTruthy();
     expect(screen.getByText('Duration')).toBeTruthy();
+    expect(screen.getByText('Category')).toBeTruthy();
+    expect(screen.getByText('Cardio')).toBeTruthy();
+    expect(screen.getByText('Weight Lifting')).toBeTruthy();
+    // Removed inputs that were never wired through to the API.
+    expect(screen.queryByText('Title')).toBeNull();
+    expect(screen.queryByText('Workout Type')).toBeNull();
+    expect(screen.queryByText('Calories Burned')).toBeNull();
+  });
+
+  it('saves time, duration, and the chosen exerciseCategory', () => {
+    const onSave = jest.fn();
+    render(
+      <EditItemModal
+        visible
+        onClose={jest.fn()}
+        item={existingWorkout}
+        onSave={onSave}
+        mode="edit"
+        itemType="workout"
+      />
+    );
+    fireEvent.press(screen.getByText('Weight Lifting'));
+    fireEvent.press(screen.getByText('Save'));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const arg = onSave.mock.calls[0][0];
+    expect(arg.id).toBe('7');
+    expect(arg.type).toBe('workout');
+    expect(arg.time).toBe('6:00 PM');
+    expect(arg.duration).toBe('45 min');
+    expect(arg.exerciseCategory).toBe('Weight Lifting');
+    expect(arg.title).toBe('HIIT');
+  });
+});
+
+describe('EditItemModal — workout add mode', () => {
+  it('starts with no category selected and saves null when user does not pick one', () => {
+    const onSave = jest.fn();
+    render(
+      <EditItemModal
+        visible
+        onClose={jest.fn()}
+        item={null}
+        onSave={onSave}
+        mode="add"
+        itemType="workout"
+      />
+    );
+    expect(screen.getByText('Category')).toBeTruthy();
+    expect(screen.queryByText('Title')).toBeNull();
+    fireEvent.press(screen.getByText('Save'));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const arg = onSave.mock.calls[0][0];
+    expect(arg.type).toBe('workout');
+    expect(arg.exerciseCategory).toBeNull();
+    expect(arg.title).toBe('Workout');
   });
 });

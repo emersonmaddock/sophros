@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/theme';
-import { Check, X } from 'lucide-react-native';
+import { Check, Trash2 } from 'lucide-react-native';
 import React, { useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -10,7 +10,7 @@ type Props = {
   needsConfirmation: boolean;
   isCompleted: boolean;
   onConfirmDone: () => void;
-  onConfirmMissed: () => void;
+  onRemove: () => void;
 };
 
 type Progress = Animated.AnimatedInterpolation<number>;
@@ -50,8 +50,8 @@ function renderRight(progress: Progress) {
   return (
     <View style={styles.rightAction}>
       <Animated.View style={[styles.actionContent, { opacity, transform: [{ scale }] }]}>
-        <X size={22} color="#FFF" strokeWidth={3} />
-        <Text style={styles.actionLabel}>Missed</Text>
+        <Trash2 size={22} color="#FFF" strokeWidth={3} />
+        <Text style={styles.actionLabel}>Remove</Text>
       </Animated.View>
     </View>
   );
@@ -62,7 +62,7 @@ export function SwipeableScheduleItem({
   needsConfirmation,
   isCompleted,
   onConfirmDone,
-  onConfirmMissed,
+  onRemove,
 }: Props) {
   const swipeRef = useRef<Swipeable>(null);
 
@@ -75,7 +75,7 @@ export function SwipeableScheduleItem({
     if (direction === 'left') {
       onConfirmDone();
     } else {
-      onConfirmMissed();
+      onRemove();
     }
   };
 
