@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api import deps
-from app.models.meal import ScheduleItemAlternative
+from app.models.meal import Meal, ScheduleItemAlternative
 from app.models.schedule import ScheduleItem
 from app.models.user import User
 from app.schemas.schedule import (
@@ -75,11 +75,40 @@ async def create_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    item = ScheduleItem(**item_in.model_dump(), user_id=current_user.id)
+    meal_id = item_in.meal_id
+    if item_in.custom_meal is not None:
+        meal = Meal(
+            recipe_id=None,
+            title=item_in.custom_meal.title,
+            calories=item_in.custom_meal.calories,
+            protein=item_in.custom_meal.protein,
+            carbohydrates=item_in.custom_meal.carbohydrates,
+            fat=item_in.custom_meal.fat,
+            # mirror duration so MealRead consumers stay source-agnostic
+            prep_time_minutes=item_in.duration_minutes,
+            ingredients=[],
+            tags=[],
+            is_custom=True,
+            user_id=current_user.id,
+        )
+        db.add(meal)
+        await db.flush()  # populate meal.id; both INSERTs share one txn until commit
+        meal_id = meal.id
+
+    item = ScheduleItem(
+        date=item_in.date,
+        activity_type=item_in.activity_type,
+        duration_minutes=item_in.duration_minutes,
+        is_completed=item_in.is_completed,
+        exercise_category=item_in.exercise_category,
+        exercise_calorie_burn=item_in.exercise_calorie_burn,
+        exercise_muscle_gain=item_in.exercise_muscle_gain,
+        meal_id=meal_id,
+        user_id=current_user.id,
+    )
     db.add(item)
     await db.commit()
-    await db.refresh(item)
-    # Re-fetch with meal loaded
+
     stmt = select(ScheduleItem).where(ScheduleItem.id == item.id).options(*_meal_load())
     result = await db.execute(stmt)
     return result.scalar_one()
@@ -178,15 +207,23 @@ async def delete_schedule_item(
     current_user: User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(deps.get_db),
 ):
-    item = await db.get(ScheduleItem, item_id)
+    stmt = select(ScheduleItem).where(ScheduleItem.id == item_id).options(*_meal_load())
+    result = await db.execute(stmt)
+    item = result.scalar_one_or_none()
     if not item or item.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Schedule item not found"
         )
+
+    custom_meal_to_delete: Meal | None = None
+    if item.meal is not None and item.meal.is_custom:
+        custom_meal_to_delete = item.meal
 
     # Cascade: remove any downstream leftovers that point at this item
     await db.execute(
         delete(ScheduleItem).where(ScheduleItem.source_schedule_item_id == item_id)
     )
     await db.delete(item)
+    if custom_meal_to_delete is not None:
+        await db.delete(custom_meal_to_delete)
     await db.commit()

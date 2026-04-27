@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.domain.enums import ActivityType, ExerciseCategory
 from app.schemas.meal import MealRead
@@ -16,8 +16,27 @@ class ScheduleItemBase(BaseModel):
     exercise_muscle_gain: float = 0.0
 
 
+class CustomMealInput(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    calories: int = Field(ge=0)
+    protein: int = Field(ge=0)
+    carbohydrates: int = Field(ge=0)
+    fat: int = Field(ge=0)
+
+
 class ScheduleItemCreate(ScheduleItemBase):
     meal_id: int | None = None
+    custom_meal: CustomMealInput | None = None
+
+    @model_validator(mode="after")
+    def _validate_meal_payload(self) -> "ScheduleItemCreate":
+        is_meal = self.activity_type == ActivityType.MEAL
+        provided = sum(x is not None for x in (self.meal_id, self.custom_meal))
+        if is_meal and provided != 1:
+            raise ValueError("meal items require exactly one of meal_id or custom_meal")
+        if not is_meal and provided != 0:
+            raise ValueError("meal_id and custom_meal are only valid for meal items")
+        return self
 
 
 class ScheduleItemUpdate(BaseModel):
@@ -37,6 +56,8 @@ class ScheduleItemRead(ScheduleItemBase):
     user_id: str
     meal_id: int | None = None
     source_schedule_item_id: int | None = None
+    source_type: str = "sophros"
+    source_calendar_id: str | None = None
     meal: MealRead | None = None
     alternatives: list[MealRead] = []
 

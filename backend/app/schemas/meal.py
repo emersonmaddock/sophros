@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict
 
 class MealRead(BaseModel):
     id: int
-    recipe_id: str
+    recipe_id: str | None = None
     title: str
     image_url: str | None = None
     source_url: str | None = None
@@ -14,5 +14,6 @@ class MealRead(BaseModel):
     prep_time_minutes: int | None = None
     ingredients: list[str] = []
     tags: list[str] = []
+    is_custom: bool = False
 
     model_config = ConfigDict(from_attributes=True)

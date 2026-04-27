@@ -3,6 +3,8 @@
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
 import type {
+  ConnectCalendarApiV1CalendarGoogleConnectPostData,
+  ConnectCalendarApiV1CalendarGoogleConnectPostResponses,
   CreateScheduleItemApiV1SchedulesPostData,
   CreateScheduleItemApiV1SchedulesPostErrors,
   CreateScheduleItemApiV1SchedulesPostResponses,
@@ -18,6 +20,9 @@ import type {
   DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteData,
   DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors,
   DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses,
+  DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteData,
+  DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteErrors,
+  DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponses,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostData,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostErrors,
   GenerateWeekPlanApiV1MealPlansGenerateWeekPostResponses,
@@ -30,6 +35,8 @@ import type {
   GetScheduleItemsApiV1SchedulesGetData,
   GetScheduleItemsApiV1SchedulesGetErrors,
   GetScheduleItemsApiV1SchedulesGetResponses,
+  GetStatusApiV1CalendarGoogleStatusGetData,
+  GetStatusApiV1CalendarGoogleStatusGetResponses,
   GetWeekScheduleApiV1SchedulesWeekGetData,
   GetWeekScheduleApiV1SchedulesWeekGetErrors,
   GetWeekScheduleApiV1SchedulesWeekGetResponses,
@@ -47,6 +54,8 @@ import type {
   SwapScheduleItemMealApiV1SchedulesItemIdSwapPostData,
   SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
   SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
+  SyncCalendarApiV1CalendarGoogleSyncPostData,
+  SyncCalendarApiV1CalendarGoogleSyncPostResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
   UpdateScheduleItemApiV1SchedulesItemIdPutResponses,
@@ -491,6 +500,88 @@ export const upsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPost = <
       'Content-Type': 'application/json',
       ...options.headers,
     },
+  });
+
+/**
+ * Connect Calendar
+ *
+ * Create or refresh local Google Calendar connection metadata.
+ *
+ * Google OAuth tokens are owned by Clerk. This endpoint verifies that Clerk
+ * can provide a Google token for the current user, stores only app-specific
+ * metadata, and runs an initial sync.
+ */
+export const connectCalendarApiV1CalendarGoogleConnectPost = <ThrowOnError extends boolean = false>(
+  options?: Options<ConnectCalendarApiV1CalendarGoogleConnectPostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    ConnectCalendarApiV1CalendarGoogleConnectPostResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/calendar/google/connect',
+    ...options,
+  });
+
+/**
+ * Get Status
+ *
+ * Return the current Google Calendar connection status for the user.
+ */
+export const getStatusApiV1CalendarGoogleStatusGet = <ThrowOnError extends boolean = false>(
+  options?: Options<GetStatusApiV1CalendarGoogleStatusGetData, ThrowOnError>
+) =>
+  (options?.client ?? client).get<
+    GetStatusApiV1CalendarGoogleStatusGetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/calendar/google/status',
+    ...options,
+  });
+
+/**
+ * Sync Calendar
+ *
+ * Manually trigger a FreeBusy sync for the rolling 8-week window.
+ */
+export const syncCalendarApiV1CalendarGoogleSyncPost = <ThrowOnError extends boolean = false>(
+  options?: Options<SyncCalendarApiV1CalendarGoogleSyncPostData, ThrowOnError>
+) =>
+  (options?.client ?? client).post<
+    SyncCalendarApiV1CalendarGoogleSyncPostResponses,
+    unknown,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/calendar/google/sync',
+    ...options,
+  });
+
+/**
+ * Disconnect Calendar
+ *
+ * Disconnect the Google Calendar integration.
+ *
+ * Marks the local connection as disconnected and optionally removes all
+ * imported Google busy blocks from the schedule. Google OAuth account
+ * unlinking is handled by Clerk, not by this endpoint.
+ */
+export const disconnectCalendarApiV1CalendarGoogleDisconnectDelete = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteData, ThrowOnError>
+) =>
+  (options?.client ?? client).delete<
+    DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteResponses,
+    DisconnectCalendarApiV1CalendarGoogleDisconnectDeleteErrors,
+    ThrowOnError
+  >({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/v1/calendar/google/disconnect',
+    ...options,
   });
 
 /**

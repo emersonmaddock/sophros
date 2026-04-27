@@ -8,10 +8,14 @@ from app.db.base_class import Base
 
 class UserWeightLog(Base):
     __tablename__ = "user_weight_log"
-    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_weight_log_user_date"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="uq_weight_log_user_date"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     date: Mapped[date] = mapped_column(Date, nullable=False)
     weight_kg: Mapped[float] = mapped_column(Float, nullable=False)
     # 'prompt' | 'manual' | 'baseline'
@@ -22,10 +26,14 @@ class UserWeightLog(Base):
 
 class UserBodyFatLog(Base):
     __tablename__ = "user_body_fat_log"
-    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_body_fat_log_user_date"),)
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="uq_body_fat_log_user_date"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     date: Mapped[date] = mapped_column(Date, nullable=False)
     body_fat_percent: Mapped[float] = mapped_column(Float, nullable=False)
     source: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
@@ -40,7 +48,9 @@ class UserArchivedGoal(Base):
 
     # Stable goal ID derived from start_date + target_date (see frontend goalId())
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     target_date: Mapped[date] = mapped_column(Date, nullable=False)

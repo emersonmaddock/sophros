@@ -1,7 +1,9 @@
 import type { DriOutput, UserRead } from '@/api/types.gen';
 import { Colors, Layout, Shadows } from '@/constants/theme';
+import { useNow } from '@/hooks/useNow';
 import { useWeekScheduleQuery } from '@/lib/queries/schedule';
 import { useUserQuery, useUserTargetsQuery } from '@/lib/queries/user';
+import { mondayOf } from '@/utils/date';
 import {
   calculateHealthScore,
   type DailyNutritionTotals,
@@ -44,7 +46,7 @@ function nutritionRow(
       plan && targets
         ? `${Math.round(plan.total_calories)} / ${Math.round(targets.calories.target)} kcal`
         : '',
-    source: "Today's meal plan vs your DRI targets",
+    source: "Today's completed meals vs your DRI targets",
     target: 'Average adherence across calories, protein, carbs, fat',
     notMeasuredHint: "Generate this week's meal plan to enable nutrition scoring.",
   };
@@ -107,15 +109,15 @@ function overallLabel(overall: number | null): string {
 
 export default function HealthScorePage() {
   const router = useRouter();
-  const today = new Date();
+  // Must use useNow() (not raw `new Date()`) so dev-time overrides match what
+  // the home screen sees — otherwise the two pages disagree on which day's
+  // meals to score.
+  const today = useNow();
 
-  const weekStartStr = useMemo(() => {
-    const d = new Date(today);
-    const dow = d.getDay();
-    const diff = dow === 0 ? -6 : 1 - dow;
-    d.setDate(d.getDate() + diff);
-    return d.toISOString().split('T')[0];
-  }, [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Must use the same `mondayOf` (local-timezone) as the home screen — otherwise
+  // the two pages compute different weekStartStr keys, hit different React Query
+  // cache entries, and can fetch different/empty schedules.
+  const weekStartStr = useMemo(() => mondayOf(today), [today.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: scheduleItems = [] } = useWeekScheduleQuery(weekStartStr);
   const { data: targets } = useUserTargetsQuery();
@@ -135,29 +137,38 @@ export default function HealthScorePage() {
     [hkActive, hkSteps, hkSleep]
   );
 
-  const todayPlan = useMemo((): DailyNutritionTotals | undefined => {
-    const todayItems = scheduleItems.filter((item) => {
+  // Nutrition reflects *consumed* meals, not planned ones — must match the home
+  // screen (`app/(tabs)/index.tsx`) so the two views agree on the score.
+  const todayMealItems = useMemo(() => {
+    return scheduleItems.filter((item) => {
       const d = new Date(item.date);
       return (
         d.getFullYear() === today.getFullYear() &&
         d.getMonth() === today.getMonth() &&
         d.getDate() === today.getDate() &&
-        item.activity_type === 'meal' &&
-        item.meal != null
+        item.activity_type === 'meal'
       );
     });
-    if (todayItems.length === 0) return undefined;
-    return {
-      total_calories: todayItems.reduce((s, i) => s + (i.meal?.calories ?? 0), 0),
-      total_protein: todayItems.reduce((s, i) => s + (i.meal?.protein ?? 0), 0),
-      total_carbs: todayItems.reduce((s, i) => s + (i.meal?.carbohydrates ?? 0), 0),
-      total_fat: todayItems.reduce((s, i) => s + (i.meal?.fat ?? 0), 0),
-    };
   }, [scheduleItems]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const todayPlan = useMemo((): DailyNutritionTotals | undefined => {
+    if (todayMealItems.length === 0) return undefined;
+    const completed = todayMealItems.filter((i) => i.is_completed && i.meal);
+    return completed.reduce(
+      (acc, i) => ({
+        total_calories: acc.total_calories + (i.meal?.calories ?? 0),
+        total_protein: acc.total_protein + (i.meal?.protein ?? 0),
+        total_carbs: acc.total_carbs + (i.meal?.carbohydrates ?? 0),
+        total_fat: acc.total_fat + (i.meal?.fat ?? 0),
+      }),
+      { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 }
+    );
+  }, [todayMealItems]);
+
+  const hasPlan = todayMealItems.length > 0;
   const healthScore = useMemo(
-    () => calculateHealthScore(todayPlan, targets, user, !!todayPlan, hkInputs),
-    [todayPlan, targets, user, hkInputs]
+    () => calculateHealthScore(todayPlan, targets, user, hasPlan, hkInputs),
+    [todayPlan, targets, user, hasPlan, hkInputs]
   );
 
   const rows: PillarRow[] = [

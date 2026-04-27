@@ -1,14 +1,5 @@
 import { Platform } from 'react-native';
-import {
-  getMostRecentQuantitySample,
-  isHealthDataAvailableAsync,
-  queryCategorySamples,
-  queryQuantitySamples,
-  queryWorkoutSamples,
-  requestAuthorization,
-  saveQuantitySample,
-  saveWorkoutSample,
-} from '@kingstinct/react-native-healthkit';
+
 import { permissionsFor } from './permissions';
 import type {
   ActiveEnergyResult,
@@ -20,6 +11,13 @@ import type {
   WorkoutSample,
 } from './types';
 
+// Lazy-load the native healthkit module so it is never imported at module
+// evaluation time. Static imports trigger NitroModules initialization before
+// the native module is ready, crashing the entire module graph.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const hk = () =>
+  require('@kingstinct/react-native-healthkit') as typeof import('@kingstinct/react-native-healthkit');
+
 function isIOS(): boolean {
   return Platform.OS === 'ios';
 }
@@ -27,7 +25,7 @@ function isIOS(): boolean {
 async function isHealthKitAvailable(): Promise<boolean> {
   if (!isIOS()) return false;
   try {
-    return await isHealthDataAvailableAsync();
+    return await hk().isHealthDataAvailableAsync();
   } catch {
     return false;
   }
@@ -75,12 +73,12 @@ export async function initAuthorization(direction: Direction): Promise<void> {
   if (!(await isHealthKitAvailable())) return;
   const spec = permissionsFor(direction);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await requestAuthorization(spec as any);
+  await hk().requestAuthorization(spec as any);
 }
 
 export async function getStepsToday(): Promise<StepsResult> {
   if (!isIOS()) return { valueToday: 0, sampledAt: nowISO() };
-  const samples = await queryQuantitySamples('HKQuantityTypeIdentifierStepCount', {
+  const samples = await hk().queryQuantitySamples('HKQuantityTypeIdentifierStepCount', {
     filter: { date: { startDate: startOfToday(), endDate: new Date() } },
     limit: 0,
   });
@@ -90,7 +88,7 @@ export async function getStepsToday(): Promise<StepsResult> {
 
 export async function getActiveEnergyToday(): Promise<ActiveEnergyResult> {
   if (!isIOS()) return { kcalToday: 0, sampledAt: nowISO() };
-  const samples = await queryQuantitySamples('HKQuantityTypeIdentifierActiveEnergyBurned', {
+  const samples = await hk().queryQuantitySamples('HKQuantityTypeIdentifierActiveEnergyBurned', {
     filter: { date: { startDate: startOfToday(), endDate: new Date() } },
     limit: 0,
   });
@@ -101,7 +99,7 @@ export async function getActiveEnergyToday(): Promise<ActiveEnergyResult> {
 export async function getSleepLastNight(): Promise<SleepResult> {
   if (!isIOS()) return { minutesLastNight: null, startedAt: null, endedAt: null };
   const { start, end } = lastNightWindow();
-  const samples = await queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', {
+  const samples = await hk().queryCategorySamples('HKCategoryTypeIdentifierSleepAnalysis', {
     filter: { date: { startDate: start, endDate: end } },
     limit: 0,
   });
@@ -128,7 +126,7 @@ export async function getRecentWorkouts(days: number): Promise<WorkoutSample[]> 
   if (!isIOS()) return [];
   const start = new Date();
   start.setDate(start.getDate() - days);
-  const workouts = await queryWorkoutSamples({
+  const workouts = await hk().queryWorkoutSamples({
     filter: { date: { startDate: start, endDate: new Date() } },
     limit: 0,
   });
@@ -149,7 +147,7 @@ export async function getRecentWorkouts(days: number): Promise<WorkoutSample[]> 
 
 export async function getLatestWeight(): Promise<BodyMetricSample | null> {
   if (!isIOS()) return null;
-  const s = await getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyMass', 'kg');
+  const s = await hk().getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyMass', 'kg');
   if (!s) return null;
   const recordedAtISO =
     s.startDate instanceof Date ? s.startDate.toISOString() : String(s.startDate ?? nowISO());
@@ -158,7 +156,10 @@ export async function getLatestWeight(): Promise<BodyMetricSample | null> {
 
 export async function getLatestBodyFat(): Promise<BodyMetricSample | null> {
   if (!isIOS()) return null;
-  const s = await getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyFatPercentage', '%');
+  const s = await hk().getMostRecentQuantitySample(
+    'HKQuantityTypeIdentifierBodyFatPercentage',
+    '%'
+  );
   if (!s) return null;
   const recordedAtISO =
     s.startDate instanceof Date ? s.startDate.toISOString() : String(s.startDate ?? nowISO());
@@ -166,7 +167,7 @@ export async function getLatestBodyFat(): Promise<BodyMetricSample | null> {
 }
 
 async function sumQuantityToday<T extends string>(identifier: T, unit: string): Promise<number> {
-  const samples = await queryQuantitySamples(
+  const samples = await hk().queryQuantitySamples(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     identifier as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -211,7 +212,7 @@ export interface SaveWeightInput {
 export async function saveWeight(input: SaveWeightInput): Promise<void> {
   if (!isIOS()) return;
   const at = new Date(input.recordedAtISO);
-  await saveQuantitySample('HKQuantityTypeIdentifierBodyMass', 'kg', input.weightKg, at, at);
+  await hk().saveQuantitySample('HKQuantityTypeIdentifierBodyMass', 'kg', input.weightKg, at, at);
 }
 
 export interface SaveWorkoutInput {
@@ -227,7 +228,7 @@ export async function saveWorkout(input: SaveWorkoutInput): Promise<void> {
     WORKOUT_ACTIVITY_TYPE_BY_NAME[input.activityName] ?? WORKOUT_ACTIVITY_TYPE_BY_NAME.Other;
   const start = new Date(input.startISO);
   const end = new Date(input.endISO);
-  await saveWorkoutSample(
+  await hk().saveWorkoutSample(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     activityType as any,
     [],
@@ -250,6 +251,7 @@ export async function saveMeal(input: SaveMealInput): Promise<void> {
   // Write each macro as its own HKQuantitySample at the same timestamp.
   // Apple Health's Nutrition view groups same-timestamped samples automatically.
   const at = new Date(input.consumedAtISO);
+  const { saveQuantitySample } = hk();
   await Promise.all([
     saveQuantitySample(
       'HKQuantityTypeIdentifierDietaryEnergyConsumed',

@@ -3,7 +3,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-
 # ---------------------------------------------------------------------------
 # Weight log
 # ---------------------------------------------------------------------------
@@ -50,6 +49,7 @@ class BodyFatLogEntryRead(BaseModel):
 # Archived goals
 # ---------------------------------------------------------------------------
 
+
 class ArchivedGoalCreate(BaseModel):
     """
     Matches the ArchivedGoalSummary type in the frontend.
@@ -76,6 +76,7 @@ class ArchivedGoalRead(ArchivedGoalCreate):
 # ---------------------------------------------------------------------------
 # Goal snapshot fields (stored on User, updated via /users/me)
 # ---------------------------------------------------------------------------
+
 
 class GoalSnapshotUpdate(BaseModel):
     goal_start_date: date | None = None

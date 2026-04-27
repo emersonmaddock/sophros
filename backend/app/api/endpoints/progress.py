@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -36,7 +36,9 @@ async def get_weight_log(
     return list(result.scalars().all())
 
 
-@router.post("/weight-log", response_model=WeightLogEntryRead, status_code=status.HTTP_200_OK)
+@router.post(
+    "/weight-log", response_model=WeightLogEntryRead, status_code=status.HTTP_200_OK
+)
 async def upsert_weight_entry(
     entry_in: WeightLogEntryCreate,
     current_user: User = Depends(deps.get_current_user),
@@ -103,7 +105,9 @@ async def get_body_fat_log(
     return list(result.scalars().all())
 
 
-@router.post("/body-fat-log", response_model=BodyFatLogEntryRead, status_code=status.HTTP_200_OK)
+@router.post(
+    "/body-fat-log", response_model=BodyFatLogEntryRead, status_code=status.HTTP_200_OK
+)
 async def upsert_body_fat_entry(
     entry_in: BodyFatLogEntryCreate,
     current_user: User = Depends(deps.get_current_user),
@@ -170,7 +174,9 @@ async def get_archived_goals(
     return list(result.scalars().all())
 
 
-@router.post("/archived-goals", response_model=ArchivedGoalRead, status_code=status.HTTP_200_OK)
+@router.post(
+    "/archived-goals", response_model=ArchivedGoalRead, status_code=status.HTTP_200_OK
+)
 async def upsert_archived_goal(
     goal_in: ArchivedGoalCreate,
     current_user: User = Depends(deps.get_current_user),

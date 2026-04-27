@@ -147,7 +147,9 @@ export const MealDetailModal = ({
               }}
             >
               <Edit size={20} color={Colors.light.text} />
-              <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>Modify</Text>
+              <Text style={[styles.actionButtonText, { color: Colors.light.text }]}>
+                Reschedule
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: `${Colors.light.error}15` }]}

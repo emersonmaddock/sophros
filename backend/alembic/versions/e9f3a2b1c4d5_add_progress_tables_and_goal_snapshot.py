@@ -1,7 +1,7 @@
 """add progress tables and goal snapshot fields
 
 Revision ID: e9f3a2b1c4d5
-Revises: db1bc88ad384
+Revises: f03efbe9a54f
 Create Date: 2026-04-25
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = 'e9f3a2b1c4d5'
-down_revision: Union[str, None] = 'db1bc88ad384'
+down_revision: Union[str, None] = 'f03efbe9a54f'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

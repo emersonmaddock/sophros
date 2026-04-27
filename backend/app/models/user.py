@@ -75,11 +75,20 @@ class User(Base):
         "UserBusyTime", back_populates="user", cascade="all, delete-orphan"
     )
     weight_logs: Mapped[list["UserWeightLog"]] = relationship(
-        "UserWeightLog", back_populates="user", cascade="all, delete-orphan", order_by="UserWeightLog.date"
+        "UserWeightLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="UserWeightLog.date",
     )
     body_fat_logs: Mapped[list["UserBodyFatLog"]] = relationship(
-        "UserBodyFatLog", back_populates="user", cascade="all, delete-orphan", order_by="UserBodyFatLog.date"
+        "UserBodyFatLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="UserBodyFatLog.date",
     )
     archived_goals: Mapped[list["UserArchivedGoal"]] = relationship(
-        "UserArchivedGoal", back_populates="user", cascade="all, delete-orphan", order_by="UserArchivedGoal.archived_at.desc()"
+        "UserArchivedGoal",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="UserArchivedGoal.archived_at.desc()",
     )

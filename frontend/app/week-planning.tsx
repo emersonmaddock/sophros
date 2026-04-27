@@ -84,9 +84,11 @@ export default function WeekPlanningScreen() {
     profileLoading,
     isLoading,
     mealItems.length,
+    weekStart,
+    generateMutation,
     generateMutation.isPending,
     generateMutation.isError,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  ]);
 
   const dayItems = useMemo(
     () =>
