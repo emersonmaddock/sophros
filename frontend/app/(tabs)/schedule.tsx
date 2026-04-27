@@ -64,7 +64,7 @@ function getItemTitle(item: ScheduleItemRead): string {
     case 'meal':
       return 'Meal';
     case 'exercise':
-      return 'Workout';
+      return item.exercise_category ?? 'Workout';
     case 'sleep':
       return 'Sleep';
     default:
@@ -156,6 +156,7 @@ export default function SchedulePage() {
         title: getItemTitle(item),
         duration: getDurationDisplay(item.duration_minutes),
         type: item.activity_type === 'exercise' ? 'workout' : (item.activity_type as ItemType),
+        exerciseCategory: item.exercise_category ?? null,
       });
       setEditModalMode('edit');
       setEditModalItemType(
@@ -249,6 +250,9 @@ export default function SchedulePage() {
               date: toNaiveIso(itemDate),
               activity_type: activityType,
               duration_minutes: durationMinutes,
+              ...(updatedItem.type === 'workout' && updatedItem.exerciseCategory
+                ? { exercise_category: updatedItem.exerciseCategory }
+                : {}),
             },
             weekStartDate: weekStartStr,
           });
@@ -277,6 +281,9 @@ export default function SchedulePage() {
         : {
             date: toNaiveIso(newDate),
             duration_minutes: parseInt(updatedItem.duration) || originalItem.duration_minutes,
+            ...(updatedItem.type === 'workout'
+              ? { exercise_category: updatedItem.exerciseCategory ?? null }
+              : {}),
           };
 
       updateMutation.mutate({

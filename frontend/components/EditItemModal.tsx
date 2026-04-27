@@ -1,11 +1,14 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Colors } from '@/constants/theme';
+import type { ExerciseCategory } from '@/api/types.gen';
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { DurationPickerInput } from '@/components/DurationPickerInput';
 import { TimePickerInput } from '@/components/TimePickerInput';
 import { Dumbbell, Moon, UtensilsCrossed } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
+const EXERCISE_CATEGORIES: readonly ExerciseCategory[] = ['Cardio', 'Weight Lifting'];
 
 type EditItemModalProps = {
   visible: boolean;
@@ -52,8 +55,9 @@ export function EditItemModal({
   const [protein, setProtein] = useState(item?.protein?.toString() || '');
   const [carbs, setCarbs] = useState(item?.carbs?.toString() || '');
   const [fat, setFat] = useState(item?.fat?.toString() || '');
-  const [workoutType, setWorkoutType] = useState(item?.workoutType || '');
-  const [caloriesBurned, setCaloriesBurned] = useState('');
+  const [exerciseCategory, setExerciseCategory] = useState<ExerciseCategory | null>(
+    item?.exerciseCategory ?? null
+  );
   const [targetHours, setTargetHours] = useState(item?.targetHours?.toString() || '8');
   const [touched, setTouched] = useState(false);
 
@@ -66,10 +70,12 @@ export function EditItemModal({
   // For meal+edit, the only editable thing is time. Title/nutrition are not rendered.
   const isMealEdit = currentType === 'meal' && mode === 'edit';
   const isMealAdd = currentType === 'meal' && mode === 'add';
+  // Workouts expose only the fields the API actually supports: time, duration, and exercise_category.
+  const isWorkout = currentType === 'workout';
 
   const errors = useMemo(() => {
     const e: Record<string, string> = {};
-    if (!isMealEdit && !title.trim()) e.title = 'Title is required';
+    if (!isMealEdit && !isWorkout && !title.trim()) e.title = 'Title is required';
     if (isMealAdd) {
       const checkInt = (key: string, raw: string, label: string) => {
         if (!raw.trim()) {
@@ -100,6 +106,7 @@ export function EditItemModal({
     currentType,
     isMealAdd,
     isMealEdit,
+    isWorkout,
     calories,
     protein,
     carbs,
@@ -118,8 +125,7 @@ export function EditItemModal({
       setProtein(item?.protein?.toString() || '');
       setCarbs(item?.carbs?.toString() || '');
       setFat(item?.fat?.toString() || '');
-      setWorkoutType(item?.workoutType || '');
-      setCaloriesBurned(item?.type === 'workout' ? item?.calories?.toString() || '' : '');
+      setExerciseCategory(item?.exerciseCategory ?? null);
       setTargetHours(item?.targetHours?.toString() || '8');
       setTouched(false);
       bottomSheetRef.current?.present();
@@ -135,7 +141,7 @@ export function EditItemModal({
     const baseItem: WeeklyScheduleItem = {
       id: item?.id || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       time,
-      title: isMealEdit ? item?.title || '' : title,
+      title: isMealEdit || isWorkout ? item?.title || (isWorkout ? 'Workout' : '') : title,
       duration: isMealEdit ? item?.duration || duration : duration,
       type: currentType,
     };
@@ -145,9 +151,8 @@ export function EditItemModal({
       baseItem.protein = parseInt(protein, 10);
       baseItem.carbs = parseInt(carbs, 10);
       baseItem.fat = parseInt(fat, 10);
-    } else if (currentType === 'workout') {
-      baseItem.workoutType = workoutType || title;
-      baseItem.calories = caloriesBurned ? parseInt(caloriesBurned, 10) : undefined;
+    } else if (isWorkout) {
+      baseItem.exerciseCategory = exerciseCategory;
     } else if (currentType === 'sleep') {
       baseItem.targetHours = targetHours ? parseFloat(targetHours) : 8;
     }
@@ -211,20 +216,14 @@ export function EditItemModal({
           <TimePickerInput label="Time" value={time} onChange={setTime} format="12h" />
         </View>
 
-        {!isMealEdit && (
+        {!isMealEdit && !isWorkout && (
           <View style={styles.field}>
             <Text style={styles.label}>Title</Text>
             <TextInput
               style={inputStyle('title')}
               value={title}
               onChangeText={setTitle}
-              placeholder={
-                currentType === 'meal'
-                  ? 'e.g., Greek Yogurt Bowl'
-                  : currentType === 'workout'
-                    ? 'e.g., HIIT Training'
-                    : 'Sleep'
-              }
+              placeholder={currentType === 'meal' ? 'e.g., Greek Yogurt Bowl' : 'Sleep'}
               placeholderTextColor={Colors.light.textMuted}
             />
             {renderError('title')}
@@ -289,32 +288,33 @@ export function EditItemModal({
           </>
         )}
 
-        {currentType === 'workout' && (
-          <>
-            <View style={styles.field}>
-              <Text style={styles.label}>Workout Type</Text>
-              <TextInput
-                style={styles.input}
-                value={workoutType}
-                onChangeText={setWorkoutType}
-                placeholder="e.g., HIIT, Strength, Yoga"
-                placeholderTextColor={Colors.light.textMuted}
-              />
+        {isWorkout && (
+          <View style={styles.field}>
+            <Text style={styles.label}>Category</Text>
+            <View style={styles.segmented}>
+              {EXERCISE_CATEGORIES.map((cat) => {
+                const selected = exerciseCategory === cat;
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setExerciseCategory(cat)}
+                    style={[styles.segmentedOption, selected && styles.segmentedOptionSelected]}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentedOptionText,
+                        selected && styles.segmentedOptionTextSelected,
+                      ]}
+                    >
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            <View style={styles.macroRow}>
-              <View style={[styles.field, styles.macroField]}>
-                <Text style={styles.macroLabel}>Calories Burned</Text>
-                <TextInput
-                  style={styles.input}
-                  value={caloriesBurned}
-                  onChangeText={setCaloriesBurned}
-                  placeholder="300"
-                  keyboardType="numeric"
-                  placeholderTextColor={Colors.light.textMuted}
-                />
-              </View>
-            </View>
-          </>
+          </View>
         )}
 
         {currentType === 'sleep' && (
@@ -409,6 +409,33 @@ const styles = StyleSheet.create({
   errorText: { color: Colors.light.error, fontSize: 12, marginTop: 4 },
   macroRow: { flexDirection: 'row', gap: 12 },
   macroField: { flex: 1 },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 4,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  segmentedOption: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentedOptionSelected: {
+    backgroundColor: Colors.light.primary,
+  },
+  segmentedOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.light.textMuted,
+  },
+  segmentedOptionTextSelected: {
+    color: '#FFFFFF',
+  },
   actions: {
     flexDirection: 'row',
     gap: 12,
