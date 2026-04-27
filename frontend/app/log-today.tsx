@@ -9,8 +9,8 @@ import { useNow } from '@/hooks/useNow';
 import { useUserQuery } from '@/lib/queries/user';
 import { localDateStr } from '@/lib/progress/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import { ChevronLeft, Moon, Scale } from 'lucide-react-native';
+import { Stack, useRouter } from 'expo-router';
+import { ArrowLeft, Moon, Scale } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -42,15 +42,14 @@ export default function LogTodayPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleGoHome} hitSlop={10} style={styles.backButton}>
-            <ChevronLeft size={20} color={Colors.light.text} />
-            <Text style={styles.backButtonText}>Home</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft size={24} color={Colors.light.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Log Today</Text>
-          <View style={styles.headerSpacer} />
+          <View style={{ width: 24 }} />
         </View>
 
         {/* Sleep card */}
@@ -121,30 +120,18 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-    minHeight: 32,
+    marginBottom: 24,
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    width: 72,
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.light.text,
+    padding: 8,
+    marginLeft: -8,
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '700',
     color: Colors.light.text,
-    flex: 1,
-    textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 72,
   },
   card: {
     backgroundColor: Colors.light.surface,
