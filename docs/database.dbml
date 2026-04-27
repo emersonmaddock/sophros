@@ -1,0 +1,203 @@
+// Sophros Database Schema
+// Render at https://dbdiagram.io
+
+Table user {
+  id             varchar    [pk, note: "Clerk user ID"]
+  email          varchar    [unique, not null]
+  age            integer
+  weight         float      [note: "kg"]
+  height         float      [note: "cm"]
+  show_imperial  boolean    [default: false]
+
+  gender            gender_enum
+  activity_level    activity_level_enum
+  pregnancy_status  pregnancy_status_enum [default: "NOT_PREGNANT"]
+
+  target_weight    float
+  target_body_fat  float      [note: "percentage"]
+  target_date      date
+
+  wake_up_time  time
+  sleep_time    time
+
+  is_gluten_free   boolean [default: false]
+  is_ketogenic     boolean [default: false]
+  is_vegetarian    boolean [default: false]
+  is_vegan         boolean [default: false]
+  is_pescatarian   boolean [default: false]
+}
+
+Table user_allergies {
+  id       integer    [pk, increment]
+  user_id  varchar    [not null, ref: > user.id]
+  value    allergy_enum [not null]
+}
+
+Table user_include_cuisines {
+  id       integer    [pk, increment]
+  user_id  varchar    [not null, ref: > user.id]
+  value    cuisine_enum [not null]
+}
+
+Table user_exclude_cuisines {
+  id       integer    [pk, increment]
+  user_id  varchar    [not null, ref: > user.id]
+  value    cuisine_enum [not null]
+}
+
+Table user_busy_times {
+  id          integer  [pk, increment]
+  user_id     varchar  [not null, ref: > user.id]
+  day         day_enum [not null]
+  start_time  time     [not null]
+  end_time    time     [not null]
+}
+
+Table meals {
+  id               integer  [pk, increment]
+  recipe_id        varchar  [note: "Spoonacular recipe ID, nullable"]
+  title            varchar  [not null]
+  image_url        varchar
+  source_url       varchar
+
+  calories         integer  [not null]
+  protein          integer  [not null]
+  carbohydrates    integer  [not null]
+  fat              integer  [not null]
+
+  prep_time_minutes  integer
+  ingredients        json    [default: "[]"]
+  tags               json    [default: "[]"]
+
+  is_custom  boolean  [default: false, note: "True = user-created meal"]
+  user_id    varchar  [ref: > user.id, note: "Required when is_custom = true"]
+
+  Note: "Check: is_custom = false OR user_id IS NOT NULL"
+}
+
+Table schedules {
+  id                     integer           [pk, increment]
+  user_id                varchar           [not null, ref: > user.id]
+  date                   timestamp         [not null]
+  duration_minutes       integer           [not null]
+  prep_time_minutes      integer           [default: 0]
+  is_completed           boolean           [default: false]
+
+  activity_type          activity_type_enum [not null]
+
+  exercise_category      exercise_category_enum
+  exercise_calorie_burn  integer           [default: 0]
+  exercise_muscle_gain   float             [default: 0.0]
+
+  meal_id                integer           [ref: > meals.id]
+
+  source_schedule_item_id  integer         [ref: > schedules.id, note: "Self-ref: tracks meal overflow/leftovers"]
+
+  source_type        varchar [default: "sophros", note: "'sophros' or 'google_calendar'"]
+  source_calendar_id varchar
+}
+
+Table schedule_item_alternatives {
+  id                integer  [pk, increment]
+  schedule_item_id  integer  [not null, ref: > schedules.id]
+  meal_id           integer  [not null, ref: > meals.id]
+}
+
+Table google_calendar_connections {
+  id                    integer    [pk, increment]
+  user_id               varchar    [not null, unique, ref: > user.id]
+  google_account_email  varchar    [not null]
+  last_synced_at        timestamptz
+  sync_status           varchar    [default: "pending", note: "'pending' | 'synced' | 'failed'"]
+}
+
+// ───── Enum Definitions ─────
+
+Enum gender_enum {
+  MALE
+  FEMALE
+}
+
+Enum activity_level_enum {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+Enum pregnancy_status_enum {
+  NOT_PREGNANT
+  PREGNANT
+  EXCLUSIVELY_BREASTFEEDING
+  PARTIALLY_BREASTFEEDING
+}
+
+Enum activity_type_enum {
+  MEAL
+  SLEEP
+  WORK
+  EXERCISE
+  LEISURE
+  OTHER
+}
+
+Enum exercise_category_enum {
+  CARDIO
+  WEIGHT_LIFTING
+}
+
+Enum allergy_enum {
+  DAIRY
+  EGG
+  GLUTEN
+  GRAIN
+  PEANUT
+  SEAFOOD
+  SESAME
+  SHELLFISH
+  SOY
+  SULFITE
+  TREE_NUT
+  WHEAT
+}
+
+Enum cuisine_enum {
+  AFRICAN
+  ASIAN
+  AMERICAN
+  BRITISH
+  CAJUN
+  CARIBBEAN
+  CHINESE
+  EASTERN_EUROPEAN
+  EUROPEAN
+  FRENCH
+  GERMAN
+  GREEK
+  INDIAN
+  IRISH
+  ITALIAN
+  JAPANESE
+  JEWISH
+  KOREAN
+  LATIN_AMERICAN
+  MEDITERRANEAN
+  MEXICAN
+  MIDDLE_EASTERN
+  NORDIC
+  SOUTHERN
+  SPANISH
+  THAI
+  VIETNAMESE
+}
+
+Enum day_enum {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
