@@ -43,6 +43,19 @@ function formatDisplayTime(isoDatetime: string): string {
   return `${displayH}:${m} ${period}`;
 }
 
+function getActivityLabel(activityType: string): string {
+  switch (activityType) {
+    case 'meal':
+      return 'Meal';
+    case 'exercise':
+      return 'Workout';
+    case 'sleep':
+      return 'Sleep';
+    default:
+      return activityType.charAt(0).toUpperCase() + activityType.slice(1);
+  }
+}
+
 function getDayIndex(isoDatetime: string, weekStart: string): number {
   const itemDate = new Date(isoDatetime);
   const monday = new Date(weekStart + 'T00:00:00');
@@ -233,7 +246,7 @@ export default function WeekPlanningScreen() {
                 <View style={styles.itemContent}>
                   <Text style={styles.itemTime}>{formatDisplayTime(item.date)}</Text>
                   <Text style={styles.itemTitle} numberOfLines={1}>
-                    {item.meal?.title ?? item.activity_type}
+                    {item.meal?.title ?? getActivityLabel(item.activity_type)}
                   </Text>
                   {item.meal && (
                     <Text style={styles.itemMacros}>
