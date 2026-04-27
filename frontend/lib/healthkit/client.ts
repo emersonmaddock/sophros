@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+
 import { permissionsFor } from './permissions';
 import type {
   ActiveEnergyResult,
@@ -19,6 +20,15 @@ const hk = () =>
 
 function isIOS(): boolean {
   return Platform.OS === 'ios';
+}
+
+async function isHealthKitAvailable(): Promise<boolean> {
+  if (!isIOS()) return false;
+  try {
+    return await hk().isHealthDataAvailableAsync();
+  } catch {
+    return false;
+  }
 }
 
 function startOfToday(): Date {
@@ -60,7 +70,7 @@ function workoutActivityNameFromValue(value: number): string {
 }
 
 export async function initAuthorization(direction: Direction): Promise<void> {
-  if (!isIOS()) return;
+  if (!(await isHealthKitAvailable())) return;
   const spec = permissionsFor(direction);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await hk().requestAuthorization(spec as any);

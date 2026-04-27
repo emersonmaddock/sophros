@@ -120,6 +120,7 @@ jest.mock('@/contexts/DevTimeContext', () => ({
 jest.mock('@kingstinct/react-native-healthkit', () => {
   const defaults: Record<string, (...args: unknown[]) => unknown> = {
     isHealthDataAvailable: async () => true,
+    isHealthDataAvailableAsync: async () => true,
     requestAuthorization: async () => true,
     queryQuantitySamples: async () => [],
     getMostRecentQuantitySample: async () => undefined,

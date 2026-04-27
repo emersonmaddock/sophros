@@ -248,7 +248,6 @@ class MealPlanService:
                 target_weight=user.target_weight,
                 target_date=user.target_date,
                 exercise_calories=exercise_cals,
-                target_body_fat=user.target_body_fat,
             )
 
             user_schedule = weekly_schedules[day]

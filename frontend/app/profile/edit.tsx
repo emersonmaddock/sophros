@@ -39,7 +39,6 @@ interface ProfileEditForm {
   showImperial: boolean;
   activityLevel: ActivityLevel;
   targetWeight: string;
-  targetBodyFat: string;
   targetDate: string;
   wakeUpTime: string;
   sleepTime: string;
@@ -94,7 +93,6 @@ export default function EditProfileScreen() {
       showImperial: backendUser.show_imperial,
       activityLevel: backendUser.activity_level,
       targetWeight: displayTargetWeight,
-      targetBodyFat: backendUser.target_body_fat?.toString() ?? '',
       targetDate: backendUser.target_date ?? '',
       wakeUpTime: backendUser.wake_up_time ? backendUser.wake_up_time.substring(0, 5) : '',
       sleepTime: backendUser.sleep_time ? backendUser.sleep_time.substring(0, 5) : '',
@@ -332,22 +330,6 @@ export default function EditProfileScreen() {
       }
     } else if (backendUser.target_weight != null) {
       updates.target_weight = null;
-    }
-
-    // Target body fat
-    const targetBodyFatText = form.targetBodyFat.trim();
-    if (targetBodyFatText) {
-      const bodyFat = parseFloatOrNull(targetBodyFatText);
-      if (bodyFat === null || bodyFat < 3 || bodyFat > 60) {
-        errors.push('Target body fat must be between 3% and 60%.');
-      } else {
-        const backendBodyFat = backendUser.target_body_fat ?? 0;
-        if (Math.abs(bodyFat - backendBodyFat) > 0.0001) {
-          updates.target_body_fat = bodyFat;
-        }
-      }
-    } else if (backendUser.target_body_fat != null) {
-      updates.target_body_fat = null;
     }
 
     // Target date
@@ -625,18 +607,6 @@ export default function EditProfileScreen() {
                 style={styles.input}
                 value={form.targetWeight}
                 onChangeText={(text) => updateForm('targetWeight', text)}
-                keyboardType="decimal-pad"
-                placeholder="Optional"
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Target Body Fat %</Text>
-              <TextInput
-                style={styles.input}
-                value={form.targetBodyFat}
-                onChangeText={(text) => updateForm('targetBodyFat', text)}
                 keyboardType="decimal-pad"
                 placeholder="Optional"
                 placeholderTextColor={Colors.light.textMuted}

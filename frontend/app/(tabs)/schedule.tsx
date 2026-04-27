@@ -2,11 +2,6 @@ import type { ScheduleItemRead } from '@/api/types.gen';
 import { EditItemModal } from '@/components/EditItemModal';
 import { MealDetailModal } from '@/components/MealDetailModal';
 import { MissedItemModal } from '@/components/MissedItemModal';
-import {
-  SleepWakePrompt,
-  clearFutureSleepData,
-  shouldShowSleepPrompt,
-} from '@/components/SleepWakePrompt';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { Colors } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
@@ -21,7 +16,7 @@ import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { toLocalDateStr as formatDateStr } from '@/utils/date';
 import { useRouter } from 'expo-router';
 import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -119,14 +114,6 @@ export default function SchedulePage() {
 
   const now = useNow();
   const todayDayOfWeek = now.getDay();
-
-  // Sleep/wake daily prompt — re-evaluated whenever the current date changes
-  const [showSleepPrompt, setShowSleepPrompt] = useState(false);
-  useEffect(() => {
-    clearFutureSleepData(now)
-      .then(() => shouldShowSleepPrompt(now))
-      .then(setShowSleepPrompt);
-  }, [now.toDateString()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Compute which day index to default to
   const todayMondayIndex = todayDayOfWeek === 0 ? 6 : todayDayOfWeek - 1; // Mon=0..Sun=6
@@ -454,11 +441,6 @@ export default function SchedulePage() {
             );
           })}
         </View>
-
-        {/* Sleep/wake daily prompt — only shown when viewing today */}
-        {showSleepPrompt && isToday && (
-          <SleepWakePrompt onDismiss={() => setShowSleepPrompt(false)} />
-        )}
 
         {/* Timeline */}
         {isLoadingPlan ? (

@@ -109,7 +109,6 @@ class NutrientCalculator:
         target_weight: float | None = None,
         target_date: date | None = None,
         exercise_calories: int = 0,
-        target_body_fat: float | None = None,
     ) -> DRIOutput:
         bmr = cls.calculate_bmr(weight_kg, height_cm, age, gender)
         tdee = cls.calculate_tdee(bmr, activity_level)
@@ -139,13 +138,6 @@ class NutrientCalculator:
         # We add exercise_calories because the user needs to eat back
         # some of those calories to maintain the planned deficit/surplus.
         adjusted_tdee = tdee + daily_offset + exercise_calories
-
-        # If target body fat is lower than current estimated (not implemented),
-        # we could adjust protein ratios here. For now, we'll just prioritize
-        # protein if BF goal is lean.
-        if target_body_fat and target_body_fat < 15:
-            # Shift some carbs to protein (Advanced logic simplified)
-            pass
 
         # Ensure floor of 1200 calories for safety
         adjusted_tdee = max(1200, adjusted_tdee)

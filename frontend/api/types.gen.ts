@@ -32,6 +32,93 @@ export type Allergy =
   | 'Wheat';
 
 /**
+ * ArchivedGoalCreate
+ *
+ * Matches the ArchivedGoalSummary type in the frontend.
+ * The id is a stable string derived from startDate_targetDate.
+ */
+export type ArchivedGoalCreate = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Start Date
+   */
+  start_date: string;
+  /**
+   * Target Date
+   */
+  target_date: string;
+  /**
+   * Start Weight Kg
+   */
+  start_weight_kg: number;
+  /**
+   * Target Weight Kg
+   */
+  target_weight_kg: number;
+  /**
+   * End Date
+   */
+  end_date: string;
+  /**
+   * Final Weight Kg
+   */
+  final_weight_kg?: number | null;
+  /**
+   * Weight Change Kg
+   */
+  weight_change_kg?: number | null;
+  /**
+   * Archived At
+   */
+  archived_at: string;
+};
+
+/**
+ * ArchivedGoalRead
+ */
+export type ArchivedGoalRead = {
+  /**
+   * Id
+   */
+  id: string;
+  /**
+   * Start Date
+   */
+  start_date: string;
+  /**
+   * Target Date
+   */
+  target_date: string;
+  /**
+   * Start Weight Kg
+   */
+  start_weight_kg: number;
+  /**
+   * Target Weight Kg
+   */
+  target_weight_kg: number;
+  /**
+   * End Date
+   */
+  end_date: string;
+  /**
+   * Final Weight Kg
+   */
+  final_weight_kg?: number | null;
+  /**
+   * Weight Change Kg
+   */
+  weight_change_kg?: number | null;
+  /**
+   * Archived At
+   */
+  archived_at: string;
+};
+
+/**
  * BusyTime
  */
 export type BusyTime = {
@@ -437,13 +524,17 @@ export type UserCreate = {
    */
   target_weight?: number | null;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * Target Date
    */
   target_date?: string | null;
+  /**
+   * Goal Start Date
+   */
+  goal_start_date?: string | null;
+  /**
+   * Goal Start Weight Kg
+   */
+  goal_start_weight_kg?: number | null;
   /**
    * Wake Up Time
    */
@@ -522,13 +613,17 @@ export type UserRead = {
    */
   target_weight?: number | null;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * Target Date
    */
   target_date?: string | null;
+  /**
+   * Goal Start Date
+   */
+  goal_start_date?: string | null;
+  /**
+   * Goal Start Weight Kg
+   */
+  goal_start_weight_kg?: number | null;
   /**
    * Wake Up Time
    */
@@ -615,13 +710,17 @@ export type UserUpdate = {
    */
   target_weight?: number | null;
   /**
-   * Target Body Fat
-   */
-  target_body_fat?: number | null;
-  /**
    * Target Date
    */
   target_date?: string | null;
+  /**
+   * Goal Start Date
+   */
+  goal_start_date?: string | null;
+  /**
+   * Goal Start Weight Kg
+   */
+  goal_start_weight_kg?: number | null;
   /**
    * Wake Up Time
    */
@@ -694,6 +793,42 @@ export type ValidationError = {
   ctx?: {
     [key: string]: unknown;
   };
+};
+
+/**
+ * WeightLogEntryCreate
+ */
+export type WeightLogEntryCreate = {
+  /**
+   * Date
+   */
+  date: string;
+  /**
+   * Weight Kg
+   */
+  weight_kg: number;
+  /**
+   * Source
+   */
+  source?: 'prompt' | 'manual' | 'baseline';
+};
+
+/**
+ * WeightLogEntryRead
+ */
+export type WeightLogEntryRead = {
+  /**
+   * Date
+   */
+  date: string;
+  /**
+   * Weight Kg
+   */
+  weight_kg: number;
+  /**
+   * Source
+   */
+  source: string;
 };
 
 export type CreateUserApiV1UsersPostData = {
@@ -1046,6 +1181,130 @@ export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses = {
 
 export type GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponse =
   GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses[keyof GetPlannedWeeksApiV1MealPlansPlannedWeeksGetResponses];
+
+export type GetWeightLogApiV1UsersMeProgressWeightLogGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/users/me/progress/weight-log';
+};
+
+export type GetWeightLogApiV1UsersMeProgressWeightLogGetResponses = {
+  /**
+   * Response Get Weight Log Api V1 Users Me Progress Weight Log Get
+   *
+   * Successful Response
+   */
+  200: Array<WeightLogEntryRead>;
+};
+
+export type GetWeightLogApiV1UsersMeProgressWeightLogGetResponse =
+  GetWeightLogApiV1UsersMeProgressWeightLogGetResponses[keyof GetWeightLogApiV1UsersMeProgressWeightLogGetResponses];
+
+export type UpsertWeightEntryApiV1UsersMeProgressWeightLogPostData = {
+  body: WeightLogEntryCreate;
+  path?: never;
+  query?: never;
+  url: '/api/v1/users/me/progress/weight-log';
+};
+
+export type UpsertWeightEntryApiV1UsersMeProgressWeightLogPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpsertWeightEntryApiV1UsersMeProgressWeightLogPostError =
+  UpsertWeightEntryApiV1UsersMeProgressWeightLogPostErrors[keyof UpsertWeightEntryApiV1UsersMeProgressWeightLogPostErrors];
+
+export type UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: WeightLogEntryRead;
+};
+
+export type UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponse =
+  UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponses[keyof UpsertWeightEntryApiV1UsersMeProgressWeightLogPostResponses];
+
+export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteData = {
+  body?: never;
+  path: {
+    /**
+     * Entry Date
+     */
+    entry_date: string;
+  };
+  query?: never;
+  url: '/api/v1/users/me/progress/weight-log/{entry_date}';
+};
+
+export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteError =
+  DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors[keyof DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteErrors];
+
+export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses = {
+  /**
+   * Successful Response
+   */
+  204: void;
+};
+
+export type DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponse =
+  DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses[keyof DeleteWeightEntryApiV1UsersMeProgressWeightLogEntryDateDeleteResponses];
+
+export type GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: '/api/v1/users/me/progress/archived-goals';
+};
+
+export type GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponses = {
+  /**
+   * Response Get Archived Goals Api V1 Users Me Progress Archived Goals Get
+   *
+   * Successful Response
+   */
+  200: Array<ArchivedGoalRead>;
+};
+
+export type GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponse =
+  GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponses[keyof GetArchivedGoalsApiV1UsersMeProgressArchivedGoalsGetResponses];
+
+export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostData = {
+  body: ArchivedGoalCreate;
+  path?: never;
+  query?: never;
+  url: '/api/v1/users/me/progress/archived-goals';
+};
+
+export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostError =
+  UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostErrors[keyof UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostErrors];
+
+export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponses = {
+  /**
+   * Successful Response
+   */
+  200: ArchivedGoalRead;
+};
+
+export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponse =
+  UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponses[keyof UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponses];
 
 export type ConnectCalendarApiV1CalendarGoogleConnectPostData = {
   body?: never;

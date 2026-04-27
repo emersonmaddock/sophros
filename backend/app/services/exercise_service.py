@@ -32,18 +32,12 @@ class ExercisePlanService:
         # 1. Determine Frequency and Type Mix based on Goals
         current_weight = user.weight
         target_weight = user.target_weight or current_weight
-        target_bf = user.target_body_fat
-
         weight_diff = abs(target_weight - current_weight)
 
         # Determine Ratio of Cardio vs Weight Lifting
         if target_weight < current_weight:
             # Focus: Fat Loss
             cardio_ratio = 0.7
-            if (
-                target_bf and target_bf < 15
-            ):  # Leaner goals need more weights to preserve muscle
-                cardio_ratio = 0.5
             base_sessions = 4 if weight_diff > 5 else 3
         elif target_weight > current_weight:
             # Focus: Muscle Gain
