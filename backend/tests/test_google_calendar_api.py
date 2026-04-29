@@ -72,9 +72,12 @@ async def test_connect_calendar_creates_connection(mock_google_calendar_client):
     mock_service = MagicMock()
     mock_service.get_user_email = AsyncMock(return_value="calendar@example.com")
 
-    async def sync_side_effect(connection, access_token, db_session):
+    async def sync_side_effect(
+        connection, access_token, db_session, utc_offset_minutes
+    ):
         assert access_token == "google-access-token"
         assert db_session is mock_google_calendar_client.mock_db
+        assert utc_offset_minutes == 0
         connection.last_synced_at = datetime(2026, 4, 26, 12, 0, tzinfo=UTC)
         connection.sync_status = "synced"
         return 7, "batch-123"
@@ -84,12 +87,15 @@ async def test_connect_calendar_creates_connection(mock_google_calendar_client):
     mock_clerk = MagicMock()
     mock_clerk.get_google_access_token = AsyncMock(return_value="google-access-token")
 
-    with patch(
-        "app.api.endpoints.google_calendar._get_service",
-        return_value=mock_service,
-    ), patch(
-        "app.api.endpoints.google_calendar._get_clerk_oauth_service",
-        return_value=mock_clerk,
+    with (
+        patch(
+            "app.api.endpoints.google_calendar._get_service",
+            return_value=mock_service,
+        ),
+        patch(
+            "app.api.endpoints.google_calendar._get_clerk_oauth_service",
+            return_value=mock_clerk,
+        ),
     ):
         response = await mock_google_calendar_client.post(f"{BASE}/connect")
 
