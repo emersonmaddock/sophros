@@ -392,9 +392,7 @@ export default function SchedulePage() {
     const nowLabel = `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
     const nowRow: TimelineRow = { kind: 'now', label: nowLabel };
 
-    const insertIdx = itemRows.findIndex(
-      (r) => (r.sortMins ?? 0) > nowMins
-    );
+    const insertIdx = itemRows.findIndex((r) => (r.sortMins ?? 0) > nowMins);
     if (insertIdx === -1) return [...normalizedRows, nowRow];
     return [...normalizedRows.slice(0, insertIdx), nowRow, ...normalizedRows.slice(insertIdx)];
   }, [backendUser?.sleep_time, dayItems, isToday, now]);
