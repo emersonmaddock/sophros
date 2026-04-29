@@ -55,6 +55,7 @@ class ScheduleItemRead(ScheduleItemBase):
     id: int
     user_id: str
     meal_id: int | None = None
+    meal_type: str | None = None
     source_schedule_item_id: int | None = None
     source_type: str = "sophros"
     source_calendar_id: str | None = None

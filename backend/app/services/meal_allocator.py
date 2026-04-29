@@ -67,8 +67,18 @@ class MealAllocator:
                 meal_time = cls._find_time_for_slot(slot_enum, user_schedule, day)
 
             # If still no time, or scheduler failed, use fixed default
+            # but only if the default falls inside the user's wake/sleep window
             if meal_time is None:
-                meal_time = cls.DEFAULT_TIMES.get(slot_enum)
+                default = cls.DEFAULT_TIMES.get(slot_enum)
+                if default is not None:
+                    if user_schedule:
+                        wake_mins = _time_to_mins(user_schedule.wake_up_time)
+                        sleep_mins = _time_to_mins(user_schedule.sleep_time)
+                        default_mins = _time_to_mins(default)
+                        if wake_mins <= default_mins < sleep_mins:
+                            meal_time = default
+                    else:
+                        meal_time = default
 
             slots_output.append(
                 MealSlotTarget(
@@ -120,6 +130,10 @@ class MealAllocator:
             actual_start = max(window_start, wake_mins)
             actual_end = window_end  # window_end is typically before midnight anyway
 
+        # Breakfast should start at least 30 minutes after wake-up
+        if slot == MealSlot.BREAKFAST:
+            actual_start = max(actual_start, wake_mins + 30)
+
         # Parse busy times for the day
         busy_intervals = []
         for busy in schedule.busy_times:
@@ -169,9 +183,9 @@ class MealAllocator:
         """
         Finds an available window for exercise, avoiding proximity to meals.
         """
-        # Standard exercise window (e.g. 6am to 9pm)
-        start_bound = _time_to_mins(time(6, 0))
-        end_bound = _time_to_mins(time(21, 0))
+        # Clamp exercise window to the user's wake/sleep hours
+        start_bound = _time_to_mins(user_schedule.wake_up_time)
+        end_bound = _time_to_mins(user_schedule.sleep_time)
 
         busy_intervals = []
         for busy in user_schedule.busy_times:
@@ -209,3 +223,27 @@ class MealAllocator:
                 current_time += 15  # Check every 15 mins
 
         return None
+
+    @classmethod
+    def check_meal_window_availability(
+        cls,
+        user_schedule: UserSchedule,
+        days: list[Day] | None = None,
+    ) -> dict[tuple[MealSlot, Day], bool]:
+        """
+        Checks whether each meal slot has a schedulable 30-min window for each
+        day, given the user's busy times and wake/sleep window.
+
+        Returns {(MealSlot, Day): bool} where True means at least one window is
+        available within the standard search range for that slot/day combination.
+        Used to surface warnings when Google Calendar busy blocks prevent a meal
+        from being scheduled.
+        """
+        if days is None:
+            days = list(Day)
+        availability: dict[tuple[MealSlot, Day], bool] = {}
+        for day in days:
+            for slot in cls.SEARCH_WINDOWS:
+                found = cls._find_time_for_slot(slot, user_schedule, day)
+                availability[(slot, day)] = found is not None
+        return availability

@@ -81,27 +81,41 @@ class GoogleCalendarService:
         connection: GoogleCalendarConnection,
         access_token: str,
         db: AsyncSession,
+        utc_offset_minutes: int = 0,
     ) -> tuple[int, str]:
         """
         Sync the rolling 8-week FreeBusy window for the given connection.
 
         - Deletes existing google_calendar rows in the window.
-        - Inserts new busy-block ScheduleItem rows.
+        - Inserts new busy-block ScheduleItem rows stored as local wall-clock times.
         - Updates connection.last_synced_at / sync_status.
+
+        utc_offset_minutes: the user's UTC offset in minutes, e.g. -240 for EDT.
+        Pass -new Date().getTimezoneOffset() from the frontend.
 
         Returns (synced_count, batch_id).
         On Google API error, marks sync_status='failed' and re-raises.
         """
         now = datetime.now(UTC)
-        # Keep stored ScheduleItem timestamps naive to match the DB column type.
-        time_min = datetime(now.year, now.month, now.day)
-        time_max = time_min + timedelta(weeks=SYNC_WEEKS)
+
+        # Compute the user's local "today" date by applying their UTC offset.
+        local_now = now + timedelta(minutes=utc_offset_minutes)
+        local_date = local_now.date()
+
+        # Local midnight as a naive datetime — this is how we store times in DB.
+        time_min_local = datetime(local_date.year, local_date.month, local_date.day)
+        time_max_local = time_min_local + timedelta(weeks=SYNC_WEEKS)
+
+        # UTC equivalents for the FreeBusy API (which requires UTC).
+        time_min_utc = time_min_local - timedelta(minutes=utc_offset_minutes)
+        time_max_utc = time_max_local - timedelta(minutes=utc_offset_minutes)
+
         batch_id = str(uuid.uuid4())
 
         try:
             calendar_ids = ["primary"]
             freebusy = await self.fetch_freebusy(
-                access_token, calendar_ids, time_min, time_max
+                access_token, calendar_ids, time_min_utc, time_max_utc
             )
         except Exception:
             connection.sync_status = "failed"
@@ -109,21 +123,22 @@ class GoogleCalendarService:
             await db.commit()
             raise
 
-        # Replace Google busy rows in the sync window atomically
+        # Replace Google busy rows in the sync window atomically.
+        # Compare against local-time bounds since we now store local times.
         await db.execute(
             sql_delete(ScheduleItem).where(
                 ScheduleItem.user_id == connection.user_id,
                 ScheduleItem.source_type == "google_calendar",
-                ScheduleItem.date >= time_min,
-                ScheduleItem.date < time_max,
+                ScheduleItem.date >= time_min_local,
+                ScheduleItem.date < time_max_local,
             )
         )
 
         count = 0
         for cal_id, busy_list in freebusy.items():
             for busy in busy_list:
-                start_dt = _parse_google_dt(busy["start"])
-                end_dt = _parse_google_dt(busy["end"])
+                start_dt = _parse_google_dt(busy["start"], utc_offset_minutes)
+                end_dt = _parse_google_dt(busy["end"], utc_offset_minutes)
                 duration = max(1, int((end_dt - start_dt).total_seconds() / 60))
 
                 db.add(
@@ -153,14 +168,20 @@ class GoogleCalendarService:
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
 
-def _parse_google_dt(value: str) -> datetime:
+def _parse_google_dt(value: str, utc_offset_minutes: int = 0) -> datetime:
     """
-    Parse an RFC 3339 datetime string from Google.
+    Parse an RFC 3339 datetime string from Google and convert it to the user's
+    local wall-clock time as a naive datetime.
 
-    We intentionally preserve the timestamp's wall-clock components and drop the
-    offset when storing it, because the planner treats manual busy times as
-    local wall-clock constraints as well.
+    Google always returns UTC (e.g. "2026-04-27T11:30:00Z" for 7:30 AM EDT).
+    We apply the caller-supplied utc_offset_minutes to convert to local time
+    before stripping the timezone, so the stored value matches the wall-clock
+    time the planner expects (e.g. 07:30:00 for an EDT event).
+
+    utc_offset_minutes: -new Date().getTimezoneOffset() from the frontend,
+    e.g. -240 for EDT (UTC-4).
     """
     normalized = value.replace("Z", "+00:00")
     parsed = datetime.fromisoformat(normalized)
-    return parsed.replace(tzinfo=None)
+    local = parsed + timedelta(minutes=utc_offset_minutes)
+    return local.replace(tzinfo=None)

@@ -61,8 +61,10 @@ export function useGoogleCalendarConnectMutation() {
 
   return useMutation({
     mutationFn: async () => {
+      const utcOffsetMinutes = -new Date().getTimezoneOffset();
       const response = await client.post<GoogleCalendarStatus, unknown>({
         url: '/api/v1/calendar/google/connect',
+        query: { utc_offset_minutes: utcOffsetMinutes },
         security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error || !response.data) {
@@ -83,8 +85,10 @@ export function useGoogleCalendarSyncMutation() {
 
   return useMutation({
     mutationFn: async () => {
+      const utcOffsetMinutes = -new Date().getTimezoneOffset();
       const response = await client.post<GoogleCalendarSyncResult, unknown>({
         url: '/api/v1/calendar/google/sync',
+        query: { utc_offset_minutes: utcOffsetMinutes },
         security: [{ scheme: 'bearer', type: 'http' }],
       });
       if (response.error || !response.data) {

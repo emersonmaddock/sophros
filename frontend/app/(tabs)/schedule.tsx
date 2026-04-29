@@ -4,6 +4,7 @@ import { MealDetailModal } from '@/components/MealDetailModal';
 import { SwipeableScheduleItem } from '@/components/SwipeableScheduleItem';
 import { Colors } from '@/constants/theme';
 import { useNow } from '@/hooks/useNow';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   useCompleteScheduleItemMutation,
   useCreateScheduleItemMutation,
@@ -14,7 +15,7 @@ import {
 import type { ItemType, WeeklyScheduleItem } from '@/types/schedule';
 import { toLocalDateStr as formatDateStr } from '@/utils/date';
 import { useRouter } from 'expo-router';
-import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Utensils } from 'lucide-react-native';
+import { Calendar, ChevronLeft, ChevronRight, Dumbbell, Moon, Utensils } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -33,16 +34,12 @@ function getMonday(weekOffset: number): Date {
 }
 
 /**
- * Returns a Date for a schedule item, interpreting the timestamp correctly.
- * Google Calendar items are stored as naive UTC strings; all other items are
- * stored as naive local-time strings. Appending 'Z' makes JS parse as UTC.
+ * Returns a Date for a schedule item.
+ * All items — including Google Calendar busy blocks — are stored as naive
+ * local-time strings. Treat them all uniformly as local time (no Z appended).
  */
 function getItemDate(item: ScheduleItemRead): Date {
-  const sourceType = (item as Record<string, unknown>).source_type as string | undefined;
-  const iso = item.date;
-  return sourceType === 'google_calendar'
-    ? new Date(iso.endsWith('Z') ? iso : iso + 'Z')
-    : new Date(iso);
+  return new Date(item.date);
 }
 
 /** Derive a display time string (e.g. "7:30 AM") from a Date */
@@ -62,7 +59,7 @@ function getItemTitle(item: ScheduleItemRead): string {
   if (sourceType === 'google_calendar') return 'Busy';
   switch (item.activity_type) {
     case 'meal':
-      return 'Meal';
+      return item.meal_type ?? 'Meal';
     case 'exercise':
       return item.exercise_category ?? 'Workout';
     case 'sleep':
@@ -80,14 +77,25 @@ function getDurationDisplay(minutes: number): string {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
-/** Convert display time string to minutes since midnight */
-function parseTimeToMins(displayTime: string): number {
-  const [timePart, period] = displayTime.split(' ');
-  const [h, m] = timePart.split(':').map(Number);
-  let hours = h;
-  if (period === 'PM' && h !== 12) hours += 12;
-  if (period === 'AM' && h === 12) hours = 0;
-  return hours * 60 + (m || 0);
+function parseProfileTime(timeValue: string | null | undefined): {
+  mins: number;
+  label: string;
+} | null {
+  if (!timeValue) return null;
+
+  const [hoursStr, minutesStr] = timeValue.split(':');
+  const hours = Number(hoursStr);
+  const minutes = Number(minutesStr);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+
+  const mins = hours * 60 + minutes;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayH = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+
+  return {
+    mins,
+    label: `${displayH}:${minutes.toString().padStart(2, '0')} ${period}`,
+  };
 }
 
 export default function SchedulePage() {
@@ -103,6 +111,7 @@ export default function SchedulePage() {
   const [editModalItemType, setEditModalItemType] = useState<ItemType>('meal');
 
   const now = useNow();
+  const { backendUser } = useUserProfile();
   const todayDayOfWeek = now.getDay();
 
   // Compute which day index to default to
@@ -345,11 +354,35 @@ export default function SchedulePage() {
   // --- current-time indicator ---
   const isToday = weekOffset === 0 && selectedDayIndex === todayMondayIndex;
 
-  type TimelineRow = { kind: 'item'; item: ScheduleItemRead } | { kind: 'now'; label: string };
+  type TimelineRow =
+    | { kind: 'item'; item: ScheduleItemRead }
+    | { kind: 'now'; label: string }
+    | { kind: 'sleep-indicator'; label: string };
 
   const timelineRows = useMemo((): TimelineRow[] => {
-    const itemRows: TimelineRow[] = dayItems.map((item) => ({ kind: 'item', item }));
-    if (!isToday) return itemRows;
+    const sleepIndicator = isToday ? parseProfileTime(backendUser?.sleep_time) : null;
+    const itemRows: (TimelineRow & { sortMins?: number })[] = dayItems.map((item) => ({
+      kind: 'item',
+      item,
+      sortMins: getItemDate(item).getHours() * 60 + getItemDate(item).getMinutes(),
+    }));
+
+    if (sleepIndicator) {
+      itemRows.push({
+        kind: 'sleep-indicator',
+        label: sleepIndicator.label,
+        sortMins: sleepIndicator.mins,
+      });
+    }
+
+    itemRows.sort((a, b) => (a.sortMins ?? 0) - (b.sortMins ?? 0));
+
+    const normalizedRows: TimelineRow[] = itemRows.map((row) => {
+      if (row.kind === 'item') return { kind: 'item', item: row.item };
+      return { kind: 'sleep-indicator', label: row.label };
+    });
+
+    if (!isToday) return normalizedRows;
 
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const h = now.getHours();
@@ -359,12 +392,10 @@ export default function SchedulePage() {
     const nowLabel = `${displayH}:${m.toString().padStart(2, '0')} ${period}`;
     const nowRow: TimelineRow = { kind: 'now', label: nowLabel };
 
-    const insertIdx = itemRows.findIndex(
-      (r) => r.kind === 'item' && parseTimeToMins(getDisplayTime(getItemDate(r.item))) > nowMins
-    );
-    if (insertIdx === -1) return [...itemRows, nowRow];
-    return [...itemRows.slice(0, insertIdx), nowRow, ...itemRows.slice(insertIdx)];
-  }, [dayItems, isToday, now]);
+    const insertIdx = itemRows.findIndex((r) => (r.sortMins ?? 0) > nowMins);
+    if (insertIdx === -1) return [...normalizedRows, nowRow];
+    return [...normalizedRows.slice(0, insertIdx), nowRow, ...normalizedRows.slice(insertIdx)];
+  }, [backendUser?.sleep_time, dayItems, isToday, now]);
 
   const isCurrentWeek = weekOffset === 0;
 
@@ -444,7 +475,7 @@ export default function SchedulePage() {
           <View style={styles.emptyState}>
             <Text style={styles.emptySubtitle}>Loading...</Text>
           </View>
-        ) : dayItems.length > 0 ? (
+        ) : timelineRows.length > 0 ? (
           <>
             <View style={styles.timeline}>
               {timelineRows.map((row, i) => {
@@ -454,6 +485,22 @@ export default function SchedulePage() {
                       <View style={styles.nowDot} />
                       <View style={styles.nowLine} />
                       <Text style={styles.nowLineLabel}>{row.label}</Text>
+                    </View>
+                  );
+                }
+                if (row.kind === 'sleep-indicator') {
+                  return (
+                    <View key={`sleep-indicator-${row.label}`} style={styles.timelineItem}>
+                      <View style={styles.timeColumn}>
+                        <Text style={styles.itemTime}>{row.label}</Text>
+                      </View>
+                      <View style={styles.sleepIndicatorRow}>
+                        <View style={styles.sleepIndicatorDot}>
+                          <Moon size={12} color="#4F46E5" fill="#4F46E5" />
+                        </View>
+                        <Text style={styles.sleepIndicatorLabel}>Expected sleep</Text>
+                        <View style={styles.sleepIndicatorLine} />
+                      </View>
                     </View>
                   );
                 }
@@ -734,6 +781,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#EF4444',
+    marginLeft: 6,
+  },
+  sleepIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginTop: 4,
+  },
+  sleepIndicatorDot: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E0E7FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+  },
+  sleepIndicatorLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#6366F1',
+    marginLeft: 8,
+  },
+  sleepIndicatorLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#4F46E5',
     marginLeft: 6,
   },
   timelineItem: {

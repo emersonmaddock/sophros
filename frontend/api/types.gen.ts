@@ -439,6 +439,10 @@ export type ScheduleItemRead = {
    */
   meal_id?: number | null;
   /**
+   * Meal Type
+   */
+  meal_type?: string | null;
+  /**
    * Source Schedule Item Id
    */
   source_schedule_item_id?: number | null;
@@ -1309,9 +1313,26 @@ export type UpsertArchivedGoalApiV1UsersMeProgressArchivedGoalsPostResponse =
 export type ConnectCalendarApiV1CalendarGoogleConnectPostData = {
   body?: never;
   path?: never;
-  query?: never;
+  query?: {
+    /**
+     * Utc Offset Minutes
+     *
+     * User's UTC offset in minutes, e.g. -240 for EDT. Pass -new Date().getTimezoneOffset() from the client.
+     */
+    utc_offset_minutes?: number;
+  };
   url: '/api/v1/calendar/google/connect';
 };
+
+export type ConnectCalendarApiV1CalendarGoogleConnectPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type ConnectCalendarApiV1CalendarGoogleConnectPostError =
+  ConnectCalendarApiV1CalendarGoogleConnectPostErrors[keyof ConnectCalendarApiV1CalendarGoogleConnectPostErrors];
 
 export type ConnectCalendarApiV1CalendarGoogleConnectPostResponses = {
   /**
@@ -1343,9 +1364,26 @@ export type GetStatusApiV1CalendarGoogleStatusGetResponse =
 export type SyncCalendarApiV1CalendarGoogleSyncPostData = {
   body?: never;
   path?: never;
-  query?: never;
+  query?: {
+    /**
+     * Utc Offset Minutes
+     *
+     * User's UTC offset in minutes. Pass -new Date().getTimezoneOffset() from the client.
+     */
+    utc_offset_minutes?: number;
+  };
   url: '/api/v1/calendar/google/sync';
 };
+
+export type SyncCalendarApiV1CalendarGoogleSyncPostErrors = {
+  /**
+   * Validation Error
+   */
+  422: HttpValidationError;
+};
+
+export type SyncCalendarApiV1CalendarGoogleSyncPostError =
+  SyncCalendarApiV1CalendarGoogleSyncPostErrors[keyof SyncCalendarApiV1CalendarGoogleSyncPostErrors];
 
 export type SyncCalendarApiV1CalendarGoogleSyncPostResponses = {
   /**

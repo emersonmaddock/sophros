@@ -4,6 +4,7 @@ import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
 import type {
   ConnectCalendarApiV1CalendarGoogleConnectPostData,
+  ConnectCalendarApiV1CalendarGoogleConnectPostErrors,
   ConnectCalendarApiV1CalendarGoogleConnectPostResponses,
   CreateScheduleItemApiV1SchedulesPostData,
   CreateScheduleItemApiV1SchedulesPostErrors,
@@ -50,6 +51,7 @@ import type {
   SwapScheduleItemMealApiV1SchedulesItemIdSwapPostErrors,
   SwapScheduleItemMealApiV1SchedulesItemIdSwapPostResponses,
   SyncCalendarApiV1CalendarGoogleSyncPostData,
+  SyncCalendarApiV1CalendarGoogleSyncPostErrors,
   SyncCalendarApiV1CalendarGoogleSyncPostResponses,
   UpdateScheduleItemApiV1SchedulesItemIdPutData,
   UpdateScheduleItemApiV1SchedulesItemIdPutErrors,
@@ -441,7 +443,7 @@ export const connectCalendarApiV1CalendarGoogleConnectPost = <ThrowOnError exten
 ) =>
   (options?.client ?? client).post<
     ConnectCalendarApiV1CalendarGoogleConnectPostResponses,
-    unknown,
+    ConnectCalendarApiV1CalendarGoogleConnectPostErrors,
     ThrowOnError
   >({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -477,7 +479,7 @@ export const syncCalendarApiV1CalendarGoogleSyncPost = <ThrowOnError extends boo
 ) =>
   (options?.client ?? client).post<
     SyncCalendarApiV1CalendarGoogleSyncPostResponses,
-    unknown,
+    SyncCalendarApiV1CalendarGoogleSyncPostErrors,
     ThrowOnError
   >({
     security: [{ scheme: 'bearer', type: 'http' }],

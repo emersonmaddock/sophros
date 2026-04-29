@@ -4,8 +4,8 @@ import { SelectionCard } from '@/components/SelectionCard';
 import { TimePickerInput } from '@/components/TimePickerInput';
 import { ACTIVITY_LEVEL_OPTIONS, VALIDATION_RULES } from '@/constants/onboarding';
 import { Colors, Layout, Shadows } from '@/constants/theme';
-import { useLogWeight } from '@/lib/healthkit';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { useLogWeight } from '@/lib/healthkit';
 import { getSleepWarning } from '@/utils/sleep-validation';
 import { cmToFeetAndInches, feetAndInchesToCm, kgToLbs, lbsToKg } from '@/utils/units';
 import { useRouter } from 'expo-router';
@@ -532,18 +532,6 @@ export default function EditProfileScreen() {
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Weight ({form.showImperial ? 'lbs' : 'kg'})</Text>
-              <TextInput
-                style={styles.input}
-                value={form.weight}
-                onChangeText={(text) => updateForm('weight', text)}
-                keyboardType="decimal-pad"
-                placeholder={form.showImperial ? 'Enter weight in lbs' : 'Enter weight in kg'}
-                placeholderTextColor={Colors.light.textMuted}
-              />
-            </View>
-
             {form.showImperial ? (
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Height</Text>
@@ -641,66 +629,6 @@ export default function EditProfileScreen() {
                   {getSleepWarning(form.wakeUpTime, form.sleepTime)}
                 </Text>
               </View>
-            )}
-
-            <View style={styles.busyTimesHeader}>
-              <Text style={styles.inputLabel}>Busy Times</Text>
-              <TouchableOpacity onPress={addBusyTime} activeOpacity={0.8}>
-                <Text style={styles.addButtonText}>+ Add</Text>
-              </TouchableOpacity>
-            </View>
-
-            {form.busyTimes.length === 0 ? (
-              <Text style={styles.emptyStateText}>
-                No busy times set. Add recurring weekly blocks to optimize meal scheduling.
-              </Text>
-            ) : (
-              form.busyTimes.map((bt, index) => (
-                <View key={index} style={styles.busyTimeBlock}>
-                  <View style={styles.dayChipsRow}>
-                    {DAYS.map((day, dayIndex) => (
-                      <TouchableOpacity
-                        key={day}
-                        style={[styles.dayChip, bt.day === day && styles.dayChipActive]}
-                        onPress={() => updateBusyTime(index, 'day', day)}
-                        activeOpacity={0.8}
-                      >
-                        <Text
-                          style={[styles.dayChipText, bt.day === day && styles.dayChipTextActive]}
-                        >
-                          {DAY_LABELS[dayIndex]}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  <View style={styles.busyTimeRow}>
-                    <TimePickerInput
-                      label="Start"
-                      value={bt.start}
-                      onChange={(text) => updateBusyTime(index, 'start', text)}
-                      style={styles.imperialInput}
-                      minTime={form.wakeUpTime}
-                      maxTime={form.sleepTime}
-                    />
-                    <Text style={styles.timeSeparator}>to</Text>
-                    <TimePickerInput
-                      label="End"
-                      value={bt.end}
-                      onChange={(text) => updateBusyTime(index, 'end', text)}
-                      style={styles.imperialInput}
-                      minTime={form.wakeUpTime}
-                      maxTime={form.sleepTime}
-                    />
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={() => removeBusyTime(index)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.removeButtonText}>Remove</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))
             )}
           </View>
 

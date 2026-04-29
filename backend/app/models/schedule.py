@@ -26,6 +26,10 @@ class ScheduleItem(Base):
     exercise_calorie_burn: Mapped[int] = mapped_column(Integer, default=0)
     exercise_muscle_gain: Mapped[float] = mapped_column(Float, default=0.0)
 
+    # Which meal slot this item represents (Breakfast / Lunch / Dinner)
+    # Null for non-meal activity types (exercise, sleep, etc.)
+    meal_type: Mapped[str | None] = mapped_column(String, nullable=True)
+
     # Meal link (nullable — non-meal items leave these null)
     meal_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("meals.id", ondelete="SET NULL"), nullable=True

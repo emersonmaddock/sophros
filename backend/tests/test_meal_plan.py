@@ -228,17 +228,34 @@ async def test_generate_weekly_plan(mock_exercise):
     # Only 2 API calls for the entire week (was 21)
     assert mock_client.search_recipes.await_count == 2
 
-    # Collect all primary recipe IDs (excluding leftover slots which reuse IDs)
-    non_leftover_ids = []
+    # Collect non-leftover primary recipe IDs, split by meal type.
+    # Breakfasts rotate from a dedicated 3-recipe pool by design (Mon→0, Tue→1,
+    # Wed→2, Thu→0, ...), so duplicates among breakfast primaries are expected.
+    # Lunch/dinner primaries should still be globally unique.
+    breakfast_primary_ids: list[str] = []
+    main_primary_ids: list[str] = []
     for plan in weekly_plan.daily_plans:
         for slot in plan.slots:
-            if not slot.is_leftover:
-                non_leftover_ids.append(slot.plan.main_recipe.id)
+            if slot.is_leftover:
+                continue
+            recipe_id = slot.plan.main_recipe.id
+            if slot.slot_name == MealSlot.BREAKFAST:
+                breakfast_primary_ids.append(recipe_id)
+            else:
+                main_primary_ids.append(recipe_id)
 
-    # All non-leftover primaries should be unique
-    assert len(set(non_leftover_ids)) == len(non_leftover_ids), (
-        f"Expected all non-leftover primaries unique, got {len(set(non_leftover_ids))} "
-        f"unique out of {len(non_leftover_ids)}"
+    # Lunch/dinner primaries: all unique
+    assert len(set(main_primary_ids)) == len(main_primary_ids), (
+        f"Expected all lunch/dinner primaries unique, got {len(set(main_primary_ids))} "
+        f"unique out of {len(main_primary_ids)}"
+    )
+
+    # Breakfasts are never marked leftover, so all 7 days contribute a primary
+    assert len(breakfast_primary_ids) == 7
+    # Rotation pool is capped at 3 primaries
+    assert len(set(breakfast_primary_ids)) <= 3, (
+        f"Breakfast primaries should rotate from at most 3 recipes, got "
+        f"{len(set(breakfast_primary_ids))} unique"
     )
 
 

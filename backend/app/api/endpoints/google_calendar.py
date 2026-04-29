@@ -28,6 +28,13 @@ def _get_clerk_oauth_service() -> ClerkOAuthService:
 
 @router.post("/connect", response_model=GoogleCalendarStatus)
 async def connect_calendar(
+    utc_offset_minutes: int = Query(
+        0,
+        description=(
+            "User's UTC offset in minutes, e.g. -240 for EDT. "
+            "Pass -new Date().getTimezoneOffset() from the client."
+        ),
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> GoogleCalendarStatus:
@@ -84,7 +91,7 @@ async def connect_calendar(
 
     # Run initial sync
     try:
-        await service.sync_for_user(connection, access_token, db)
+        await service.sync_for_user(connection, access_token, db, utc_offset_minutes)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -147,6 +154,13 @@ async def get_status(
 
 @router.post("/sync", response_model=GoogleCalendarSyncResult)
 async def sync_calendar(
+    utc_offset_minutes: int = Query(
+        0,
+        description=(
+            "User's UTC offset in minutes. "
+            "Pass -new Date().getTimezoneOffset() from the client."
+        ),
+    ),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> GoogleCalendarSyncResult:
@@ -167,7 +181,9 @@ async def sync_calendar(
     clerk_oauth = _get_clerk_oauth_service()
     try:
         access_token = await clerk_oauth.get_google_access_token(current_user.id)
-        count, batch_id = await service.sync_for_user(connection, access_token, db)
+        count, batch_id = await service.sync_for_user(
+            connection, access_token, db, utc_offset_minutes
+        )
     except ClerkOAuthError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

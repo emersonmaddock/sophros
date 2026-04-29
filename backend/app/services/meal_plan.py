@@ -79,23 +79,31 @@ class MealPlanService:
         slot_calories: int,
         constraints: DietaryConstraints,
         count: int,
+        max_ready_time: int | None = None,
     ) -> list[dict]:
         """
         Fetch a pool of recipes for a given meal type and calorie target.
 
-        Uses ±30% calorie tolerance. Results are shuffled locally for variety
-        instead of using sort="random" on every API call.
+        Uses ±30% calorie tolerance. A random page offset is applied so that
+        identical profiles don't always receive the same recipes week-over-week.
+        Results are also shuffled locally for additional variety.
         """
         tolerance = 0.30
         min_cals = int(slot_calories * (1 - tolerance))
         max_cals = int(slot_calories * (1 + tolerance))
 
+        # Random offset so repeated calls with the same profile vary.
+        # Capped at count//2 so small pools (e.g. breakfast count=5) don't
+        # page past all available results.
+        offset = random.randint(0, max(0, count // 2))
+
         logger.info(
-            "Fetching recipe pool: type=%s, %d-%d cal, count=%d",
+            "Fetching recipe pool: type=%s, %d-%d cal, count=%d, offset=%d",
             meal_type,
             min_cals,
             max_cals,
             count,
+            offset,
         )
 
         results = await self.spoonacular_client.search_recipes(
@@ -104,6 +112,8 @@ class MealPlanService:
             max_calories=max_cals,
             constraints=constraints,
             number=count,
+            offset=offset,
+            max_ready_time=max_ready_time,
         )
 
         random.shuffle(results)
@@ -119,7 +129,8 @@ class MealPlanService:
         Assign a primary recipe and up to 2 alternatives from the pool.
 
         - Primary: first unused recipe (added to used_ids globally)
-        - Alternatives: next unused-within-slot recipes (NOT added to used_ids)
+        - Alternatives: next unused recipes (also added to used_ids globally so
+          they can never appear as a primary recommendation on another day)
         - Raises ValueError if no unused primary is available
         - Sets slot.plan as MealOption and slot.prep_time_minutes
         """
@@ -144,11 +155,12 @@ class MealPlanService:
                 slot.slot_name,
             )
 
-        # First candidate is primary — track globally
-        primary = candidates[0]
-        used_ids.add(primary["id"])
+        # Track all candidates (primary + alternatives) globally so no recipe
+        # appears as both an alternative for one slot and a primary on another day.
+        for candidate in candidates:
+            used_ids.add(candidate["id"])
 
-        main_recipe = MealPlanService._convert_to_recipe(primary)
+        main_recipe = MealPlanService._convert_to_recipe(candidates[0])
         alternatives = [MealPlanService._convert_to_recipe(c) for c in candidates[1:]]
 
         slot.plan = MealOption(main_recipe=main_recipe, alternatives=alternatives)
@@ -294,18 +306,32 @@ class MealPlanService:
             first_plan.slots, [MealSlot.LUNCH, MealSlot.DINNER], 0.35
         )
 
+        # Breakfast pool of 6: first 3 rotate as weekly primaries
+        # (Mon→0, Tue→1, Wed→2, Thu→0, …), last 3 are dedicated alternatives
+        # that never appear as a weekly primary recommendation.
         breakfast_pool, main_pool = await asyncio.gather(
             self._fetch_recipe_pool(
-                MealType.BREAKFAST, breakfast_cals, constraints, count=25
+                MealType.BREAKFAST,
+                breakfast_cals,
+                constraints,
+                count=6,
             ),
             self._fetch_recipe_pool(
                 MealType.MAIN_COURSE, main_cals, constraints, count=50
             ),
         )
 
+        # Split breakfast pool: primaries (rotate across the week) vs alternatives
+        # (never used as a primary, so they never appear as weekly recommendations).
+        n_primaries = min(3, len(breakfast_pool))
+        breakfast_primaries = breakfast_pool[:n_primaries]
+        breakfast_alts = breakfast_pool[n_primaries:]  # dedicated swap options
+
         # Step 5: Assign recipes from pools, respecting leftovers
         used_ids: set[int] = set()
         recipe_manifest: dict[tuple[Day, MealSlot], Recipe] = {}
+
+        breakfast_idx = 0
 
         for plan in daily_plans:
             for slot in plan.slots:
@@ -320,16 +346,30 @@ class MealPlanService:
                             slot.prep_time_minutes = 5  # Just reheating
                             continue
 
-                pool = (
-                    breakfast_pool
-                    if slot.slot_name == MealSlot.BREAKFAST
-                    else main_pool
-                )
-                self._assign_slot_recipes(slot, pool, used_ids)
+                if slot.slot_name == MealSlot.BREAKFAST:
+                    if breakfast_primaries:
+                        n_prim = len(breakfast_primaries)
+                        primary_data = breakfast_primaries[breakfast_idx % n_prim]
+                        # Alternatives come exclusively from the dedicated alts pool
+                        # so they never coincide with any weekly primary breakfast.
+                        alts_data = breakfast_alts[:2]
+                        breakfast_idx += 1
+                        main_recipe = self._convert_to_recipe(primary_data)
+                        alternatives = [self._convert_to_recipe(a) for a in alts_data]
+                        slot.plan = MealOption(
+                            main_recipe=main_recipe, alternatives=alternatives
+                        )
+                        slot.prep_time_minutes = min(
+                            main_recipe.preparation_time_minutes or 30, 30
+                        )
+                else:
+                    self._assign_slot_recipes(slot, main_pool, used_ids)
 
-                # Store in manifest for potential leftover lookups
-                if slot.plan and slot.plan.main_recipe:
-                    recipe_manifest[(plan.day, slot.slot_name)] = slot.plan.main_recipe
+                    # Store in manifest for potential leftover lookups
+                    if slot.plan and slot.plan.main_recipe:
+                        recipe_manifest[(plan.day, slot.slot_name)] = (
+                            slot.plan.main_recipe
+                        )
 
         total_weekly_cals = sum(p.total_calories for p in daily_plans)
         return WeeklyMealPlan(
@@ -370,13 +410,11 @@ class MealPlanService:
         )
         google_blocks = google_result.scalars().all()
 
+        # Meal/exercise scheduling uses Google Calendar busy times exclusively.
+        # Manual busy_times stored on the user profile are intentionally ignored
+        # so that only calendar-synced events influence slot placement.
         extra_busy = self._google_blocks_to_busy_times(list(google_blocks))
-        if extra_busy:
-            planning_user = user.model_copy(
-                update={"busy_times": list(user.busy_times) + extra_busy}
-            )
-        else:
-            planning_user = user
+        planning_user = user.model_copy(update={"busy_times": extra_busy})
 
         weekly_plan = await self.generate_weekly_plan(planning_user)
         return await self._persist_weekly_plan(
@@ -526,6 +564,7 @@ class MealPlanService:
                     user_id=user_id,
                     date=item_dt,
                     activity_type=ActivityType.MEAL,
+                    meal_type=slot.slot_name.value,
                     duration_minutes=max(30, prep),
                     prep_time_minutes=prep,
                     is_completed=False,
@@ -633,6 +672,12 @@ class MealPlanService:
 
         for i, item in enumerate(all_slots):
             if item["is_assigned"]:
+                continue
+
+            # Breakfasts are never treated as leftovers — they rotate from a
+            # dedicated pool and are always freshly "cooked".
+            if item["is_breakfast"]:
+                item["is_assigned"] = True
                 continue
 
             current_slot: MealSlotTarget = item["slot"]
