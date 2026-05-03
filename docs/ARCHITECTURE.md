@@ -14,28 +14,28 @@ Sophros is a health planning mobile application that collects lifestyle data (nu
 graph TD
     subgraph Client["Mobile&nbsp;Client&nbsp;—&nbsp;React&nbsp;Native&nbsp;+&nbsp;Expo"]
         direction LR
-        Auth["Auth<br/>(Clerk)"] ~~~ Tabs["Tabs<br/>(4 pages)"] ~~~ Onboarding["Onboarding<br/>(5 steps)"] ~~~ MealPlan["Meal Planning<br/>Screen"]
+        Auth["Clerk<br/>Authentication"] ~~~ Query["Tanstack<br/>Query and Cache"] ~~~ Calendar["Google Calendar<br/>Busy Times"] ~~~ AppleHealth["Apple Health<br/>Ecosystem Integraton"] ~~~ Visual["Pages<br/>Onboarding Flow<br/>Tabbed layout<br/>Account Page<br/>Health Score<br/>Meal Planning<br/>"]
     end
 
     Client -- "HTTPS / REST" --> Backend
 
     subgraph Backend["FastAPI&nbsp;Backend&nbsp;—&nbsp;Python&nbsp;3.11"]
-        API["API Layer<br/>/users · /schedules · /meal-plans"]
-        API --> Services["Service Layer<br/>NutrientCalculator · MealAllocator<br/>MealPlanGenerator · ExerciseService"]
+        API["API Layer<br/>/users<br/>/schedules<br/>/meal-plans<br/>/calendar/google"]
+        API --> Services["Service Layer<br/>NutrientCalculator<br/> MealAllocator<br/>MealPlanGenerator<br/>ExerciseService"]
     end
 
     Backend --> DB
     Backend --> External
 
-    subgraph DB["PostgreSQL&nbsp;—&nbsp;Neon&nbsp;/&nbsp;asyncpg"]
-        Tables["Users · Schedules · MealPlans · BusyTimes · Dietary"]
+    subgraph DB["PostgreSQL&nbsp;—&nbsp;asyncpg"]
+        Tables["Users<br/>Schedules<br/>Meals<br/>BusyTimes<br/>Dietary<br/>Allergies<br/>Google Calendar"]
     end
 
     subgraph External["External APIs"]
         direction LR
         Spoonacular["Spoonacular<br/>(Recipes)"]
         Clerk["Clerk<br/>(Auth / JWT)"]
-        OpenAI["OpenAI API<br/>(configured)"]
+        CalendarAPI["Google Calendar<br/>(Schedule Alignment)"]
     end
 ```
 
